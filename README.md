@@ -30,7 +30,7 @@ This server implements the Model Context Protocol (MCP) specification, providing
 
 1. **Clone the repository:**
    ```bash
-   git clone <repository-url>
+   git clone git@github.com:husams/agile-mcp.git
    cd agile-mcp
    ```
 
