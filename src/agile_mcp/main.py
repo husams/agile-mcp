@@ -13,6 +13,15 @@ from typing import Optional
 
 from fastmcp import FastMCP
 
+try:
+    from .api import register_epic_tools
+except ImportError:
+    # Handle when running as script directly
+    import sys
+    import os
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from api import register_epic_tools
+
 # Configure logging to stderr to avoid contaminating stdout JSON-RPC
 logging.basicConfig(
     level=logging.INFO,
@@ -36,6 +45,10 @@ def create_server() -> FastMCP:
         # Initialize FastMCP server with proper configuration
         server = FastMCP("Agile Management Server")
         logger.info("FastMCP server instance created successfully")
+        
+        # Register epic management tools
+        register_epic_tools(server)
+        logger.info("Epic management tools registered successfully")
         
         # FastMCP automatically handles:
         # - MCP initialize request handling

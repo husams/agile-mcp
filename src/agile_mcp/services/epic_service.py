@@ -1,0 +1,79 @@
+"""
+Service layer for Epic business logic operations.
+"""
+
+from typing import List, Dict, Any
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+
+from ..repositories.epic_repository import EpicRepository
+from ..models.epic import Epic
+from .exceptions import EpicValidationError, DatabaseError
+
+
+class EpicService:
+    """Service class for Epic business logic operations."""
+    
+    # Constants for validation
+    MAX_TITLE_LENGTH = 200
+    MAX_DESCRIPTION_LENGTH = 2000
+    DEFAULT_STATUS = "Draft"
+    
+    def __init__(self, epic_repository: EpicRepository):
+        """Initialize service with repository dependency."""
+        self.epic_repository = epic_repository
+    
+    def create_epic(self, title: str, description: str) -> Dict[str, Any]:
+        """
+        Create a new epic with validation.
+        
+        Args:
+            title: The name of the epic
+            description: A detailed explanation of the epic's goal
+            
+        Returns:
+            Dict[str, Any]: Dictionary representation of the created epic
+            
+        Raises:
+            EpicValidationError: If validation fails
+            DatabaseError: If database operation fails
+        """
+        # Validate input parameters
+        if not title or not title.strip():
+            raise EpicValidationError("Epic title cannot be empty")
+        
+        if not description or not description.strip():
+            raise EpicValidationError("Epic description cannot be empty")
+        
+        if len(title.strip()) > self.MAX_TITLE_LENGTH:
+            raise EpicValidationError(f"Epic title cannot exceed {self.MAX_TITLE_LENGTH} characters")
+        
+        if len(description.strip()) > self.MAX_DESCRIPTION_LENGTH:
+            raise EpicValidationError(f"Epic description cannot exceed {self.MAX_DESCRIPTION_LENGTH} characters")
+        
+        try:
+            epic = self.epic_repository.create_epic(title.strip(), description.strip())
+            return epic.to_dict()
+        except ValueError as e:
+            # Handle SQLAlchemy model validation errors
+            raise EpicValidationError(str(e))
+        except IntegrityError as e:
+            # Handle database constraint violations
+            raise DatabaseError(f"Data integrity error: {str(e)}")
+        except SQLAlchemyError as e:
+            raise DatabaseError(f"Database operation failed: {str(e)}")
+    
+    def find_epics(self) -> List[Dict[str, Any]]:
+        """
+        Retrieve all epics.
+        
+        Returns:
+            List[Dict[str, Any]]: List of epic dictionaries
+            
+        Raises:
+            DatabaseError: If database operation fails
+        """
+        try:
+            epics = self.epic_repository.find_all_epics()
+            return [epic.to_dict() for epic in epics]
+        except SQLAlchemyError as e:
+            raise DatabaseError(f"Database operation failed while retrieving epics: {str(e)}")
