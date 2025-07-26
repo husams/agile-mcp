@@ -1,3 +1,29 @@
+# Sprint Change Proposal: Fix Missing MCP Server Example
+
+## 1. Identified Issue Summary
+
+**Problem:** The sharded architecture document, `docs/architecture/mcp-server-implementation-examples.md`, is incomplete. It is missing the detailed Python code example for implementing MCP Tools, Resources, and Prompts, which is present in the main `docs/architecture.md` source document.
+
+**Trigger:** This was identified via user report during a review of the project documentation.
+
+## 2. Epic & Artifact Impact
+
+*   **Epic Impact:** This is a low-impact change to the overall epic structure. However, it directly affects the execution of the initial development stories within the current epic.
+*   **Story Impact:** This defect critically impacts story `1.1.service-initialization.md`. The missing code example is essential guidance for the developer to correctly implement the MCP server according to the specified architecture. Failure to fix this could lead to incorrect implementation or development delays.
+*   **Artifact Conflict:** There is a direct content conflict between `docs/architecture.md` (the source of truth) and the sharded file `docs/architecture/mcp-server-implementation-examples.md` (the outdated shard).
+
+## 3. Recommended Path Forward
+
+The recommended path is **Direct Adjustment**. This is a documentation defect that can be corrected by updating the sharded file to match the content of the main architecture document. No changes to scope, epics, or other stories are required.
+
+## 4. Specific Proposed Edits
+
+The following action should be taken:
+
+**Action:** Overwrite the content of the file `docs/architecture/mcp-server-implementation-examples.md`.
+
+**New Content:**
+```markdown
 # MCP Server Implementation Examples
 
 The following examples demonstrate how each of the three MCP primitives (Tools, Resources, and Prompts) will be defined in the API/Tool layer using the FastMCP SDK.
@@ -74,3 +100,8 @@ def create_story_from_title(epic_id: str, title: str) -> dict:
 if __name__ == "__main__":
      mcp.run()
 ```
+```
+
+## 5. Agent Handoff Plan
+
+No agent handoff is required. This is a direct documentation fix. Once this proposal is approved, the proposed edit can be implemented immediately.
