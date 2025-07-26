@@ -2,21 +2,13 @@
 
 ** is a revolutionary suite of AI-powered agents designed to streamline and automate the entire software development lifecycle, from initial idea to production deployment.** It acts as an intelligent co-pilot for your development team, handling the tedious and time-consuming tasks so your developers can focus on what they do best: writing code.
 
-## The Problem: The "Everything Else" of Software Development
+## The Problem: A New Tooling Layer for AI-Augmented Development
 
-Software development is more than just writing code. It's a complex process that involves:
+The modern software development process, especially when augmented by AI, requires a new layer of tooling. AI agents need a structured way to interact with project management systems that is more granular and context-aware than traditional user-facing UIs. This service acts as a specialized **MCP Server**, designed from the ground up to be used by AI agents as a primary tool.
 
-*   **Product Management:** Defining requirements, creating user stories, and managing the product backlog.
-*   **Architecture:** Designing scalable and maintainable systems.
-*   **Project Management:** Planning sprints, tracking progress, and ensuring timely delivery.
-*   **Quality Assurance:** Writing tests, performing code reviews, and ensuring a high-quality product.
-*   **DevOps:** Setting up and managing infrastructure, CI/CD pipelines, and monitoring.
+## The Solution: An Agile Lifecycle Management Service
 
-These "everything else" tasks are often manual, time-consuming, and prone to error. They can bog down your development team and slow down your time to market.
-
-## The Solution: A Team of AI-Powered Agents
-
- provides a team of specialized AI agents that automate and assist with these "everything else" tasks. Each agent is an expert in its domain:
+This project provides a robust set of tools for Generative AI agents to autonomously manage the agile software development lifecycle. It enables agents to efficiently manage backlogs, retrieve task-relevant information, and track generated artifacts. The service implements the Model Context Protocol (MCP) as the standard for all agent-service communication, ensuring predictable and secure interactions.
 
 *   **`*pm` (Product Manager):** Helps you create and manage your product backlog, write user stories, and define your product roadmap.
 *   **`*architect`:** Assists with designing your system architecture, choosing the right technologies, and ensuring scalability and performance.
