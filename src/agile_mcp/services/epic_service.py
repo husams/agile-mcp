@@ -7,7 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 
 from ..repositories.epic_repository import EpicRepository
 from ..models.epic import Epic
-from .exceptions import EpicValidationError, DatabaseError
+from .exceptions import EpicValidationError, EpicNotFoundError, InvalidEpicStatusError, DatabaseError
 
 
 class EpicService:
@@ -17,6 +17,7 @@ class EpicService:
     MAX_TITLE_LENGTH = 200
     MAX_DESCRIPTION_LENGTH = 2000
     DEFAULT_STATUS = "Draft"
+    VALID_STATUSES = {"Draft", "Ready", "In Progress", "Done", "On Hold"}
     
     def __init__(self, epic_repository: EpicRepository):
         """Initialize service with repository dependency."""
@@ -77,3 +78,45 @@ class EpicService:
             return [epic.to_dict() for epic in epics]
         except SQLAlchemyError as e:
             raise DatabaseError(f"Database operation failed while retrieving epics: {str(e)}")
+    
+    def update_epic_status(self, epic_id: str, status: str) -> Dict[str, Any]:
+        """
+        Update the status of an epic.
+        
+        Args:
+            epic_id: The unique identifier of the epic
+            status: The new status value
+            
+        Returns:
+            Dict[str, Any]: Dictionary representation of the updated epic
+            
+        Raises:
+            EpicNotFoundError: If epic is not found
+            InvalidEpicStatusError: If status is invalid
+            DatabaseError: If database operation fails
+        """
+        # Validate epic_id parameter
+        if not epic_id or not epic_id.strip():
+            raise EpicNotFoundError("Epic ID cannot be empty")
+        
+        # Validate status parameter
+        if not status or not status.strip():
+            raise InvalidEpicStatusError("Epic status cannot be empty")
+        
+        status = status.strip()
+        if status not in self.VALID_STATUSES:
+            raise InvalidEpicStatusError(f"Epic status must be one of: {', '.join(sorted(self.VALID_STATUSES))}")
+        
+        try:
+            epic = self.epic_repository.update_epic_status(epic_id.strip(), status)
+            if epic is None:
+                raise EpicNotFoundError(f"Epic with ID '{epic_id}' not found")
+            return epic.to_dict()
+        except ValueError as e:
+            # Handle SQLAlchemy model validation errors
+            raise InvalidEpicStatusError(str(e))
+        except IntegrityError as e:
+            # Handle database constraint violations
+            raise DatabaseError(f"Data integrity error: {str(e)}")
+        except SQLAlchemyError as e:
+            raise DatabaseError(f"Database operation failed: {str(e)}")

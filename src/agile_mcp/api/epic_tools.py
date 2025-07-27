@@ -11,7 +11,7 @@ from mcp.types import ErrorData
 from ..database import get_db, create_tables
 from ..repositories.epic_repository import EpicRepository
 from ..services.epic_service import EpicService
-from ..services.exceptions import EpicValidationError, DatabaseError
+from ..services.exceptions import EpicValidationError, EpicNotFoundError, InvalidEpicStatusError, DatabaseError
 
 
 def register_epic_tools(mcp: FastMCP) -> None:
@@ -84,6 +84,42 @@ def register_epic_tools(mcp: FastMCP) -> None:
             finally:
                 db_session.close()
                 
+        except DatabaseError as e:
+            raise McpError(ErrorData(code=-32001, message=f"Database error: {str(e)}"))
+        except Exception as e:
+            raise McpError(ErrorData(code=-32001, message=f"Unexpected error: {str(e)}"))
+    
+    @mcp.tool("backlog.updateEpicStatus")
+    def update_epic_status(epic_id: str, status: str) -> Dict[str, Any]:
+        """
+        Update the status of an epic to reflect its current stage in the project plan.
+        
+        Args:
+            epic_id: The unique identifier of the epic to update
+            status: The new status value (must be one of: "Draft", "Ready", "In Progress", "Done", "On Hold")
+            
+        Returns:
+            Dict containing the updated epic's id, title, description, and status
+            
+        Raises:
+            McpError: If epic is not found, status is invalid, or database operation fails
+        """
+        try:
+            db_session = get_db()
+            try:
+                epic_repository = EpicRepository(db_session)
+                epic_service = EpicService(epic_repository)
+                
+                epic_dict = epic_service.update_epic_status(epic_id, status)
+                return epic_dict
+                
+            finally:
+                db_session.close()
+                
+        except EpicNotFoundError as e:
+            raise McpError(ErrorData(code=-32001, message=str(e)))
+        except InvalidEpicStatusError as e:
+            raise McpError(ErrorData(code=-32001, message=str(e)))
         except DatabaseError as e:
             raise McpError(ErrorData(code=-32001, message=f"Database error: {str(e)}"))
         except Exception as e:

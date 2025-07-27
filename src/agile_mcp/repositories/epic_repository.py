@@ -81,3 +81,32 @@ class EpicRepository:
             return self.db_session.query(Epic).filter(Epic.id == epic_id).first()
         except SQLAlchemyError as e:
             raise e
+    
+    def update_epic_status(self, epic_id: str, status: str) -> Optional[Epic]:
+        """
+        Update the status of an epic.
+        
+        Args:
+            epic_id: The unique identifier of the epic
+            status: The new status value
+            
+        Returns:
+            Optional[Epic]: The updated epic instance if found, None if not found
+            
+        Raises:
+            SQLAlchemyError: If database operation fails
+        """
+        try:
+            epic = self.db_session.query(Epic).filter(Epic.id == epic_id).first()
+            if epic is None:
+                return None
+            
+            epic.status = status
+            self.db_session.commit()
+            self.db_session.refresh(epic)
+            
+            return epic
+            
+        except SQLAlchemyError as e:
+            self.db_session.rollback()
+            raise e

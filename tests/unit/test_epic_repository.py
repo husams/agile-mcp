@@ -95,3 +95,94 @@ def test_create_epic_generates_unique_ids(epic_repository):
     assert epic1.id != epic2.id
     assert epic2.id != epic3.id
     assert epic1.id != epic3.id
+
+
+def test_update_epic_status_success(epic_repository):
+    """Test successful epic status update."""
+    # Create epic
+    epic = epic_repository.create_epic("Test Epic", "Test description")
+    original_id = epic.id
+    
+    # Update status
+    updated_epic = epic_repository.update_epic_status(epic.id, "Ready")
+    
+    assert updated_epic is not None
+    assert updated_epic.id == original_id
+    assert updated_epic.title == "Test Epic"
+    assert updated_epic.description == "Test description"
+    assert updated_epic.status == "Ready"
+    
+    # Verify change persisted in database
+    found_epic = epic_repository.find_epic_by_id(epic.id)
+    assert found_epic.status == "Ready"
+
+
+def test_update_epic_status_all_valid_statuses(epic_repository):
+    """Test updating epic status to all valid status values."""
+    valid_statuses = ["Draft", "Ready", "In Progress", "Done", "On Hold"]
+    
+    for status in valid_statuses:
+        epic = epic_repository.create_epic(f"Epic {status}", "Test description")
+        updated_epic = epic_repository.update_epic_status(epic.id, status)
+        
+        assert updated_epic.status == status
+        
+        # Verify persistence
+        found_epic = epic_repository.find_epic_by_id(epic.id)
+        assert found_epic.status == status
+
+
+def test_update_epic_status_not_found(epic_repository):
+    """Test updating status of non-existent epic."""
+    non_existent_id = str(uuid.uuid4())
+    
+    updated_epic = epic_repository.update_epic_status(non_existent_id, "Ready")
+    
+    assert updated_epic is None
+
+
+def test_update_epic_status_invalid_status_constraint(epic_repository):
+    """Test updating epic with invalid status triggers validation error."""
+    epic = epic_repository.create_epic("Test Epic", "Test description")
+    
+    # This should fail due to Epic model validation
+    with pytest.raises(ValueError):
+        epic_repository.update_epic_status(epic.id, "InvalidStatus")
+
+
+def test_update_epic_status_transaction_rollback(epic_repository, in_memory_db):
+    """Test that failed update operations rollback properly."""
+    # Create epic
+    epic = epic_repository.create_epic("Test Epic", "Test description")
+    original_status = epic.status
+    
+    # Attempt invalid update that should fail and rollback
+    try:
+        epic_repository.update_epic_status(epic.id, "InvalidStatus")
+    except ValueError:
+        pass
+    
+    # Verify original epic status is unchanged
+    found_epic = epic_repository.find_epic_by_id(epic.id)
+    assert found_epic.status == original_status
+
+
+def test_update_epic_status_sequential_updates(epic_repository):
+    """Test multiple sequential status updates on same epic."""
+    epic = epic_repository.create_epic("Test Epic", "Test description")
+    
+    # Draft -> Ready
+    updated_epic = epic_repository.update_epic_status(epic.id, "Ready")
+    assert updated_epic.status == "Ready"
+    
+    # Ready -> In Progress
+    updated_epic = epic_repository.update_epic_status(epic.id, "In Progress")
+    assert updated_epic.status == "In Progress"
+    
+    # In Progress -> Done
+    updated_epic = epic_repository.update_epic_status(epic.id, "Done")
+    assert updated_epic.status == "Done"
+    
+    # Verify final state persisted
+    found_epic = epic_repository.find_epic_by_id(epic.id)
+    assert found_epic.status == "Done"

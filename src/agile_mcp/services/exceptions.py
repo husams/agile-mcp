@@ -13,6 +13,11 @@ class EpicNotFoundError(Exception):
     pass
 
 
+class InvalidEpicStatusError(Exception):
+    """Raised when an invalid epic status is provided."""
+    pass
+
+
 class StoryValidationError(Exception):
     """Raised when story data validation fails."""
     pass
