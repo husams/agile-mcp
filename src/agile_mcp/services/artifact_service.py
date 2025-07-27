@@ -6,7 +6,6 @@ from typing import Any, Dict, List
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from ..models.artifact import Artifact
 from ..repositories.artifact_repository import ArtifactRepository
 from ..utils.logging_config import create_entity_context, get_logger
 from ..utils.validators import RelationValidator, URIValidator
@@ -103,7 +102,8 @@ class ArtifactService:
             # Handle SQLAlchemy model validation errors
             raise ArtifactValidationError(str(e))
         except IntegrityError as e:
-            # Handle database constraint violations (e.g., story_id doesn't exist)
+            # Handle database constraint violations
+            # (e.g., story_id doesn't exist)
             if "Story with id" in str(e) and "does not exist" in str(e):
                 raise StoryNotFoundError(f"Story with ID '{story_id}' not found")
             raise DatabaseError(f"Data integrity error: {str(e)}")
@@ -134,7 +134,7 @@ class ArtifactService:
             return [artifact.to_dict() for artifact in artifacts]
         except SQLAlchemyError as e:
             raise DatabaseError(
-                f"Database operation failed while retrieving artifacts: {str(e)}"
+                f"Database operation failed while retrieving artifacts: " f"{str(e)}"
             )
 
     def get_artifact(self, artifact_id: str) -> Dict[str, Any]:
@@ -163,5 +163,5 @@ class ArtifactService:
             return artifact.to_dict()
         except SQLAlchemyError as e:
             raise DatabaseError(
-                f"Database operation failed while retrieving artifact: {str(e)}"
+                f"Database operation failed while retrieving artifact: " f"{str(e)}"
             )

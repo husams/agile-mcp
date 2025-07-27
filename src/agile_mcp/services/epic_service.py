@@ -6,7 +6,6 @@ from typing import Any, Dict, List
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from ..models.epic import Epic
 from ..repositories.epic_repository import EpicRepository
 from ..utils.logging_config import create_entity_context, get_logger
 from .exceptions import (
@@ -60,7 +59,8 @@ class EpicService:
 
         if len(description.strip()) > self.MAX_DESCRIPTION_LENGTH:
             raise EpicValidationError(
-                f"Epic description cannot exceed {self.MAX_DESCRIPTION_LENGTH} characters"
+                f"Epic description cannot exceed "
+                f"{self.MAX_DESCRIPTION_LENGTH} characters"
             )
 
         try:
@@ -135,7 +135,8 @@ class EpicService:
         status = status.strip()
         if status not in self.VALID_STATUSES:
             raise InvalidEpicStatusError(
-                f"Epic status must be one of: {', '.join(sorted(self.VALID_STATUSES))}"
+                f"Epic status must be one of: "
+                f"{', '.join(sorted(self.VALID_STATUSES))}"
             )
 
         try:

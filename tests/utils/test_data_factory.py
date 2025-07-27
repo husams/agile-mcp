@@ -1,7 +1,8 @@
 """
 DataFactory - Consistent test data creation across all test types.
 
-Provides factory methods for creating epics, stories, and artifacts with proper relationships,
+Provides factory methods for creating epics, stories, and artifacts with proper
+relationships,
 ensuring consistent test data setup for unit, integration, and E2E tests.
 """
 
@@ -16,7 +17,8 @@ from src.agile_mcp.models.story import Story
 
 
 class DataFactory:
-    """Factory class for creating consistent test data across all test types."""
+    """Factory class for creating consistent test data across all test
+    types."""
 
     def __init__(self, session: Session):
         """
@@ -82,10 +84,13 @@ class DataFactory:
 
         Args:
             story_id: Story ID (generates UUID if not provided)
-            epic_id: Epic ID to associate with (creates epic if not provided)
+            epic_id: Epic ID to associate with
+                (creates epic if not provided)
             title: Story title (generates default if not provided)
-            description: Story description (generates default if not provided)
-            acceptance_criteria: Acceptance criteria (generates default if not provided)
+            description: Story description
+                (generates default if not provided)
+            acceptance_criteria: Acceptance criteria
+                (generates default if not provided)
             status: Story status (default: "ToDo")
             **kwargs: Additional story attributes
 
@@ -109,7 +114,7 @@ class DataFactory:
 
         if acceptance_criteria is None:
             acceptance_criteria = [
-                f"Story {story_id} should work correctly and meet test requirements"
+                f"Story {story_id} should work correctly and meet test " "requirements"
             ]
 
         story = Story(
@@ -140,8 +145,10 @@ class DataFactory:
 
         Args:
             artifact_id: Artifact ID (generates UUID if not provided)
-            story_id: Story ID to associate with (creates story if not provided)
-            relation: Artifact relation type (default: "implementation")
+            story_id: Story ID to associate with
+                (creates story if not provided)
+            relation: Artifact relation type
+                (default: "implementation")
             uri: Artifact URI (generates default if not provided)
             **kwargs: Additional artifact attributes
 
@@ -176,7 +183,8 @@ class DataFactory:
         artifacts_per_story: int = 1,
     ) -> Dict[str, List[Any]]:
         """
-        Create a complete test data hierarchy with epics, stories, and artifacts.
+        Create a complete test data hierarchy with epics, stories, and
+        artifacts.
 
         Args:
             epic_count: Number of epics to create
@@ -202,16 +210,22 @@ class DataFactory:
                     story_id=f"hierarchy-story-{epic_idx}-{story_idx}",
                     epic_id=epic.id,
                     title=f"Story {story_idx + 1} for Epic {epic_idx + 1}",
-                    description=f"Story {story_idx + 1} in epic {epic_idx + 1}",
+                    description=(f"Story {story_idx + 1} in epic {epic_idx + 1}"),
                 )
                 hierarchy["stories"].append(story)
                 self.session.commit()  # Commit story before creating artifacts
 
                 for artifact_idx in range(artifacts_per_story):
                     artifact = self.create_artifact(
-                        artifact_id=f"hierarchy-artifact-{epic_idx}-{story_idx}-{artifact_idx}",
+                        artifact_id=(
+                            f"hierarchy-artifact-{epic_idx}-{story_idx}-"
+                            f"{artifact_idx}"
+                        ),
                         story_id=story.id,
-                        uri=f"file:///hierarchy/epic{epic_idx}/story{story_idx}/artifact{artifact_idx}.py",
+                        uri=(
+                            f"file:///hierarchy/epic{epic_idx}/"
+                            f"story{story_idx}/artifact{artifact_idx}.py"
+                        ),
                     )
                     hierarchy["artifacts"].append(artifact)
 
@@ -225,7 +239,8 @@ class DataFactory:
         Create predefined test scenarios for common testing patterns.
 
         Args:
-            scenario: Scenario name ("empty", "single_epic", "basic_workflow", "complex")
+            scenario: Scenario name
+                ("empty", "single_epic", "basic_workflow", "complex")
 
         Returns:
             Dictionary with scenario data and created objects

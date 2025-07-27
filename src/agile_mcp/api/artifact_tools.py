@@ -2,7 +2,6 @@
 FastMCP tools for Artifact management operations.
 """
 
-import logging
 import uuid
 from typing import Any, Dict, List
 
@@ -15,7 +14,6 @@ from ..models.response import ArtifactResponse
 from ..repositories.artifact_repository import ArtifactRepository
 from ..services.artifact_service import ArtifactService
 from ..services.exceptions import (
-    ArtifactNotFoundError,
     ArtifactValidationError,
     DatabaseError,
     InvalidRelationTypeError,
@@ -26,7 +24,6 @@ from ..utils.logging_config import (
     create_request_context,
     get_logger,
 )
-from ..utils.mcp_response import MCPResponse
 
 
 def register_artifact_tools(mcp: FastMCP) -> None:
@@ -54,15 +51,20 @@ def register_artifact_tools(mcp: FastMCP) -> None:
         Links a generated artifact to a user story for traceability.
 
         Args:
-            story_id: The unique identifier of the story to link the artifact to
-            uri: The Uniform Resource Identifier for the artifact (e.g., file:///path/to/code.js)
-            relation: The relationship type between artifact and story ("implementation", "design", "test")
+            story_id: The unique identifier of the story to link the
+                artifact to
+            uri: The Uniform Resource Identifier for the artifact
+                (e.g., file:///path/to/code.js)
+            relation: The relationship type between artifact and story
+                ("implementation", "design", "test")
 
         Returns:
-            Dict containing the created artifact's id, uri, relation, and story_id
+            Dict containing the created artifact's id, uri, relation,
+            and story_id
 
         Raises:
-            McpError: If validation fails, story not found, or database operation fails
+            McpError: If validation fails, story not found, or database
+                operation fails
         """
         request_id = str(uuid.uuid4())
         try:
@@ -213,7 +215,8 @@ def register_artifact_tools(mcp: FastMCP) -> None:
             story_id: The unique identifier of the story
 
         Returns:
-            List of dicts, each containing an artifact's id, uri, relation, and story_id
+            List of dicts, each containing an artifact's id, uri, relation,
+            and story_id
 
         Raises:
             McpError: If validation fails or database operation fails

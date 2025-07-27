@@ -6,7 +6,6 @@ from typing import Any, Dict, List
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from ..models.story import Story
 from ..repositories.dependency_repository import DependencyRepository
 from ..utils.logging_config import create_entity_context, get_logger
 from .exceptions import (
@@ -30,7 +29,8 @@ class DependencyService:
         self, story_id: str, depends_on_story_id: str
     ) -> Dict[str, Any]:
         """
-        Add a dependency relationship between two stories with comprehensive validation.
+        Add a dependency relationship between two stories with comprehensive
+        validation.
 
         Args:
             story_id: The story that will have the dependency
@@ -82,7 +82,9 @@ class DependencyService:
                 story_id, depends_on_story_id
             ):
                 raise CircularDependencyError(
-                    f"Adding dependency from '{story_id}' to '{depends_on_story_id}' would create a circular dependency"
+                    f"Adding dependency from '{story_id}' to '"
+                    f"{depends_on_story_id}' would create a circular "
+                    "dependency"
                 )
 
             # Add the dependency
@@ -92,7 +94,8 @@ class DependencyService:
 
             if not result:
                 raise DuplicateDependencyError(
-                    f"Dependency from '{story_id}' to '{depends_on_story_id}' already exists"
+                    f"Dependency from '{story_id}' to '"
+                    f"{depends_on_story_id}' already exists"
                 )
 
             self.logger.info(
@@ -106,7 +109,10 @@ class DependencyService:
                 "status": "success",
                 "story_id": story_id,
                 "depends_on_story_id": depends_on_story_id,
-                "message": f"Dependency added: Story {story_id} now depends on Story {depends_on_story_id}",
+                "message": (
+                    f"Dependency added: Story {story_id} now depends on "
+                    f"Story {depends_on_story_id}"
+                ),
             }
 
         except (
@@ -123,7 +129,8 @@ class DependencyService:
                 raise StoryNotFoundError("One or both stories do not exist")
             elif "UNIQUE constraint failed" in str(e):
                 raise DuplicateDependencyError(
-                    f"Dependency from '{story_id}' to '{depends_on_story_id}' already exists"
+                    f"Dependency from '{story_id}' to '"
+                    f"{depends_on_story_id}' already exists"
                 )
             else:
                 raise DatabaseError(f"Data integrity error: {str(e)}")
@@ -138,7 +145,8 @@ class DependencyService:
             story_id: The story to get dependencies for
 
         Returns:
-            List[Dict[str, Any]]: List of story dictionaries this story depends on
+            List[Dict[str, Any]]: List of story dictionaries this story
+                depends on
 
         Raises:
             DependencyValidationError: If story_id is empty
@@ -163,7 +171,7 @@ class DependencyService:
             raise
         except SQLAlchemyError as e:
             raise DatabaseError(
-                f"Database operation failed while retrieving dependencies: {str(e)}"
+                f"Database operation failed while retrieving dependencies: " f"{str(e)}"
             )
 
     def get_story_dependents(self, story_id: str) -> List[Dict[str, Any]]:
@@ -174,7 +182,8 @@ class DependencyService:
             story_id: The story to get dependents for
 
         Returns:
-            List[Dict[str, Any]]: List of story dictionaries that depend on this story
+            List[Dict[str, Any]]: List of story dictionaries that depend on
+                this story
 
         Raises:
             DependencyValidationError: If story_id is empty
@@ -199,7 +208,7 @@ class DependencyService:
             raise
         except SQLAlchemyError as e:
             raise DatabaseError(
-                f"Database operation failed while retrieving dependents: {str(e)}"
+                f"Database operation failed while retrieving dependents: " f"{str(e)}"
             )
 
     def remove_story_dependency(
@@ -237,14 +246,16 @@ class DependencyService:
 
             if not result:
                 raise StoryNotFoundError(
-                    f"Dependency from '{story_id}' to '{depends_on_story_id}' does not exist"
+                    f"Dependency from '{story_id}' to '"
+                    f"{depends_on_story_id}' does not exist"
                 )
 
             return {
                 "status": "success",
                 "story_id": story_id,
                 "depends_on_story_id": depends_on_story_id,
-                "message": f"Dependency removed: Story {story_id} no longer depends on Story {depends_on_story_id}",
+                "message": f"Dependency removed: Story {story_id} no longer "
+                f"depends on Story {depends_on_story_id}",
             }
 
         except (DependencyValidationError, StoryNotFoundError):
@@ -255,7 +266,8 @@ class DependencyService:
 
     def validate_dependency_graph(self, story_id: str) -> Dict[str, Any]:
         """
-        Validate the entire dependency graph for circular dependencies starting from a story.
+        Validate the entire dependency graph for circular dependencies
+        starting from a story.
 
         Args:
             story_id: The story to start validation from
@@ -295,7 +307,10 @@ class DependencyService:
                     validation_result["issues"].append(
                         {
                             "type": "circular_dependency",
-                            "description": f"Circular dependency detected involving story {dep.id}",
+                            "description": (
+                                f"Circular dependency detected involving "
+                                f"story {dep.id}"
+                            ),
                         }
                     )
                     validation_result["status"] = "invalid"

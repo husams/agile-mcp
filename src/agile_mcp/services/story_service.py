@@ -7,7 +7,6 @@ from typing import Any, Dict, List, Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from ..models.story import Story
 from ..repositories.dependency_repository import DependencyRepository
 from ..repositories.story_repository import StoryRepository
 from ..utils.logging_config import create_entity_context, get_logger
@@ -51,7 +50,8 @@ class StoryService:
         Args:
             title: A short, descriptive title
             description: The full user story text
-            acceptance_criteria: A list of conditions that must be met for the story to be considered complete
+            acceptance_criteria: A list of conditions that must be met for the
+                story to be considered complete
             epic_id: Foreign key reference to the parent Epic
 
         Returns:
@@ -76,7 +76,8 @@ class StoryService:
 
         if len(description.strip()) > self.MAX_DESCRIPTION_LENGTH:
             raise StoryValidationError(
-                f"Story description cannot exceed {self.MAX_DESCRIPTION_LENGTH} characters"
+                f"Story description cannot exceed "
+                f"{self.MAX_DESCRIPTION_LENGTH} characters"
             )
 
         if not isinstance(acceptance_criteria, list):
@@ -122,7 +123,8 @@ class StoryService:
             # Handle SQLAlchemy model validation errors
             raise StoryValidationError(str(e))
         except IntegrityError as e:
-            # Handle database constraint violations (e.g., epic_id doesn't exist)
+            # Handle database constraint violations
+            # (e.g., epic_id doesn't exist)
             if "Epic with id" in str(e) and "does not exist" in str(e):
                 raise EpicNotFoundError(f"Epic with ID '{epic_id}' not found")
             raise DatabaseError(f"Data integrity error: {str(e)}")
@@ -186,7 +188,8 @@ class StoryService:
 
         Args:
             story_id: The unique identifier of the story
-            status: The new status value ("ToDo", "InProgress", "Review", "Done")
+            status: The new status value
+                ("ToDo", "InProgress", "Review", "Done")
 
         Returns:
             Dict[str, Any]: Dictionary representation of the updated story
@@ -206,7 +209,7 @@ class StoryService:
 
         if status not in self.VALID_STATUSES:
             raise InvalidStoryStatusError(
-                f"Status must be one of: {', '.join(sorted(self.VALID_STATUSES))}"
+                f"Status must be one of: " f"{', '.join(sorted(self.VALID_STATUSES))}"
             )
 
         try:
@@ -235,15 +238,17 @@ class StoryService:
             raise InvalidStoryStatusError(str(e))
         except SQLAlchemyError as e:
             raise DatabaseError(
-                f"Database operation failed while updating story status: {str(e)}"
+                f"Database operation failed while updating story status: " f"{str(e)}"
             )
 
     def get_story_section(self, story_id: str, section_name: str) -> str:
         """
-        Retrieve a specific section from a story by reading its markdown file.
+        Retrieve a specific section from a story by reading its markdown
+        file.
 
         Args:
-            story_id: The unique identifier of the story (used to locate the markdown file)
+            story_id: The unique identifier of the story
+                (used to locate the markdown file)
             section_name: The name of the section to extract
 
         Returns:
@@ -263,7 +268,8 @@ class StoryService:
             raise StoryValidationError("Section name cannot be empty")
 
         # Construct file path - stories are in docs/stories/ directory
-        # Story files use the format {story_id}.*.md (e.g., "1.1.service-initialization.md")
+        # Story files use the format {story_id}.*.md
+        # (e.g., "1.1.service-initialization.md")
         story_id_clean = story_id.strip()
 
         # Find the story file - it should be in docs/stories/ directory
@@ -281,7 +287,7 @@ class StoryService:
 
             if not story_file:
                 raise StoryNotFoundError(
-                    f"Story file for ID '{story_id}' not found in '{stories_dir}'"
+                    f"Story file for ID '{story_id}' not found in " f"'{stories_dir}'"
                 )
 
             # Read the story file content
@@ -328,11 +334,13 @@ class StoryService:
         1. Priority (highest first)
         2. Created date (earliest first) for same priority
 
-        When a story is retrieved, its status is automatically updated to "InProgress".
+        When a story is retrieved, its status is automatically updated to
+        "InProgress".
 
         Returns:
-            Optional[Dict[str, Any]]: Dictionary representation of the next ready story,
-                                    or None if no stories are ready
+            Optional[Dict[str, Any]]: Dictionary representation of the next
+                ready story,
+                or None if no stories are ready
 
         Raises:
             DatabaseError: If database operation fails
@@ -340,11 +348,12 @@ class StoryService:
         """
         if not self.dependency_repository:
             raise StoryValidationError(
-                "Dependency repository required for get_next_ready_story operation"
+                "Dependency repository required for get_next_ready_story " "operation"
             )
 
         try:
-            # Get all ToDo stories ordered by priority (desc) and created_at (asc)
+            # Get all ToDo stories ordered by priority (desc) and
+            # created_at (asc)
             todo_stories = self.story_repository.find_stories_by_status_ordered("ToDo")
 
             # Find the first story that has no incomplete dependencies
@@ -362,7 +371,8 @@ class StoryService:
 
         except SQLAlchemyError as e:
             raise DatabaseError(
-                f"Database operation failed while finding next ready story: {str(e)}"
+                f"Database operation failed while finding next ready story: "
+                f"{str(e)}"
             )
         except Exception as e:
             if isinstance(e, (StoryValidationError, DatabaseError)):

@@ -1,7 +1,8 @@
 """
 TestDatabaseManager - Comprehensive test-only database isolation system.
 
-Provides thread-safe database session management with automatic cleanup for all test types.
+Provides thread-safe database session management with automatic cleanup for
+all test types.
 Implements three-tier isolation system:
 - In-memory SQLite for unit tests (≤10ms)
 - Shared in-memory for integration tests (≤100ms)
@@ -17,10 +18,9 @@ from contextlib import contextmanager
 from typing import Any, Dict, Optional, Tuple
 
 from sqlalchemy import Engine, create_engine, text
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from src.agile_mcp.models import Artifact, Story, story_dependency
 from src.agile_mcp.models.epic import Base
 
 
@@ -60,7 +60,8 @@ class DatabaseManager:
         if test_id is None:
             test_id = str(uuid.uuid4())
 
-        # Always create a new isolated database for each test - no caching for unit tests
+        # Always create a new isolated database for each test
+        # - no caching for unit tests
         # Use unique identifier to ensure complete isolation
         unique_id = f"{test_id}_{uuid.uuid4().hex[:8]}"
         db_url = f"sqlite:///:memory:?cache=private&uri=true&test_id={unique_id}"
@@ -96,10 +97,12 @@ class DatabaseManager:
         cache_key = f"shared_memory_{test_suite_id}"
 
         if cache_key not in self._engines:
-            # Create shared in-memory database with cache=shared for integration tests
-            # This allows multiple sessions to share the same database within a test suite
+            # Create shared in-memory database with cache=shared
+            # for integration tests
+            # This allows multiple sessions to share the same database
+            # within a test suite
             db_url = (
-                f"sqlite:///:memory:?cache=shared&uri=true&suite_id={test_suite_id}"
+                f"sqlite:///:memory:?cache=shared&uri=true&" f"suite_id={test_suite_id}"
             )
 
             engine = create_engine(
@@ -112,7 +115,8 @@ class DatabaseManager:
             # Create all tables
             Base.metadata.create_all(engine)
 
-            # Create session factory with transaction support for integration tests
+            # Create session factory with transaction support
+            # for integration tests
             session_factory = sessionmaker(
                 autocommit=False, autoflush=False, bind=engine
             )

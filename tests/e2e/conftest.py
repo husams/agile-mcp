@@ -1,25 +1,23 @@
 """
-Enhanced pytest configuration and fixtures for E2E tests with comprehensive subprocess isolation.
+Enhanced pytest configuration and fixtures for E2E tests with comprehensive
+subprocess isolation.
 
-Provides isolated database environments, subprocess management for MCP server testing,
+Provides isolated database environments, subprocess management for MCP server
+testing,
 and JSON-RPC client helpers for server communication with automatic cleanup.
 """
 
 import json
 import os
-import socket
 import subprocess
-import tempfile
 import time
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict
 
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 
-from src.agile_mcp.models import Artifact, Story, story_dependency
-from src.agile_mcp.models.epic import Base, Epic
+from src.agile_mcp.models.epic import Epic
 from tests.utils.test_database_manager import DatabaseManager
 
 
@@ -76,7 +74,8 @@ def isolated_e2e_database():
 @pytest.fixture(scope="function")
 def mcp_server_subprocess(isolated_e2e_database):
     """
-    Enhanced subprocess fixture for MCP server with complete environment isolation.
+    Enhanced subprocess fixture for MCP server with complete environment
+    isolation.
 
     Provides:
     - Isolated database environment per test
@@ -108,13 +107,15 @@ def mcp_server_subprocess(isolated_e2e_database):
         )
 
         # Give the server a moment to start and print its initial banner/logs
-        # We don't check process.poll() here, as stdio server might exit if no input
+        # We don't check process.poll() here, as stdio server might exit
+        # if no input
         time.sleep(0.5)
 
         # Read initial startup output to ensure it's ready
         # This is a more robust way to check if the server is "ready"
         # without relying on it staying alive indefinitely without input.
-        # We'll read until we see the "Starting server with stdio transport" message
+        # We'll read until we see the "Starting server with stdio
+        # transport" message
         # or a timeout.
         startup_output = ""
         start_time = time.time()
@@ -126,17 +127,19 @@ def mcp_server_subprocess(isolated_e2e_database):
             if line:
                 startup_output += line
             else:
-                # If no more output, and server hasn't started, it might have failed
+                # If no more output, and server hasn't started, it might
+                # have failed
                 if process.poll() is not None:
                     stdout, stderr_final = process.communicate(timeout=1)
                     raise RuntimeError(
-                        f"MCP server failed to start during initial read. stdout: {stdout}, stderr: {stderr_final}"
+                        f"MCP server failed to start during initial read. "
+                        f"stdout: {stdout}, stderr: {stderr_final}"
                     )
                 time.sleep(0.1)  # Wait a bit before trying to read again
 
         if "Starting server with stdio transport" not in startup_output:
             raise RuntimeError(
-                "MCP server did not indicate stdio transport start within timeout."
+                "MCP server did not indicate stdio transport start within " "timeout."
             )
 
         def communicate_json_rpc(
@@ -159,12 +162,14 @@ def mcp_server_subprocess(isolated_e2e_database):
                 "params": params or {},
             }
 
-            # Simple stdin/stdout communication (adjust based on actual MCP protocol)
+            # Simple stdin/stdout communication
+            # (adjust based on actual MCP protocol)
             try:
                 process.stdin.write(json.dumps(request) + "\n")
                 process.stdin.flush()
 
-                # Read response (simplified - real implementation would be more robust)
+                # Read response (simplified - real implementation would
+                # be more robust)
                 response_line = process.stdout.readline()
                 if response_line:
                     return json.loads(response_line.strip())
@@ -259,7 +264,8 @@ def e2e_test_data_setup(isolated_e2e_database):
         Setup test data for different E2E scenarios.
 
         Args:
-            scenario: Type of test scenario ("basic", "with_stories", "complex")
+            scenario: Type of test scenario
+                ("basic", "with_stories", "complex")
 
         Returns:
             Dictionary with created test data IDs
