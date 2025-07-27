@@ -211,3 +211,11 @@ config/development.yaml
 
 # Database files
 agile_mcp.db
+*.db
+*.db-journal
+
+# Test database files
+:memory:*
+test_*.db
+*test*.sqlite
+*test*.sqlite3
