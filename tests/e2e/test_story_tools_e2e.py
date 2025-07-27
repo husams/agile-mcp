@@ -126,7 +126,7 @@ def test_story_server_initialization_includes_story_tools(mcp_server_process):
 
     # Verify the server initialized correctly and is advertising tools
     assert "listChanged" in init_response["result"]["capabilities"]["tools"]
-    assert init_response["result"]["capabilities"]["tools"]["listChanged"] == True
+    assert init_response["result"]["capabilities"]["tools"]["listChanged"] is True
 
 
 def test_create_story_tool_success(mcp_server_process):
@@ -201,7 +201,7 @@ def test_create_story_with_missing_epic_id(mcp_server_process):
 
     # Verify error response (FastMCP format)
     assert "result" in response
-    assert response["result"]["isError"] == True
+    assert response["result"]["isError"] is True
     assert "content" in response["result"]
     assert len(response["result"]["content"]) > 0
 
@@ -227,7 +227,7 @@ def test_create_story_with_invalid_epic_id(mcp_server_process):
 
     # Verify error response (FastMCP format)
     assert "result" in response
-    assert response["result"]["isError"] == True
+    assert response["result"]["isError"] is True
     assert "content" in response["result"]
     assert len(response["result"]["content"]) > 0
     assert "Epic not found" in response["result"]["content"][0]["text"]
@@ -255,7 +255,7 @@ def test_create_story_with_empty_title(mcp_server_process):
 
     # Verify error response (FastMCP format)
     assert "result" in response
-    assert response["result"]["isError"] == True
+    assert response["result"]["isError"] is True
     assert "content" in response["result"]
     assert len(response["result"]["content"]) > 0
     assert "Story validation error" in response["result"]["content"][0]["text"]
@@ -283,7 +283,7 @@ def test_create_story_with_empty_acceptance_criteria(mcp_server_process):
 
     # Verify error response (FastMCP format)
     assert "result" in response
-    assert response["result"]["isError"] == True
+    assert response["result"]["isError"] is True
     assert "content" in response["result"]
     assert len(response["result"]["content"]) > 0
     assert "Story validation error" in response["result"]["content"][0]["text"]
@@ -354,7 +354,7 @@ def test_get_story_with_non_existent_id(mcp_server_process):
 
     # Verify error response (FastMCP format)
     assert "result" in response
-    assert response["result"]["isError"] == True
+    assert response["result"]["isError"] is True
     assert "content" in response["result"]
     assert len(response["result"]["content"]) > 0
     assert "Story not found" in response["result"]["content"][0]["text"]
@@ -374,7 +374,7 @@ def test_get_story_with_empty_id(mcp_server_process):
 
     # Verify error response (FastMCP format)
     assert "result" in response
-    assert response["result"]["isError"] == True
+    assert response["result"]["isError"] is True
     assert "content" in response["result"]
     assert len(response["result"]["content"]) > 0
     assert "Story validation error" in response["result"]["content"][0]["text"]
@@ -650,7 +650,7 @@ def test_update_story_status_invalid_status_error(mcp_server_process):
 
     # Verify error response (FastMCP format)
     assert "result" in response
-    assert response["result"]["isError"] == True
+    assert response["result"]["isError"] is True
     assert "content" in response["result"]
     assert len(response["result"]["content"]) > 0
     assert "Invalid status error" in response["result"]["content"][0]["text"]
@@ -693,7 +693,7 @@ def test_update_story_status_empty_status_error(mcp_server_process):
 
     # Verify error response (FastMCP format)
     assert "result" in response
-    assert response["result"]["isError"] == True
+    assert response["result"]["isError"] is True
     assert "content" in response["result"]
     assert len(response["result"]["content"]) > 0
     assert "Invalid status error" in response["result"]["content"][0]["text"]
@@ -715,7 +715,7 @@ def test_update_story_status_non_existent_story_error(mcp_server_process):
 
     # Verify error response (FastMCP format)
     assert "result" in response
-    assert response["result"]["isError"] == True
+    assert response["result"]["isError"] is True
     assert "content" in response["result"]
     assert len(response["result"]["content"]) > 0
     assert "Story not found" in response["result"]["content"][0]["text"]
@@ -737,7 +737,7 @@ def test_update_story_status_empty_story_id_error(mcp_server_process):
 
     # Verify error response (FastMCP format)
     assert "result" in response
-    assert response["result"]["isError"] == True
+    assert response["result"]["isError"] is True
     assert "content" in response["result"]
     assert len(response["result"]["content"]) > 0
     assert "Story validation error" in response["result"]["content"][0]["text"]
@@ -991,6 +991,6 @@ def test_update_story_status_jsonrpc_compliance(mcp_server_process):
     assert (
         "result" in error_response
     )  # FastMCP returns errors as results with isError=true
-    assert error_response["result"]["isError"] == True
+    assert error_response["result"]["isError"] is True
     assert "content" in error_response["result"]
     assert len(error_response["result"]["content"]) > 0

@@ -91,7 +91,8 @@ class StoryParser:
 
             available_sections = [header for header, _ in sections]
             raise SectionNotFoundError(
-                f"Section '{section_name}' not found. Available sections: {', '.join(available_sections)}"
+                f"Section '{section_name}' not found. "
+                f"Available sections: {', '.join(available_sections)}"
             )
 
         # Extract content between this section and the next

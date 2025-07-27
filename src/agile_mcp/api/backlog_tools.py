@@ -62,7 +62,8 @@ def register_backlog_tools(mcp: FastMCP) -> None:
 
         Args:
             story_id: The unique identifier of the story
-            section_name: The name of the section to extract (e.g., "Acceptance Criteria", "Story", "Tasks / Subtasks")
+            section_name: The name of the section to extract (e.g.,
+                "Acceptance Criteria", "Story", "Tasks / Subtasks")
 
         Returns:
             Dict containing the story_id, section_name, and content of the requested section

@@ -10,10 +10,6 @@ from pathlib import Path
 
 import pytest
 
-from .test_helpers import (
-    validate_json_response,
-    validate_jsonrpc_response_format,
-)
 
 
 @pytest.fixture
@@ -146,7 +142,7 @@ def test_find_epics_tool_success(mcp_server_process):
     mcp_server_process.stdin.flush()
 
     # Create an epic first
-    create_response = send_jsonrpc_request(
+    _ = send_jsonrpc_request(
         mcp_server_process,
         "tools/call",
         {
@@ -214,7 +210,7 @@ def test_create_epic_validation_error(mcp_server_process):
 
     # Verify error response (FastMCP format)
     assert "result" in response
-    assert response["result"]["isError"] == True
+    assert response["result"]["isError"] is True
     assert "content" in response["result"]
     assert len(response["result"]["content"]) > 0
     assert "Validation error" in response["result"]["content"][0]["text"]
@@ -253,7 +249,7 @@ def test_create_epic_with_long_title_error(mcp_server_process):
 
     # Verify error response (FastMCP format)
     assert "result" in response
-    assert response["result"]["isError"] == True
+    assert response["result"]["isError"] is True
     assert "content" in response["result"]
     assert len(response["result"]["content"]) > 0
     assert "Validation error" in response["result"]["content"][0]["text"]
@@ -385,7 +381,7 @@ def test_update_epic_status_not_found(mcp_server_process):
 
     # Verify error response
     assert "result" in response
-    assert response["result"]["isError"] == True
+    assert response["result"]["isError"] is True
     assert "content" in response["result"]
     assert (
         "Epic with ID 'nonexistent-id' not found"
@@ -428,7 +424,7 @@ def test_update_epic_status_invalid_status(mcp_server_process):
 
         # Verify error response
         assert "result" in response
-        assert response["result"]["isError"] == True
+        assert response["result"]["isError"] is True
         assert "content" in response["result"]
         assert "Epic status must be one of" in response["result"]["content"][0]["text"]
 
@@ -448,7 +444,7 @@ def test_update_epic_status_empty_parameters(mcp_server_process):
     )
 
     assert "result" in response
-    assert response["result"]["isError"] == True
+    assert response["result"]["isError"] is True
     assert "Epic ID cannot be empty" in response["result"]["content"][0]["text"]
 
     # Test empty status
@@ -462,7 +458,7 @@ def test_update_epic_status_empty_parameters(mcp_server_process):
     )
 
     assert "result" in response
-    assert response["result"]["isError"] == True
+    assert response["result"]["isError"] is True
     assert "Epic status cannot be empty" in response["result"]["content"][0]["text"]
 
 

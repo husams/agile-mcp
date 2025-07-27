@@ -210,7 +210,7 @@ class TestArtifactToolsE2E:
         # Verify error response using validation helpers
         assert "result" in response
         assert "content" in response["result"]
-        assert response["result"]["isError"] == True
+        assert response["result"]["isError"] is True
 
         # Validate error response format and content
         tool_response_text = response["result"]["content"][0]["text"]
@@ -248,7 +248,7 @@ class TestArtifactToolsE2E:
         # Verify error response using validation helpers
         assert "result" in response
         assert "content" in response["result"]
-        assert response["result"]["isError"] == True
+        assert response["result"]["isError"] is True
 
         # Validate error response format
         tool_response_text = response["result"]["content"][0]["text"]
@@ -282,7 +282,7 @@ class TestArtifactToolsE2E:
         # Verify error response (FastMCP returns successful response with error content)
         assert "result" in response
         assert "content" in response["result"]
-        assert response["result"]["isError"] == True
+        assert response["result"]["isError"] is True
         assert "Story not found" in response["result"]["content"][0]["text"]
 
     def test_artifacts_list_for_story_e2e_success(self, mcp_server_process):
@@ -400,7 +400,7 @@ class TestArtifactToolsE2E:
         # Verify error response (FastMCP returns successful response with error content)
         assert "result" in response
         assert "content" in response["result"]
-        assert response["result"]["isError"] == True
+        assert response["result"]["isError"] is True
         assert "Artifact validation error" in response["result"]["content"][0]["text"]
         assert "Story ID cannot be empty" in response["result"]["content"][0]["text"]
 
@@ -606,7 +606,7 @@ class TestArtifactToolsE2E:
             # Verify error response (FastMCP returns successful response with error content)
             assert "result" in response
             assert "content" in response["result"]
-            assert response["result"]["isError"] == True
+            assert response["result"]["isError"] is True
             assert (
                 "validation error" in response["result"]["content"][0]["text"].lower()
             )

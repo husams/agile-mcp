@@ -270,8 +270,6 @@ def e2e_test_data_setup(isolated_e2e_database):
         Returns:
             Dictionary with created test data IDs
         """
-        manager = DatabaseManager.get_instance()
-
         # Create a session to the test database
         engine = create_engine(f"sqlite:///{db_path}")
         SessionLocal = sessionmaker(bind=engine)

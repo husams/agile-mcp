@@ -168,7 +168,8 @@ def register_epic_tools(mcp: FastMCP) -> None:
 
         Args:
             epic_id: The unique identifier of the epic to update
-            status: The new status value (must be one of: "Draft", "Ready", "In Progress", "Done", "On Hold")
+            status: The new status value (must be one of: "Draft", "Ready",
+                "In Progress", "Done", "On Hold")
 
         Returns:
             Dict containing the updated epic's id, title, description, and status

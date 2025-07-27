@@ -1,3 +1,9 @@
+"""
+Utility module for standardized MCP JSON response formatting.
+
+Provides utilities to create consistent JSON responses for MCP tool operations.
+"""
+
 import json
 from datetime import datetime
 from typing import Any, Dict, Optional
