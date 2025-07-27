@@ -86,17 +86,6 @@ def mcp_server_subprocess(isolated_e2e_database):
     """
     db_path, env_vars = isolated_e2e_database
     
-    # Find available port for the server
-    def find_free_port():
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(('', 0))
-            s.listen(1)
-            port = s.getsockname()[1]
-        return port
-    
-    port = find_free_port()
-    env_vars["MCP_SERVER_PORT"] = str(port)
-    
     # Prepare environment for subprocess
     subprocess_env = os.environ.copy()
     subprocess_env.update(env_vars)
@@ -108,19 +97,37 @@ def mcp_server_subprocess(isolated_e2e_database):
         process = subprocess.Popen(
             ["python3", "-m", "src.agile_mcp.main"],
             env=subprocess_env,
+            stdin=subprocess.PIPE, # Add stdin for communication
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
             cwd=os.getcwd()
         )
         
-        # Wait for server to start (simple approach)
-        time.sleep(0.5)
+        # Give the server a moment to start and print its initial banner/logs
+        # We don't check process.poll() here, as stdio server might exit if no input
+        time.sleep(0.5) 
         
-        # Check if process is still running
-        if process.poll() is not None:
-            stdout, stderr = process.communicate(timeout=5)
-            raise RuntimeError(f"MCP server failed to start. stdout: {stdout}, stderr: {stderr}")
+        # Read initial startup output to ensure it's ready
+        # This is a more robust way to check if the server is "ready"
+        # without relying on it staying alive indefinitely without input.
+        # We'll read until we see the "Starting server with stdio transport" message
+        # or a timeout.
+        startup_output = ""
+        start_time = time.time()
+        while "Starting server with stdio transport" not in startup_output and time.time() - start_time < 5:
+            line = process.stderr.readline() # Logs go to stderr
+            if line:
+                startup_output += line
+            else:
+                # If no more output, and server hasn't started, it might have failed
+                if process.poll() is not None:
+                    stdout, stderr_final = process.communicate(timeout=1)
+                    raise RuntimeError(f"MCP server failed to start during initial read. stdout: {stdout}, stderr: {stderr_final}")
+                time.sleep(0.1) # Wait a bit before trying to read again
+        
+        if "Starting server with stdio transport" not in startup_output:
+            raise RuntimeError("MCP server did not indicate stdio transport start within timeout.")
         
         def communicate_json_rpc(method: str, params: Dict[str, Any] = None) -> Dict[str, Any]:
             """

@@ -14,46 +14,7 @@ from .test_helpers import (
 )
 
 
-@pytest.fixture
-def mcp_server_process(isolated_test_database):
-    """Create a FastMCP server process for testing with database isolation."""
-    import subprocess
-    import time
-    import os
-    
-    # Setup environment with isolated database
-    env = os.environ.copy()
-    env["TEST_DATABASE_URL"] = f"sqlite:///{isolated_test_database}"
-    env["MCP_TEST_MODE"] = "true"
-    
-    # Start server process
-    process = subprocess.Popen(
-        ["python3", "-m", "src.agile_mcp.main"],
-        env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        cwd=os.getcwd()
-    )
-    
-    # Wait for server to start
-    time.sleep(0.5)
-    
-    # MCP servers with stdio transport exit normally when no input is provided
-    # This is expected behavior, not a failure
-    
-    try:
-        yield process
-    finally:
-        # Cleanup
-        try:
-            process.terminate()
-            process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait(timeout=2)
-        except Exception:
-            pass
+
 
 
 @pytest.fixture
@@ -93,10 +54,11 @@ The testing section contains information about test execution requirements.
 class TestBacklogSectionToolsE2E:
     """End-to-end test cases for backlog section management tools."""
     
-    def test_server_initialization_with_backlog_tools(self, mcp_server_process):
+    def test_server_initialization_with_backlog_tools(self, mcp_server_subprocess):
         """Test that server initialization successfully includes backlog tools."""
+        process, env_vars, communicate_json_rpc = mcp_server_subprocess
         # Verify server process was created successfully
-        assert mcp_server_process is not None
+        assert process is not None
         
         # The server should exit cleanly after showing startup banner 
         # This indicates successful initialization with all tools including backlog tools

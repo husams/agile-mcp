@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 
 from ..repositories.epic_repository import EpicRepository
 from ..models.epic import Epic
+from ..utils.logging_config import get_logger, create_entity_context
 from .exceptions import EpicValidationError, EpicNotFoundError, InvalidEpicStatusError, DatabaseError
 
 
@@ -22,6 +23,7 @@ class EpicService:
     def __init__(self, epic_repository: EpicRepository):
         """Initialize service with repository dependency."""
         self.epic_repository = epic_repository
+        self.logger = get_logger(__name__)
     
     def create_epic(self, title: str, description: str) -> Dict[str, Any]:
         """
@@ -52,7 +54,22 @@ class EpicService:
             raise EpicValidationError(f"Epic description cannot exceed {self.MAX_DESCRIPTION_LENGTH} characters")
         
         try:
+            self.logger.info(
+                "Creating epic",
+                title=title.strip()[:50],  # Truncate for logging
+                operation="create_epic"
+            )
+            
             epic = self.epic_repository.create_epic(title.strip(), description.strip())
+            
+            self.logger.info(
+                "Epic created successfully",
+                **create_entity_context(epic_id=epic.id),
+                title=title.strip()[:50],
+                status=epic.status,
+                operation="create_epic"
+            )
+            
             return epic.to_dict()
         except ValueError as e:
             # Handle SQLAlchemy model validation errors
@@ -108,9 +125,24 @@ class EpicService:
             raise InvalidEpicStatusError(f"Epic status must be one of: {', '.join(sorted(self.VALID_STATUSES))}")
         
         try:
+            self.logger.info(
+                "Updating epic status",
+                **create_entity_context(epic_id=epic_id.strip()),
+                new_status=status,
+                operation="update_epic_status"
+            )
+            
             epic = self.epic_repository.update_epic_status(epic_id.strip(), status)
             if epic is None:
                 raise EpicNotFoundError(f"Epic with ID '{epic_id}' not found")
+            
+            self.logger.info(
+                "Epic status updated successfully",
+                **create_entity_context(epic_id=epic_id.strip()),
+                new_status=status,
+                operation="update_epic_status"
+            )
+            
             return epic.to_dict()
         except ValueError as e:
             # Handle SQLAlchemy model validation errors

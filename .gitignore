@@ -208,3 +208,6 @@ Temporary Items
 .env.production
 config/local.yaml
 config/development.yaml
+
+# Database files
+agile_mcp.db

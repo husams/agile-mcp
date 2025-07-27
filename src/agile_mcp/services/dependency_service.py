@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 
 from ..repositories.dependency_repository import DependencyRepository
 from ..models.story import Story
+from ..utils.logging_config import get_logger, create_entity_context
 from .exceptions import (
     DependencyValidationError, 
     CircularDependencyError, 
@@ -22,6 +23,7 @@ class DependencyService:
     def __init__(self, dependency_repository: DependencyRepository):
         """Initialize service with repository dependency."""
         self.dependency_repository = dependency_repository
+        self.logger = get_logger(__name__)
     
     def add_story_dependency(self, story_id: str, depends_on_story_id: str) -> Dict[str, Any]:
         """
@@ -56,6 +58,13 @@ class DependencyService:
             raise DependencyValidationError("A story cannot depend on itself")
         
         try:
+            self.logger.info(
+                "Adding story dependency",
+                **create_entity_context(story_id=story_id),
+                depends_on_story_id=depends_on_story_id,
+                operation="add_story_dependency"
+            )
+            
             # Validate that both stories exist
             if not self.dependency_repository.story_exists(story_id):
                 raise StoryNotFoundError(f"Story with ID '{story_id}' not found")
@@ -76,6 +85,13 @@ class DependencyService:
                 raise DuplicateDependencyError(
                     f"Dependency from '{story_id}' to '{depends_on_story_id}' already exists"
                 )
+            
+            self.logger.info(
+                "Story dependency added successfully",
+                **create_entity_context(story_id=story_id),
+                depends_on_story_id=depends_on_story_id,
+                operation="add_story_dependency"
+            )
             
             return {
                 "status": "success",

@@ -10,6 +10,7 @@ from ..repositories.story_repository import StoryRepository
 from ..repositories.dependency_repository import DependencyRepository
 from ..models.story import Story
 from ..utils.story_parser import StoryParser
+from ..utils.logging_config import get_logger, create_entity_context
 from .exceptions import StoryValidationError, StoryNotFoundError, EpicNotFoundError, DatabaseError, InvalidStoryStatusError, SectionNotFoundError
 
 
@@ -27,6 +28,7 @@ class StoryService:
         self.story_repository = story_repository
         self.dependency_repository = dependency_repository
         self.story_parser = StoryParser()
+        self.logger = get_logger(__name__)
     
     def create_story(self, title: str, description: str, acceptance_criteria: List[str], epic_id: str) -> Dict[str, Any]:
         """
@@ -73,12 +75,28 @@ class StoryService:
             raise StoryValidationError("Epic ID cannot be empty")
         
         try:
+            self.logger.info(
+                "Creating story",
+                **create_entity_context(epic_id=epic_id.strip()),
+                title=title.strip()[:50],  # Truncate for logging
+                operation="create_story"
+            )
+            
             story = self.story_repository.create_story(
                 title.strip(), 
                 description.strip(), 
                 [criterion.strip() for criterion in acceptance_criteria],
                 epic_id.strip()
             )
+            
+            self.logger.info(
+                "Story created successfully",
+                **create_entity_context(story_id=story.id, epic_id=epic_id.strip()),
+                title=title.strip()[:50],
+                status=story.status,
+                operation="create_story"
+            )
+            
             return story.to_dict()
         except ValueError as e:
             # Handle SQLAlchemy model validation errors
@@ -166,9 +184,25 @@ class StoryService:
             raise InvalidStoryStatusError(f"Status must be one of: {', '.join(sorted(self.VALID_STATUSES))}")
         
         try:
+            self.logger.info(
+                "Updating story status",
+                **create_entity_context(story_id=story_id.strip()),
+                new_status=status,
+                operation="update_story_status"
+            )
+            
             story = self.story_repository.update_story_status(story_id.strip(), status)
             if not story:
                 raise StoryNotFoundError(f"Story with ID '{story_id}' not found")
+            
+            self.logger.info(
+                "Story status updated successfully",
+                **create_entity_context(story_id=story_id.strip()),
+                old_status=getattr(story, '_previous_status', 'unknown'),
+                new_status=status,
+                operation="update_story_status"
+            )
+            
             return story.to_dict()
         except ValueError as e:
             # Handle model validation errors

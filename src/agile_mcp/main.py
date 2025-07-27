@@ -6,7 +6,6 @@ This module serves as the primary entry point for the Agile Management MCP Serve
 It initializes the FastMCP server instance and handles MCP protocol communications.
 """
 
-import logging
 import sys
 from typing import Optional
 
@@ -14,20 +13,18 @@ from fastmcp import FastMCP
 
 try:
     from .api import register_epic_tools, register_story_tools, register_artifact_tools, register_backlog_tools
+    from .utils.logging_config import configure_logging, get_logger
 except ImportError:
     # Handle when running as script directly
     import sys
     import os
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from api import register_epic_tools, register_story_tools, register_artifact_tools, register_backlog_tools
+    from utils.logging_config import configure_logging, get_logger
 
-# Configure logging to stderr to avoid contaminating stdout JSON-RPC
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    stream=sys.stderr
-)
-logger = logging.getLogger(__name__)
+# Configure structured logging
+configure_logging(log_level="INFO", enable_json=True)
+logger = get_logger(__name__)
 
 
 def create_server() -> FastMCP:

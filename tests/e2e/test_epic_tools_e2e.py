@@ -10,20 +10,31 @@ import tempfile
 import pytest
 from pathlib import Path
 
+from .test_helpers import (
+    validate_full_tool_response, validate_epic_tool_response,
+    validate_jsonrpc_response_format, validate_json_response,
+    validate_error_response_format
+)
+
 
 @pytest.fixture
-def mcp_server_process():
-    """Start MCP server as subprocess and return process handle."""
+def mcp_server_process(isolated_test_database):
+    """Start MCP server as subprocess with isolated database."""
     # Get the path to the run_server.py file
     run_server_path = Path(__file__).parent.parent.parent / "run_server.py"
     
-    # Start server process
+    # Set up environment with isolated test database
+    env = os.environ.copy()
+    env["TEST_DATABASE_URL"] = f"sqlite:///{isolated_test_database}"
+    
+    # Start server process with isolated database
     process = subprocess.Popen(
         [sys.executable, str(run_server_path)],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        text=True
+        text=True,
+        env=env
     )
     
     yield process

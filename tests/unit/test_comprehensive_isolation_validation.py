@@ -13,7 +13,7 @@ import time
 import threading
 from tests.utils.database_isolation_validator import DatabaseIsolationValidator
 from tests.utils.test_database_manager import DatabaseManager
-from tests.utils.test_data_factory import TestDataFactory
+from tests.utils.test_data_factory import DataFactory
 
 
 class TestSystemPerformanceValidation:
@@ -32,7 +32,7 @@ class TestSystemPerformanceValidation:
             
             try:
                 # Create some test data to simulate real unit test workload
-                factory = TestDataFactory(session)
+                factory = DataFactory(session)
                 epic = factory.create_epic()
                 story = factory.create_story()
                 session.commit()
@@ -64,7 +64,7 @@ class TestSystemPerformanceValidation:
         session = session_factory()
         
         try:
-            factory = TestDataFactory(session)
+            factory = DataFactory(session)
             epic = factory.create_epic()
             story = factory.create_story()
             artifact = factory.create_artifact()
@@ -93,7 +93,7 @@ class TestSystemPerformanceValidation:
         session = session_factory()
         
         try:
-            factory = TestDataFactory(session)
+            factory = DataFactory(session)
             # Create more complex test scenario for E2E
             hierarchy = factory.create_complete_hierarchy(
                 epic_count=2,
@@ -205,7 +205,7 @@ class TestIsolationSystemValidation:
         # Contaminate database and verify detection
         session = session_factory()
         try:
-            factory = TestDataFactory(session)
+            factory = DataFactory(session)
             factory.create_epic()
             session.commit()
             
@@ -260,7 +260,7 @@ class TestDataFactoryIntegration:
         unit_session = unit_factory()
         
         try:
-            factory1 = TestDataFactory(unit_session)
+            factory1 = DataFactory(unit_session)
             hierarchy1 = factory1.create_complete_hierarchy(epic_count=1, stories_per_epic=2, artifacts_per_story=1)
             
             assert len(hierarchy1["epics"]) == 1
@@ -275,7 +275,7 @@ class TestDataFactoryIntegration:
         int_session = int_factory()
         
         try:
-            factory2 = TestDataFactory(int_session)
+            factory2 = DataFactory(int_session)
             basic_scenario = factory2.create_test_scenario("basic_workflow")
             
             assert basic_scenario["scenario"] == "basic_workflow"
@@ -289,7 +289,7 @@ class TestDataFactoryIntegration:
         e2e_session = e2e_factory()
         
         try:
-            factory3 = TestDataFactory(e2e_session)
+            factory3 = DataFactory(e2e_session)
             epic = factory3.create_epic(epic_id="e2e_test_epic", title="E2E Test Epic")
             
             assert epic.id == "e2e_test_epic"
@@ -320,7 +320,7 @@ class TestDataFactoryIntegration:
             session = session_factory()
             
             try:
-                factory = TestDataFactory(session)
+                factory = DataFactory(session)
                 
                 # Create test data
                 epic = factory.create_epic(epic_id=f"cleanup_{db_type}_epic")
@@ -359,7 +359,7 @@ class TestSystemStressValidation:
                 session = session_factory()
                 
                 try:
-                    factory = TestDataFactory(session)
+                    factory = DataFactory(session)
                     # Create moderate test data
                     hierarchy = factory.create_complete_hierarchy(
                         epic_count=1,
@@ -421,7 +421,7 @@ class TestSystemStressValidation:
             session = session_factory()
             
             try:
-                factory = TestDataFactory(session)
+                factory = DataFactory(session)
                 epic = factory.create_epic()
                 session.commit()
                 

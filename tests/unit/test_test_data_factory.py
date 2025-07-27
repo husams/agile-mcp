@@ -3,7 +3,7 @@ Unit tests for TestDataFactory to validate consistent test data creation.
 """
 
 import pytest
-from tests.utils.test_data_factory import TestDataFactory
+from tests.utils.test_data_factory import DataFactory
 from src.agile_mcp.models.epic import Epic
 from src.agile_mcp.models.story import Story
 from src.agile_mcp.models.artifact import Artifact
@@ -11,7 +11,7 @@ from src.agile_mcp.models.artifact import Artifact
 
 def test_create_epic(test_session):
     """Test epic creation with TestDataFactory."""
-    factory = TestDataFactory(test_session)
+    factory = DataFactory(test_session)
     
     # Test with default values
     epic1 = factory.create_epic()
@@ -35,7 +35,7 @@ def test_create_epic(test_session):
 
 def test_create_story(test_session):
     """Test story creation with TestDataFactory."""
-    factory = TestDataFactory(test_session)
+    factory = DataFactory(test_session)
     
     # Test with auto-created epic
     story1 = factory.create_story()
@@ -66,7 +66,7 @@ def test_create_story(test_session):
 
 def test_create_artifact(test_session):
     """Test artifact creation with TestDataFactory."""
-    factory = TestDataFactory(test_session)
+    factory = DataFactory(test_session)
     
     # Test with auto-created story
     artifact1 = factory.create_artifact()
@@ -93,7 +93,7 @@ def test_create_artifact(test_session):
 
 def test_create_complete_hierarchy(test_session):
     """Test creating complete data hierarchy."""
-    factory = TestDataFactory(test_session)
+    factory = DataFactory(test_session)
     
     hierarchy = factory.create_complete_hierarchy(
         epic_count=2,
@@ -115,7 +115,7 @@ def test_create_complete_hierarchy(test_session):
 
 def test_create_test_scenarios(test_session):
     """Test predefined test scenarios."""
-    factory = TestDataFactory(test_session)
+    factory = DataFactory(test_session)
     
     # Test empty scenario
     empty_scenario = factory.create_test_scenario("empty")
@@ -146,7 +146,7 @@ def test_create_test_scenarios(test_session):
 
 def test_factory_tracking(test_session):
     """Test that factory tracks created objects."""
-    factory = TestDataFactory(test_session)
+    factory = DataFactory(test_session)
     
     initial_count = len(factory.get_created_objects())
     assert initial_count == 0
@@ -169,7 +169,7 @@ def test_factory_tracking(test_session):
 
 def test_factory_cleanup(test_session):
     """Test factory cleanup functionality."""
-    factory = TestDataFactory(test_session)
+    factory = DataFactory(test_session)
     
     # Create test data
     epic = factory.create_epic(epic_id="cleanup-test-epic")
@@ -193,21 +193,21 @@ def test_factory_cleanup(test_session):
 
 def test_factory_error_handling(test_session):
     """Test factory error handling."""
-    factory = TestDataFactory(test_session)
+    factory = DataFactory(test_session)
     
     # Test unknown scenario
     with pytest.raises(ValueError, match="Unknown scenario"):
         factory.create_test_scenario("unknown_scenario")
     
     # Test with None session (edge case)
-    factory_with_none = TestDataFactory(None)
+    factory_with_none = DataFactory(None)
     with pytest.raises(AttributeError):
         factory_with_none.create_epic()
 
 
 def test_factory_with_kwargs(test_session):
     """Test factory methods with valid Epic attributes."""
-    factory = TestDataFactory(test_session)
+    factory = DataFactory(test_session)
     
     # Test epic with valid Epic attributes
     epic = factory.create_epic(
