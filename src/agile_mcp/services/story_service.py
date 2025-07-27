@@ -4,10 +4,12 @@ Service layer for Story business logic operations.
 
 from typing import List, Dict, Any
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+import os
 
 from ..repositories.story_repository import StoryRepository
 from ..models.story import Story
-from .exceptions import StoryValidationError, StoryNotFoundError, EpicNotFoundError, DatabaseError, InvalidStoryStatusError
+from ..utils.story_parser import StoryParser
+from .exceptions import StoryValidationError, StoryNotFoundError, EpicNotFoundError, DatabaseError, InvalidStoryStatusError, SectionNotFoundError
 
 
 class StoryService:
@@ -22,6 +24,7 @@ class StoryService:
     def __init__(self, story_repository: StoryRepository):
         """Initialize service with repository dependency."""
         self.story_repository = story_repository
+        self.story_parser = StoryParser()
     
     def create_story(self, title: str, description: str, acceptance_criteria: List[str], epic_id: str) -> Dict[str, Any]:
         """
@@ -170,3 +173,73 @@ class StoryService:
             raise InvalidStoryStatusError(str(e))
         except SQLAlchemyError as e:
             raise DatabaseError(f"Database operation failed while updating story status: {str(e)}")
+    
+    def get_story_section(self, story_id: str, section_name: str) -> str:
+        """
+        Retrieve a specific section from a story by reading its markdown file.
+        
+        Args:
+            story_id: The unique identifier of the story (used to locate the markdown file)
+            section_name: The name of the section to extract
+            
+        Returns:
+            str: The content of the requested section
+            
+        Raises:
+            StoryValidationError: If story_id or section_name is empty
+            StoryNotFoundError: If story file is not found
+            SectionNotFoundError: If the section is not found in the story
+            DatabaseError: If file operation fails
+        """
+        # Validate input parameters
+        if not story_id or not story_id.strip():
+            raise StoryValidationError("Story ID cannot be empty")
+        
+        if not section_name or not section_name.strip():
+            raise StoryValidationError("Section name cannot be empty")
+        
+        # Construct file path - stories are in docs/stories/ directory
+        # Story files use the format {story_id}.*.md (e.g., "1.1.service-initialization.md")
+        story_id_clean = story_id.strip()
+        
+        # Find the story file - it should be in docs/stories/ directory
+        stories_dir = os.path.join("docs", "stories")
+        if not os.path.exists(stories_dir):
+            raise StoryNotFoundError(f"Stories directory '{stories_dir}' not found")
+        
+        # Look for files that start with the story_id
+        story_file = None
+        try:
+            for filename in os.listdir(stories_dir):
+                if filename.startswith(story_id_clean) and filename.endswith(".md"):
+                    story_file = os.path.join(stories_dir, filename)
+                    break
+            
+            if not story_file:
+                raise StoryNotFoundError(f"Story file for ID '{story_id}' not found in '{stories_dir}'")
+            
+            # Read the story file content
+            with open(story_file, 'r', encoding='utf-8') as f:
+                story_content = f.read()
+            
+            if not story_content.strip():
+                raise StoryNotFoundError(f"Story file '{story_file}' is empty")
+            
+            # Use the parser to extract the section
+            try:
+                section_content = self.story_parser.extract_section(story_content, section_name)
+                return section_content
+            except SectionNotFoundError:
+                # Re-raise with the same message
+                raise
+            except ValueError as e:
+                # Convert parser validation errors to our exception type
+                raise StoryValidationError(f"Section parsing error: {str(e)}")
+            
+        except OSError as e:
+            raise DatabaseError(f"File operation failed: {str(e)}")
+        except Exception as e:
+            # Catch any other unexpected errors
+            if isinstance(e, (StoryValidationError, StoryNotFoundError, SectionNotFoundError)):
+                raise
+            raise DatabaseError(f"Unexpected error while processing story section: {str(e)}")

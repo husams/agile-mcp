@@ -51,3 +51,23 @@ class ArtifactNotFoundError(Exception):
 class InvalidRelationTypeError(Exception):
     """Raised when an invalid artifact relation type is provided."""
     pass
+
+
+class SectionNotFoundError(Exception):
+    """Raised when requested story section is not found."""
+    pass
+
+
+class CircularDependencyError(Exception):
+    """Raised when adding a dependency would create a circular dependency."""
+    pass
+
+
+class DependencyValidationError(Exception):
+    """Raised when dependency data validation fails."""
+    pass
+
+
+class DuplicateDependencyError(Exception):
+    """Raised when attempting to add a dependency that already exists."""
+    pass

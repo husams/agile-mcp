@@ -6,6 +6,7 @@ from typing import Dict, Any, List
 from sqlalchemy import Column, String, Text, JSON, ForeignKey, CheckConstraint
 from sqlalchemy.orm import relationship, validates
 from .epic import Base
+from .story_dependency import story_dependencies
 
 
 class Story(Base):
@@ -42,6 +43,19 @@ class Story(Base):
     
     # Relationship to artifacts (one-to-many)
     artifacts = relationship("Artifact", back_populates="story")
+    
+    # Many-to-many relationship for dependencies
+    dependencies = relationship("Story", 
+                              secondary=story_dependencies,
+                              primaryjoin="Story.id == story_dependencies.c.story_id",
+                              secondaryjoin="Story.id == story_dependencies.c.depends_on_story_id",
+                              back_populates="dependents")
+
+    dependents = relationship("Story",
+                            secondary=story_dependencies, 
+                            primaryjoin="Story.id == story_dependencies.c.depends_on_story_id",
+                            secondaryjoin="Story.id == story_dependencies.c.story_id",
+                            back_populates="dependencies")
     
     def __init__(self, id: str, title: str, description: str, acceptance_criteria: List[str], epic_id: str, status: str = "ToDo"):
         """Initialize Story with default status of 'ToDo'."""
