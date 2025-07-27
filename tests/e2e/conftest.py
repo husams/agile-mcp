@@ -11,7 +11,7 @@ import json
 import os
 import subprocess
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import pytest
 from sqlalchemy import create_engine
@@ -143,7 +143,7 @@ def mcp_server_subprocess(isolated_e2e_database):
             )
 
         def communicate_json_rpc(
-            method: str, params: Dict[str, Any] = None
+            method: str, params: Optional[Dict[str, Any]] = None
         ) -> Dict[str, Any]:
             """
             Helper function for JSON-RPC communication with the MCP server.
@@ -205,7 +205,7 @@ def json_rpc_client():
     """
 
     def create_request(
-        method: str, params: Dict[str, Any] = None, request_id: int = 1
+        method: str, params: Optional[Dict[str, Any]] = None, request_id: int = 1
     ) -> Dict[str, Any]:
         """Create a JSON-RPC 2.0 request."""
         return {
@@ -225,7 +225,9 @@ def json_rpc_client():
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON response: {e}")
 
-    def validate_response(response: Dict[str, Any], expected_keys: list = None) -> bool:
+    def validate_response(
+        response: Dict[str, Any], expected_keys: Optional[list[Any]] = None
+    ) -> bool:
         """Validate JSON-RPC response structure."""
         if not isinstance(response, dict):
             return False
@@ -275,7 +277,7 @@ def e2e_test_data_setup(isolated_e2e_database):
         SessionLocal = sessionmaker(bind=engine)
         session = SessionLocal()
 
-        data_ids = {}
+        data_ids: Dict[str, Any] = {}
 
         try:
             if scenario == "basic":
@@ -291,7 +293,7 @@ def e2e_test_data_setup(isolated_e2e_database):
                     epic_id="default-epic",
                     title="Test Story 1",
                     description="Test story for E2E testing",
-                    acceptance_criteria="Should work correctly",
+                    acceptance_criteria=["Should work correctly"],
                     status="ToDo",
                 )
                 story2 = Story(
@@ -299,7 +301,7 @@ def e2e_test_data_setup(isolated_e2e_database):
                     epic_id="default-epic",
                     title="Test Story 2",
                     description="Another test story",
-                    acceptance_criteria="Should also work correctly",
+                    acceptance_criteria=["Should also work correctly"],
                     status="Ready",
                 )
 
@@ -323,17 +325,15 @@ def e2e_test_data_setup(isolated_e2e_database):
                     epic_id="default-epic",
                     title="Complex Test Story",
                     description="Complex story with artifacts",
-                    acceptance_criteria="Should handle complexity",
+                    acceptance_criteria=["Should handle complexity"],
                     status="InProgress",
                 )
 
                 artifact = Artifact(
                     id="test-artifact",
+                    uri="file:///test/path.py",
+                    relation="implementation",
                     story_id="complex-story",
-                    type="code",
-                    path="/test/path.py",
-                    content="# Test content",
-                    status="created",
                 )
 
                 session.add_all([story, artifact])

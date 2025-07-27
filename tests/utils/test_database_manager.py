@@ -27,6 +27,7 @@ from src.agile_mcp.models.epic import Base
 class DatabaseManager:
     """Thread-safe database manager for comprehensive test isolation."""
 
+    _instance: Optional["DatabaseManager"] = None
     _instance_lock = threading.Lock()
     _engines: Dict[str, Engine] = {}
     _session_factories: Dict[str, sessionmaker] = {}
@@ -38,9 +39,9 @@ class DatabaseManager:
     @classmethod
     def get_instance(cls) -> "DatabaseManager":
         """Get singleton instance with thread safety."""
-        if not hasattr(cls, "_instance"):
+        if cls._instance is None:
             with cls._instance_lock:
-                if not hasattr(cls, "_instance"):
+                if cls._instance is None:
                     cls._instance = cls()
         return cls._instance
 
@@ -223,7 +224,7 @@ class DatabaseManager:
             # Test connection
             with engine.connect() as conn:
                 result = conn.execute(text("SELECT 1")).fetchone()
-                if result[0] != 1:
+                if result is None or result[0] != 1:
                     return False
 
             # Validate table creation
@@ -292,7 +293,7 @@ class DatabaseManager:
 
     def measure_performance(
         self, test_type: str, test_id: Optional[str] = None
-    ) -> Dict[str, float]:
+    ) -> Dict[str, Any]:
         """
         Measure database performance for the specified test type.
 
@@ -303,7 +304,7 @@ class DatabaseManager:
         Returns:
             Dictionary with performance metrics in milliseconds
         """
-        metrics = {}
+        metrics: Dict[str, Any] = {}
 
         # Measure database creation time
         start_time = time.time()

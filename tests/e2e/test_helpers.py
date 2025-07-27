@@ -6,7 +6,7 @@ for production server testing with real data.
 """
 
 import json
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Type, Union, cast
 
 import pytest
 from pydantic import BaseModel, ValidationError
@@ -55,6 +55,9 @@ def validate_json_response(response: str) -> dict:
             f"Error position: line {e.lineno}, column {e.colno}\n"
             f"Response snippet: {error_context}..."
         )
+        return (
+            {}
+        )  # This will never be reached due to pytest.fail(), but needed for mypy
 
 
 def parse_fastmcp_error_message(error_text: str) -> dict:
@@ -123,7 +126,7 @@ def validate_tool_response_format(response_json: dict) -> dict:
     """
     # Tools return data directly, success field is not required for successful responses
     # Only validate success field exists if it's present (for error responses)
-    required_fields = []
+    required_fields: list[str] = []
 
     for field in required_fields:
         if field not in response_json:
@@ -293,44 +296,65 @@ def validate_pydantic_model(
 
 def validate_story_response(response_data: dict) -> StoryResponse:
     """Validate response data matches StoryResponse schema for production story data."""
-    return validate_pydantic_model(response_data, StoryResponse, "story response")
+    return cast(
+        StoryResponse,
+        validate_pydantic_model(response_data, StoryResponse, "story response"),
+    )
 
 
 def validate_epic_response(response_data: dict) -> EpicResponse:
     """Validate response data matches EpicResponse schema for production epic data."""
-    return validate_pydantic_model(response_data, EpicResponse, "epic response")
+    return cast(
+        EpicResponse,
+        validate_pydantic_model(response_data, EpicResponse, "epic response"),
+    )
 
 
 def validate_artifact_response(response_data: dict) -> ArtifactResponse:
     """Validate response data matches ArtifactResponse schema for production artifact data."""
-    return validate_pydantic_model(response_data, ArtifactResponse, "artifact response")
+    return cast(
+        ArtifactResponse,
+        validate_pydantic_model(response_data, ArtifactResponse, "artifact response"),
+    )
 
 
 def validate_dependency_response(response_data: dict) -> DependencyResponse:
     """Validate response data matches DependencyResponse schema for production dependency data."""
-    return validate_pydantic_model(
-        response_data, DependencyResponse, "dependency response"
+    return cast(
+        DependencyResponse,
+        validate_pydantic_model(
+            response_data, DependencyResponse, "dependency response"
+        ),
     )
 
 
 def validate_story_section_response(response_data: dict) -> StorySectionResponse:
     """Validate response data matches StorySectionResponse schema."""
-    return validate_pydantic_model(
-        response_data, StorySectionResponse, "story section response"
+    return cast(
+        StorySectionResponse,
+        validate_pydantic_model(
+            response_data, StorySectionResponse, "story section response"
+        ),
     )
 
 
 def validate_dependency_add_response(response_data: dict) -> DependencyAddResponse:
     """Validate response data matches DependencyAddResponse schema."""
-    return validate_pydantic_model(
-        response_data, DependencyAddResponse, "dependency add response"
+    return cast(
+        DependencyAddResponse,
+        validate_pydantic_model(
+            response_data, DependencyAddResponse, "dependency add response"
+        ),
     )
 
 
 def validate_dod_checklist_response(response_data: dict) -> DoDChecklistResponse:
     """Validate response data matches DoDChecklistResponse schema for DoD checklist responses."""
-    return validate_pydantic_model(
-        response_data, DoDChecklistResponse, "DoD checklist response"
+    return cast(
+        DoDChecklistResponse,
+        validate_pydantic_model(
+            response_data, DoDChecklistResponse, "DoD checklist response"
+        ),
     )
 
 
@@ -383,27 +407,34 @@ def validate_full_tool_response(
 # Convenience functions for common validation patterns
 def validate_story_tool_response(response: str) -> StoryResponse:
     """Complete validation for story tool responses."""
-    return validate_full_tool_response(response, StoryResponse)
+    return cast(StoryResponse, validate_full_tool_response(response, StoryResponse))
 
 
 def validate_epic_tool_response(response: str) -> EpicResponse:
     """Complete validation for epic tool responses."""
-    return validate_full_tool_response(response, EpicResponse)
+    return cast(EpicResponse, validate_full_tool_response(response, EpicResponse))
 
 
 def validate_artifact_tool_response(response: str) -> ArtifactResponse:
     """Complete validation for artifact tool responses."""
-    return validate_full_tool_response(response, ArtifactResponse)
+    return cast(
+        ArtifactResponse, validate_full_tool_response(response, ArtifactResponse)
+    )
 
 
 def validate_dependency_tool_response(response: str) -> DependencyResponse:
     """Complete validation for dependency tool responses."""
-    return validate_full_tool_response(response, DependencyResponse)
+    return cast(
+        DependencyResponse, validate_full_tool_response(response, DependencyResponse)
+    )
 
 
 def validate_dod_checklist_tool_response(response: str) -> DoDChecklistResponse:
     """Complete validation for DoD checklist tool responses."""
-    return validate_full_tool_response(response, DoDChecklistResponse)
+    return cast(
+        DoDChecklistResponse,
+        validate_full_tool_response(response, DoDChecklistResponse),
+    )
 
 
 # JSON-RPC 2.0 Protocol Compliance Validators
@@ -657,6 +688,7 @@ def validate_mcp_tool_response_complete(
                 f"JSON-RPC result must be string or object, got: {type(tool_response).__name__}\n"
                 f"Response: {response_json}"
             )
+            return {}  # Never reached due to pytest.fail(), but needed for mypy
     else:
         # Handle JSON-RPC error response
         error = response_json["error"]
@@ -666,3 +698,4 @@ def validate_mcp_tool_response_complete(
             f"Message: {error['message']}\n"
             f"Data: {error.get('data', 'None')}"
         )
+        return {}  # Never reached due to pytest.fail(), but needed for mypy

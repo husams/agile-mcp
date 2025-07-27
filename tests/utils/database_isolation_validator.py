@@ -9,15 +9,12 @@ import os
 import threading
 import time
 import uuid
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Session, sessionmaker
 
-from src.agile_mcp.models.artifact import Artifact
-from src.agile_mcp.models.epic import Base, Epic
-from src.agile_mcp.models.story import Story
+from src.agile_mcp.models.epic import Epic
 from tests.utils.test_database_manager import DatabaseManager
 
 
@@ -38,7 +35,7 @@ class DatabaseIsolationValidator:
         Returns:
             Dictionary with validation results and any issues found
         """
-        validation_result = {
+        validation_result: Dict[str, Any] = {
             "is_clean": True,
             "issues": [],
             "table_counts": {},
@@ -62,7 +59,7 @@ class DatabaseIsolationValidator:
                         ).scalar()
                         validation_result["table_counts"][table_name] = result
 
-                        if result > 0:
+                        if result is not None and result > 0:
                             validation_result["is_clean"] = False
                             validation_result["issues"].append(
                                 f"Table {table_name} contains {result} records"
@@ -103,7 +100,7 @@ class DatabaseIsolationValidator:
         Returns:
             Dictionary with isolation validation results
         """
-        validation_result = {
+        validation_result: Dict[str, Any] = {
             "is_isolated": True,
             "issues": [],
             "test_db_info": {},
@@ -164,7 +161,7 @@ class DatabaseIsolationValidator:
         Returns:
             Dictionary with cross-session isolation validation results
         """
-        validation_result = {
+        validation_result: Dict[str, Any] = {
             "is_isolated": True,
             "issues": [],
             "session_results": [],
@@ -288,7 +285,7 @@ class DatabaseIsolationValidator:
         Returns:
             Dictionary with thread safety validation results
         """
-        validation_result = {
+        validation_result: Dict[str, Any] = {
             "is_thread_safe": True,
             "issues": [],
             "thread_results": [],
@@ -300,7 +297,7 @@ class DatabaseIsolationValidator:
 
         def thread_test_function(thread_id: int):
             """Function to run in each thread for testing."""
-            thread_result = {
+            thread_result: Dict[str, Any] = {
                 "thread_id": thread_id,
                 "success": False,
                 "error": None,
@@ -399,7 +396,11 @@ class DatabaseIsolationValidator:
             )
 
         # Performance metrics
-        execution_times = [result["execution_time"] for result in thread_results]
+        execution_times = [
+            result["execution_time"]
+            for result in thread_results
+            if "execution_time" in result and result["execution_time"] is not None
+        ]
         validation_result["performance_metrics"] = {
             "total_execution_time": overall_execution_time,
             "successful_threads": successful_threads,
@@ -413,7 +414,9 @@ class DatabaseIsolationValidator:
 
         return validation_result
 
-    def generate_isolation_report(self, test_types: List[str] = None) -> Dict[str, Any]:
+    def generate_isolation_report(
+        self, test_types: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
         """
         Generate comprehensive isolation validation report for all test types.
 
@@ -426,7 +429,7 @@ class DatabaseIsolationValidator:
         if test_types is None:
             test_types = ["unit", "integration", "e2e"]
 
-        report = {
+        report: Dict[str, Any] = {
             "timestamp": time.time(),
             "overall_status": "PASS",
             "test_types": {},
@@ -439,7 +442,7 @@ class DatabaseIsolationValidator:
         }
 
         for test_type in test_types:
-            type_report = {
+            type_report: Dict[str, Any] = {
                 "clean_state": self.validate_clean_database_state(
                     self.manager.create_memory_database(f"clean_test_{test_type}")[0]
                 ),
@@ -452,7 +455,7 @@ class DatabaseIsolationValidator:
             # Check production isolation for file-based tests
             if test_type == "e2e":
                 engine, _, db_path = self.manager.create_file_database(
-                    f"prod_isolation_test"
+                    "prod_isolation_test"
                 )
                 type_report["production_isolation"] = (
                     self.validate_production_isolation(engine)

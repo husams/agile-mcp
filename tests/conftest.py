@@ -9,9 +9,7 @@ Provides centralized test fixtures using TestDatabaseManager for all test types:
 """
 
 import os
-import tempfile
-from typing import Generator
-from unittest.mock import patch
+from typing import Optional
 
 import pytest
 
@@ -251,7 +249,7 @@ def performance_monitor():
     """
     manager = DatabaseManager.get_instance()
 
-    def measure_performance(test_type: str, test_id: str = None):
+    def measure_performance(test_type: str, test_id: Optional[str] = None):
         """Measure database performance for the given test type."""
         return manager.measure_performance(test_type, test_id)
 
@@ -272,7 +270,7 @@ def cleanup_database_manager():
 
 
 # Test markers for the three-tier system
-pytest_plugins = []
+pytest_plugins: list[str] = []
 
 
 def pytest_configure(config):

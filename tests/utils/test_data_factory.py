@@ -28,7 +28,7 @@ class DataFactory:
             session: SQLAlchemy session for database operations
         """
         self.session = session
-        self._created_objects = []  # Track created objects for cleanup
+        self._created_objects: list[Any] = []  # Track created objects for cleanup
 
     def create_epic(
         self,
@@ -194,7 +194,7 @@ class DataFactory:
         Returns:
             Dictionary with created objects organized by type
         """
-        hierarchy = {"epics": [], "stories": [], "artifacts": []}
+        hierarchy: Dict[str, List[Any]] = {"epics": [], "stories": [], "artifacts": []}
 
         for epic_idx in range(epic_count):
             epic = self.create_epic(
