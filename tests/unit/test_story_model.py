@@ -3,7 +3,7 @@ Unit tests for Story model.
 """
 
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -305,7 +305,7 @@ def test_story_created_at_field():
     assert story.created_at == custom_time
     
     # Test default created_at (should be current time)
-    before_creation = datetime.utcnow()
+    before_creation = datetime.now(timezone.utc)
     story_default = Story(
         id="test-story-18",
         title="Default Time Story",
@@ -313,7 +313,7 @@ def test_story_created_at_field():
         acceptance_criteria=["Should have default time"],
         epic_id="test-epic-1"
     )
-    after_creation = datetime.utcnow()
+    after_creation = datetime.now(timezone.utc)
     
     assert before_creation <= story_default.created_at <= after_creation
 

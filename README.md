@@ -1,5 +1,7 @@
 # Agile MCP Server
 
+[![CI Pipeline](https://github.com/[USERNAME]/agile-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/[USERNAME]/agile-mcp/actions/workflows/ci.yml)
+
 A Model Context Protocol (MCP) server that provides AI agents with structured tools for agile software development lifecycle management. This server enables AI assistants to autonomously manage backlogs, retrieve task-relevant information, and track generated artifacts in a structured, context-aware manner.
 
 ## Overview
