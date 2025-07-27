@@ -3,7 +3,7 @@ Utility for parsing story markdown sections.
 """
 
 import re
-from typing import Dict, List
+from typing import List
 
 
 class StoryParser:

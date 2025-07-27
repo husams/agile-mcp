@@ -2,7 +2,6 @@
 FastMCP tools for backlog management operations.
 """
 
-import logging
 import uuid
 from typing import Any, Dict
 
@@ -13,7 +12,6 @@ from mcp.types import ErrorData
 from ..database import create_tables, get_db
 from ..models.response import (
     DependencyAddResponse,
-    DependencyResponse,
     StoryResponse,
     StorySectionResponse,
 )
@@ -35,7 +33,6 @@ from ..utils.logging_config import (
     create_request_context,
     get_logger,
 )
-from ..utils.mcp_response import MCPResponse
 
 
 def register_backlog_tools(mcp: FastMCP) -> None:
@@ -66,10 +63,12 @@ def register_backlog_tools(mcp: FastMCP) -> None:
                 "Acceptance Criteria", "Story", "Tasks / Subtasks")
 
         Returns:
-            Dict containing the story_id, section_name, and content of the requested section
+            Dict containing the story_id, section_name, and content of the
+            requested section
 
         Raises:
-            McpError: If validation fails, story not found, section not found, or file operation fails
+            McpError: If validation fails, story not found, section not found,
+                or file operation fails
         """
         request_id = str(uuid.uuid4())
         try:
@@ -213,12 +212,15 @@ def register_backlog_tools(mcp: FastMCP) -> None:
         """
         Add a dependency relationship between two stories.
 
-        A dependency means that 'depends_on_story_id' must be completed before 'story_id' can be started.
-        This tool prevents the creation of circular dependencies (e.g., Story A depends on B, and B depends on A).
+        A dependency means that 'depends_on_story_id' must be completed before
+        'story_id' can be started.
+        This tool prevents the creation of circular dependencies (e.g., Story A
+        depends on B, and B depends on A).
 
         Args:
             story_id: The unique identifier of the story that will have the dependency
-            depends_on_story_id: The unique identifier of the story that must be completed first
+            depends_on_story_id: The unique identifier of the story that must be
+                completed first
 
         Returns:
             JSON string containing success/error response
@@ -326,7 +328,8 @@ def register_backlog_tools(mcp: FastMCP) -> None:
         2. Created date (earliest first) for same priority
 
         Returns:
-            Dict containing the story details if one is found, or empty dict if no stories are ready
+            Dict containing the story details if one is found, or empty dict if
+            no stories are ready
 
         Raises:
             McpError: If database operation fails or service error occurs

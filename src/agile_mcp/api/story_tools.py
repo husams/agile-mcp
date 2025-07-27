@@ -2,7 +2,6 @@
 FastMCP tools for Story management operations.
 """
 
-import logging
 import uuid
 from typing import Any, Dict, List
 
@@ -26,7 +25,6 @@ from ..utils.logging_config import (
     create_request_context,
     get_logger,
 )
-from ..utils.mcp_response import MCPResponse
 
 
 def register_story_tools(mcp: FastMCP) -> None:
@@ -57,10 +55,12 @@ def register_story_tools(mcp: FastMCP) -> None:
             epic_id: The unique identifier of the parent epic
             title: A short, descriptive title (max 200 characters)
             description: The full user story text (max 2000 characters)
-            acceptance_criteria: A list of conditions that must be met for the story to be considered complete
+            acceptance_criteria: A list of conditions that must be met for the
+                story to be considered complete
 
         Returns:
-            Dict containing the created story's id, title, description, acceptance_criteria, status, and epic_id
+            Dict containing the created story's id, title, description,
+            acceptance_criteria, status, and epic_id
 
         Raises:
             McpError: If validation fails, epic not found, or database operation fails
@@ -161,7 +161,8 @@ def register_story_tools(mcp: FastMCP) -> None:
             story_id: The unique identifier of the story
 
         Returns:
-            Dict containing the story's id, title, description, acceptance_criteria, status, and epic_id
+            Dict containing the story's id, title, description,
+            acceptance_criteria, status, and epic_id
 
         Raises:
             McpError: If story not found or database operation fails
@@ -263,10 +264,12 @@ def register_story_tools(mcp: FastMCP) -> None:
 
         Args:
             story_id: The unique identifier of the story
-            status: The new status value ("ToDo", "InProgress", "Review", "Done")
+            status: The new status value ("ToDo", "InProgress", "Review",
+                "Done")
 
         Returns:
-            Dict containing the updated story's id, title, description, acceptance_criteria, status, and epic_id
+            Dict containing the updated story's id, title, description,
+            acceptance_criteria, status, and epic_id
 
         Raises:
             McpError: If validation fails, story not found, or database operation fails
@@ -449,7 +452,9 @@ def register_story_tools(mcp: FastMCP) -> None:
                     {
                         "id": "acceptance_criteria_met",
                         "name": "All Acceptance Criteria Met",
-                        "description": "All acceptance criteria have been implemented and verified",
+                        "description": (
+                            "All acceptance criteria have been implemented and verified"
+                        ),
                         "category": "Requirements",
                         "status": (
                             "PASSED"
@@ -461,7 +466,9 @@ def register_story_tools(mcp: FastMCP) -> None:
                     {
                         "id": "unit_tests_written",
                         "name": "Unit Tests Written",
-                        "description": "Comprehensive unit tests cover all new functionality",
+                        "description": (
+                            "Comprehensive unit tests cover all new functionality"
+                        ),
                         "category": "Testing",
                         "status": (
                             "PASSED"
@@ -497,7 +504,9 @@ def register_story_tools(mcp: FastMCP) -> None:
                     {
                         "id": "e2e_tests_passing",
                         "name": "End-to-End Tests Passing",
-                        "description": "All E2E tests demonstrate working functionality",
+                        "description": (
+                            "All E2E tests demonstrate working functionality"
+                        ),
                         "category": "Testing",
                         "status": (
                             "PASSED"
@@ -509,7 +518,9 @@ def register_story_tools(mcp: FastMCP) -> None:
                     {
                         "id": "code_reviewed",
                         "name": "Code Review Completed",
-                        "description": "Code has been reviewed and approved by peer reviewers",
+                        "description": (
+                            "Code has been reviewed and approved by peer reviewers"
+                        ),
                         "category": "Quality",
                         "status": (
                             "PASSED" if story_dict["status"] == "Done" else "FAILED"
@@ -541,7 +552,9 @@ def register_story_tools(mcp: FastMCP) -> None:
                     {
                         "id": "api_docs_updated",
                         "name": "API Documentation Updated",
-                        "description": "API documentation reflects any new or changed endpoints",
+                        "description": (
+                            "API documentation reflects any new or changed endpoints"
+                        ),
                         "category": "Documentation",
                         "status": (
                             "PASSED" if story_dict["status"] == "Done" else "PARTIAL"
@@ -551,7 +564,9 @@ def register_story_tools(mcp: FastMCP) -> None:
                     {
                         "id": "security_reviewed",
                         "name": "Security Review Completed",
-                        "description": "Security implications have been reviewed and addressed",
+                        "description": (
+                            "Security implications have been reviewed and addressed"
+                        ),
                         "category": "Security",
                         "status": (
                             "PASSED" if story_dict["status"] == "Done" else "PARTIAL"
@@ -561,7 +576,9 @@ def register_story_tools(mcp: FastMCP) -> None:
                     {
                         "id": "performance_tested",
                         "name": "Performance Impact Tested",
-                        "description": "Performance impact has been measured and is acceptable",
+                        "description": (
+                            "Performance impact has been measured and is acceptable"
+                        ),
                         "category": "Performance",
                         "status": (
                             "PASSED" if story_dict["status"] == "Done" else "PARTIAL"
@@ -617,7 +634,10 @@ def register_story_tools(mcp: FastMCP) -> None:
 
                 if overall_status == "PASSED":
                     recommendations = [
-                        "Story meets all Definition of Done criteria and is ready for completion."
+                        (
+                            "Story meets all Definition of Done criteria and is ready "
+                            "for completion."
+                        )
                     ]
 
                 # Create summary
@@ -645,7 +665,9 @@ def register_story_tools(mcp: FastMCP) -> None:
                     "checklist_items": checklist_items,
                     "summary": summary,
                     "recommendations": recommendations,
-                    "evaluated_at": "2025-07-27T00:00:00Z",  # Current timestamp would be better in production
+                    "evaluated_at": (
+                        "2025-07-27T00:00:00Z"  # Current timestamp would be better
+                    ),
                 }
                 dod_response = DoDChecklistResponse(**dod_result)
                 return dod_response.model_dump()

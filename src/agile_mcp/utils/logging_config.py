@@ -79,7 +79,8 @@ def configure_logging(
         processors=processors,
         wrapper_class=structlog.stdlib.BoundLogger,
         logger_factory=structlog.stdlib.LoggerFactory(),
-        cache_logger_on_first_use=False,  # Disable cache to ensure proper binding in tests
+        cache_logger_on_first_use=False,  # Disable cache to ensure proper
+        # binding in tests
     )
 
 

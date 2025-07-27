@@ -33,7 +33,8 @@ class ArtifactRepository:
 
         Raises:
             SQLAlchemyError: If database operation fails
-            IntegrityError: If story_id does not exist (foreign key constraint violation)
+            IntegrityError: If story_id does not exist (foreign key constraint
+                violation)
         """
         try:
             # Verify story exists before creating artifact

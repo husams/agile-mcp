@@ -2,7 +2,6 @@
 FastMCP tools for Epic management operations.
 """
 
-import logging
 import uuid
 from typing import Any, Dict, List
 
@@ -134,7 +133,8 @@ def register_epic_tools(mcp: FastMCP) -> None:
         Retrieve a list of all existing epics.
 
         Returns:
-            List of dictionaries, each containing an epic's id, title, description, and status
+            List of dictionaries, each containing an epic's id, title,
+            description, and status
 
         Raises:
             McpError: If database operation fails
@@ -175,7 +175,8 @@ def register_epic_tools(mcp: FastMCP) -> None:
             Dict containing the updated epic's id, title, description, and status
 
         Raises:
-            McpError: If epic is not found, status is invalid, or database operation fails
+            McpError: If epic is not found, status is invalid, or database
+                operation fails
         """
         request_id = str(uuid.uuid4())
         try:

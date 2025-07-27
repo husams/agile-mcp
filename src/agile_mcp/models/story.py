@@ -29,9 +29,11 @@ class Story(Base):
         id: Unique identifier for the story
         title: A short, descriptive title
         description: The full user story text
-        acceptance_criteria: A list of conditions that must be met for the story to be considered complete
+        acceptance_criteria: A list of conditions that must be met for the
+            story to be considered complete
         status: Current state (ToDo, InProgress, Review, Done)
-        priority: Priority level for ordering (higher number = higher priority), default 0
+        priority: Priority level for ordering (higher number = higher priority),
+            default 0
         created_at: Timestamp when story was created (for ordering)
         epic_id: Foreign key reference to the parent Epic
     """
@@ -94,7 +96,8 @@ class Story(Base):
         priority: int = 0,
         created_at: datetime = None,
     ):
-        """Initialize Story with default status of 'ToDo', priority 0, and current timestamp."""
+        """Initialize Story with default status of 'ToDo', priority 0, and current
+        timestamp."""
         self.id = id
         self.title = title
         self.description = description
@@ -158,4 +161,7 @@ class Story(Base):
         return status
 
     def __repr__(self) -> str:
-        return f"<Story(id='{self.id}', title='{self.title}', status='{self.status}', epic_id='{self.epic_id}')>"
+        return (
+            f"<Story(id='{self.id}', title='{self.title}', "
+            f"status='{self.status}', epic_id='{self.epic_id}')>"
+        )

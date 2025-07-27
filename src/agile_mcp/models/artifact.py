@@ -67,4 +67,7 @@ class Artifact(Base):
         return RelationValidator.validate_relation_or_raise(relation)
 
     def __repr__(self) -> str:
-        return f"<Artifact(id='{self.id}', uri='{self.uri}', relation='{self.relation}', story_id='{self.story_id}')>"
+        return (
+            f"<Artifact(id='{self.id}', uri='{self.uri}', "
+            f"relation='{self.relation}', story_id='{self.story_id}')>"
+        )

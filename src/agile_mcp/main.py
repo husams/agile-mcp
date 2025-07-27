@@ -22,16 +22,15 @@ try:
 except ImportError:
     # Handle when running as script directly
     import os
-    import sys
 
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from api import (
+    from api import (  # type: ignore
         register_artifact_tools,
         register_backlog_tools,
         register_epic_tools,
         register_story_tools,
     )
-    from utils.logging_config import configure_logging, get_logger
+    from utils.logging_config import configure_logging, get_logger  # type: ignore
 
 # Configure structured logging
 configure_logging(log_level="INFO", enable_json=True)

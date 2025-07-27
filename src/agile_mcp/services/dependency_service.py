@@ -293,7 +293,7 @@ class DependencyService:
             # Get all dependencies for this story
             dependencies = self.dependency_repository.get_story_dependencies(story_id)
 
-            validation_result = {
+            validation_result: Dict[str, Any] = {
                 "status": "valid",
                 "story_id": story_id,
                 "total_dependencies": len(dependencies),

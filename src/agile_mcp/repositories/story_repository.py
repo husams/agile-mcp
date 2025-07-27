@@ -28,7 +28,8 @@ class StoryRepository:
         Args:
             title: A short, descriptive title
             description: The full user story text
-            acceptance_criteria: A list of conditions that must be met for the story to be considered complete
+            acceptance_criteria: A list of conditions that must be met for the
+                story to be considered complete
             epic_id: Foreign key reference to the parent Epic
 
         Returns:
@@ -130,14 +131,16 @@ class StoryRepository:
 
     def find_stories_by_status_ordered(self, status: str) -> List[Story]:
         """
-        Find all stories with the given status, ordered by priority (desc) then created_at (asc).
+        Find all stories with the given status, ordered by priority (desc) then
+        created_at (asc).
         Higher priority numbers come first, then earlier creation dates.
 
         Args:
             status: The status to filter stories by
 
         Returns:
-            List[Story]: List of story instances with the given status, ordered by priority and creation date
+            List[Story]: List of story instances with the given status, ordered by
+            priority and creation date
 
         Raises:
             SQLAlchemyError: If database operation fails

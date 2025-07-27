@@ -11,7 +11,6 @@ from pathlib import Path
 import pytest
 
 
-
 @pytest.fixture
 def mcp_server_process(isolated_test_database):
     """Start MCP server as subprocess with isolated database."""
@@ -563,7 +562,7 @@ def test_multiple_status_transitions_workflow(mcp_server_process):
 
 
 def test_create_update_retrieve_complete_workflow(mcp_server_process):
-    """Test complete workflow: create epic, update status, then retrieve updated epic."""
+    """Test complete workflow: create epic, update status, then retrieve epic."""
     initialize_server(mcp_server_process)
 
     # Step 1: Create epic

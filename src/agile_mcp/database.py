@@ -8,11 +8,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from .models import Artifact  # Import to register with metadata
-from .models import Story  # Import to register with metadata
-from .models import (  # Import to register association table with metadata
-    story_dependency,
-)
+from .models import Artifact  # Import to register with metadata  # noqa: F401
+from .models import Story  # Import to register with metadata  # noqa: F401
+from .models import story_dependency  # Import to register with metadata  # noqa: F401
 from .models.epic import Base
 
 # Database file path - use TEST_DATABASE_URL for E2E test isolation

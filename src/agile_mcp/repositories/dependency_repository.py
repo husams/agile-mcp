@@ -2,10 +2,10 @@
 Repository layer for Story Dependency data access operations.
 """
 
-from typing import List, Optional
+from typing import List
 
 from sqlalchemy import text
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from ..models.story import Story
@@ -32,13 +32,15 @@ class DependencyRepository:
 
         Raises:
             SQLAlchemyError: If database operation fails
-            IntegrityError: If foreign key constraint violation or duplicate dependency
+            SQLAlchemyError: If foreign key constraint violation or duplicate
+                dependency
         """
         try:
             # Check if dependency already exists
             existing = self.db_session.execute(
                 text(
-                    "SELECT 1 FROM story_dependencies WHERE story_id = :story_id AND depends_on_story_id = :depends_on_story_id"
+                    "SELECT 1 FROM story_dependencies WHERE story_id = :story_id "
+                    "AND depends_on_story_id = :depends_on_story_id"
                 ),
                 {"story_id": story_id, "depends_on_story_id": depends_on_story_id},
             ).first()
@@ -49,7 +51,8 @@ class DependencyRepository:
             # Insert new dependency
             self.db_session.execute(
                 text(
-                    "INSERT INTO story_dependencies (story_id, depends_on_story_id) VALUES (:story_id, :depends_on_story_id)"
+                    "INSERT INTO story_dependencies (story_id, depends_on_story_id) "
+                    "VALUES (:story_id, :depends_on_story_id)"
                 ),
                 {"story_id": story_id, "depends_on_story_id": depends_on_story_id},
             )
@@ -186,7 +189,8 @@ class DependencyRepository:
         try:
             result = self.db_session.execute(
                 text(
-                    "DELETE FROM story_dependencies WHERE story_id = :story_id AND depends_on_story_id = :depends_on_story_id"
+                    "DELETE FROM story_dependencies WHERE story_id = :story_id "
+                    "AND depends_on_story_id = :depends_on_story_id"
                 ),
                 {"story_id": story_id, "depends_on_story_id": depends_on_story_id},
             )
@@ -201,7 +205,8 @@ class DependencyRepository:
     def has_incomplete_dependencies(self, story_id: str) -> bool:
         """
         Check if a story has any incomplete dependencies.
-        A dependency is incomplete if the story it depends on has status other than "Done".
+        A dependency is incomplete if the story it depends on has status other
+        than "Done".
 
         Args:
             story_id: The story to check dependencies for

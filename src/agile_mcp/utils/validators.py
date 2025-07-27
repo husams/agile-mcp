@@ -93,6 +93,7 @@ class RelationValidator:
         """
         if not cls.is_valid_relation(relation):
             raise ValueError(
-                f"Artifact relation must be one of: {', '.join(sorted(cls.VALID_RELATIONS))}"
+                f"Artifact relation must be one of: "
+                f"{', '.join(sorted(cls.VALID_RELATIONS))}"
             )
         return relation
