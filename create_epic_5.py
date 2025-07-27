@@ -4,7 +4,7 @@ Script to create Epic 5 for Database Isolation using MCP server tools.
 """
 
 import json
-import subprocess
+import subprocess  # nosec B404
 import sys
 import time
 from typing import Any, Dict
@@ -42,7 +42,7 @@ def send_mcp_request(
 
 def create_mcp_server() -> subprocess.Popen:
     """Start the MCP server process."""
-    process = subprocess.Popen(
+    process = subprocess.Popen(  # nosec B603
         [sys.executable, "run_server.py"],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
