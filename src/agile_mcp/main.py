@@ -13,13 +13,13 @@ from typing import Optional
 from fastmcp import FastMCP
 
 try:
-    from .api import register_epic_tools, register_story_tools
+    from .api import register_epic_tools, register_story_tools, register_artifact_tools
 except ImportError:
     # Handle when running as script directly
     import sys
     import os
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from api import register_epic_tools, register_story_tools
+    from api import register_epic_tools, register_story_tools, register_artifact_tools
 
 # Configure logging to stderr to avoid contaminating stdout JSON-RPC
 logging.basicConfig(
@@ -52,6 +52,10 @@ def create_server() -> FastMCP:
         # Register story management tools
         register_story_tools(server)
         logger.info("Story management tools registered successfully")
+        
+        # Register artifact management tools
+        register_artifact_tools(server)
+        logger.info("Artifact management tools registered successfully")
         
         # FastMCP automatically handles:
         # - MCP initialize request handling

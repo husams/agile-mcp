@@ -36,3 +36,18 @@ class InvalidStoryStatusError(Exception):
 class DatabaseError(Exception):
     """Raised when database operations fail."""
     pass
+
+
+class ArtifactValidationError(Exception):
+    """Raised when artifact data validation fails."""
+    pass
+
+
+class ArtifactNotFoundError(Exception):
+    """Raised when requested artifact is not found."""
+    pass
+
+
+class InvalidRelationTypeError(Exception):
+    """Raised when an invalid artifact relation type is provided."""
+    pass

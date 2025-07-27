@@ -40,6 +40,9 @@ class Story(Base):
     # Relationship to epic (many-to-one)
     epic = relationship("Epic", back_populates="stories")
     
+    # Relationship to artifacts (one-to-many)
+    artifacts = relationship("Artifact", back_populates="story")
+    
     def __init__(self, id: str, title: str, description: str, acceptance_criteria: List[str], epic_id: str, status: str = "ToDo"):
         """Initialize Story with default status of 'ToDo'."""
         self.id = id
