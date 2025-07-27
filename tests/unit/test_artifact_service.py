@@ -2,7 +2,7 @@
 Unit tests for Artifact service layer.
 """
 
-from unittest.mock import MagicMock, Mock
+from unittest.mock import Mock
 
 import pytest
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError

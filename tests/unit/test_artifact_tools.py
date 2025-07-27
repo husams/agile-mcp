@@ -2,20 +2,12 @@
 Unit tests for Artifact tools/API layer.
 """
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 from fastmcp import FastMCP
-from fastmcp.exceptions import McpError
 
 from src.agile_mcp.api.artifact_tools import register_artifact_tools
-from src.agile_mcp.services.exceptions import (
-    ArtifactNotFoundError,
-    ArtifactValidationError,
-    DatabaseError,
-    InvalidRelationTypeError,
-    StoryNotFoundError,
-)
 
 
 @pytest.fixture

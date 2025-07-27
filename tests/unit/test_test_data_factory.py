@@ -4,7 +4,6 @@ Unit tests for TestDataFactory to validate consistent test data creation.
 
 import pytest
 
-from src.agile_mcp.models.artifact import Artifact
 from src.agile_mcp.models.epic import Epic
 from src.agile_mcp.models.story import Story
 from tests.utils.test_data_factory import DataFactory

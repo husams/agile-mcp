@@ -5,10 +5,7 @@ Tests the FastMCP server initialization process, capabilities response,
 and JSON-RPC 2.0 compliance in isolation.
 """
 
-import asyncio
-import sys
-from io import StringIO
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -135,4 +132,3 @@ class TestJSONRPCCompliance:
         """Test that errors are logged to stderr to avoid contaminating stdout JSON-RPC."""
         # This is tested in the error handling tests above
         # Verifying that error output goes to stderr, not stdout
-        pass

@@ -2,8 +2,6 @@
 Unit tests for E2E conftest.py fixtures to validate subprocess isolation and JSON-RPC helpers.
 """
 
-import json
-import os
 from unittest.mock import Mock, patch
 
 import pytest

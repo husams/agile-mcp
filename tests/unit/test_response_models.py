@@ -2,15 +2,12 @@
 Unit tests for enhanced Pydantic response models.
 """
 
-from datetime import datetime, timezone
-
 import pytest
 from pydantic import ValidationError
 
 from src.agile_mcp.models.response import (
     ArtifactResponse,
     DependencyAddResponse,
-    DependencyResponse,
     DoDChecklistResponse,
     EpicResponse,
     StoryResponse,

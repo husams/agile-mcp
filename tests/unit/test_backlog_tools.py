@@ -2,19 +2,11 @@
 Unit tests for backlog management FastMCP tools.
 """
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
-from fastmcp.exceptions import McpError
 
 from src.agile_mcp.api.backlog_tools import register_backlog_tools
-from src.agile_mcp.services.exceptions import (
-    CircularDependencyError,
-    DatabaseError,
-    DependencyValidationError,
-    DuplicateDependencyError,
-    StoryNotFoundError,
-)
 
 
 @pytest.fixture

@@ -1,7 +1,6 @@
 import json
 from datetime import datetime
 
-import pytest
 
 from src.agile_mcp.utils.mcp_response import MCPResponse
 

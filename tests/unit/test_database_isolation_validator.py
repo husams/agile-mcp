@@ -3,9 +3,7 @@ Unit tests for DatabaseIsolationValidator to validate isolation verification.
 """
 
 import os
-import tempfile
 
-import pytest
 
 from src.agile_mcp.models.epic import Epic
 from tests.utils.database_isolation_validator import DatabaseIsolationValidator

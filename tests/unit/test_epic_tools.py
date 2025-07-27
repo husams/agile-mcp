@@ -2,17 +2,14 @@
 Unit tests for Epic API/Tool layer.
 """
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
-from fastmcp.exceptions import McpError
 
-from src.agile_mcp.repositories.epic_repository import EpicRepository
 from src.agile_mcp.services.epic_service import EpicService
 from src.agile_mcp.services.exceptions import (
     DatabaseError,
     EpicNotFoundError,
-    EpicValidationError,
     InvalidEpicStatusError,
 )
 

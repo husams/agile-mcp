@@ -2,10 +2,10 @@
 Unit tests for Dependency service layer.
 """
 
-from unittest.mock import MagicMock, Mock
+from unittest.mock import Mock
 
 import pytest
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError
 
 from src.agile_mcp.models.story import Story
 from src.agile_mcp.services.dependency_service import DependencyService

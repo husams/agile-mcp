@@ -5,7 +5,6 @@ Unit tests for E2E test validation helpers.
 import json
 
 import pytest
-from pydantic import ValidationError
 
 from src.agile_mcp.models.response import ArtifactResponse, EpicResponse, StoryResponse
 from tests.e2e.test_helpers import (

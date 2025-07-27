@@ -3,9 +3,8 @@ Unit tests for structured logging configuration.
 """
 
 import json
-import sys
 from io import StringIO
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 import structlog

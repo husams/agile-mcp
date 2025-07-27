@@ -6,7 +6,6 @@ import json
 import os
 import subprocess
 import sys
-import tempfile
 import time
 from pathlib import Path
 
@@ -15,7 +14,6 @@ import pytest
 from tests.e2e.test_helpers import (
     validate_artifact_tool_response,
     validate_error_response_format,
-    validate_full_tool_response,
     validate_json_response,
     validate_jsonrpc_response_format,
 )

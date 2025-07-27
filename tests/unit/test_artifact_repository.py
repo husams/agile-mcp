@@ -6,10 +6,9 @@ import uuid
 
 import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
-from src.agile_mcp.models.artifact import Artifact
 from src.agile_mcp.models.epic import Base, Epic
 from src.agile_mcp.models.story import Story
 from src.agile_mcp.repositories.artifact_repository import ArtifactRepository

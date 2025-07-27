@@ -281,7 +281,8 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers",
-        "integration: mark test as an integration test (uses shared database, ≤100ms target)",
+        "integration: mark test as an integration test "
+        "(uses shared database, ≤100ms target)",
     )
     config.addinivalue_line(
         "markers",

@@ -2,20 +2,7 @@
 End-to-end tests for backlog management tools integration.
 """
 
-import os
-from unittest.mock import mock_open, patch
-
 import pytest
-
-from src.agile_mcp.main import create_server
-
-from .test_helpers import (
-    validate_error_response_format,
-    validate_full_tool_response,
-    validate_json_response,
-    validate_jsonrpc_response_format,
-    validate_story_tool_response,
-)
 
 
 @pytest.fixture

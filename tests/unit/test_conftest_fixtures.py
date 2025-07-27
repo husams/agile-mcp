@@ -4,7 +4,6 @@ Unit tests for root conftest.py fixtures to validate comprehensive database isol
 
 import os
 
-import pytest
 
 from src.agile_mcp.models.epic import Epic
 
@@ -142,11 +141,9 @@ def test_fixture_isolation():
     """Test that fixtures provide proper isolation between tests."""
     # This test should run independently and not see data from other tests
     # This is implicitly tested by all other tests not interfering with each other
-    pass
 
 
 def test_pytest_markers_configured():
     """Test that pytest markers are properly configured."""
     # This will be verified by the pytest configuration
     # The markers should be available: unit, integration, e2e, slow
-    pass

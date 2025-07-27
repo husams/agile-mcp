@@ -6,7 +6,6 @@ import os
 import threading
 import time
 
-import pytest
 
 from src.agile_mcp.models.epic import Epic
 from tests.utils.test_database_manager import DatabaseManager
