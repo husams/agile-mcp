@@ -1,5 +1,5 @@
 """
-TestDataFactory - Consistent test data creation across all test types.
+DataFactory - Consistent test data creation across all test types.
 
 Provides factory methods for creating epics, stories, and artifacts with proper relationships,
 ensuring consistent test data setup for unit, integration, and E2E tests.
@@ -14,7 +14,7 @@ from src.agile_mcp.models.story import Story
 from src.agile_mcp.models.artifact import Artifact
 
 
-class TestDataFactory:
+class DataFactory:
     """Factory class for creating consistent test data across all test types."""
     
     def __init__(self, session: Session):

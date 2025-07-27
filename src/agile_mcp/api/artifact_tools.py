@@ -3,6 +3,7 @@ FastMCP tools for Artifact management operations.
 """
 
 import logging
+import uuid
 from typing import Dict, Any, List
 from fastmcp import FastMCP
 from fastmcp.exceptions import McpError
@@ -11,6 +12,7 @@ from mcp.types import ErrorData
 from ..database import get_db, create_tables
 from ..repositories.artifact_repository import ArtifactRepository  
 from ..services.artifact_service import ArtifactService
+from ..utils.mcp_response import MCPResponse
 from ..services.exceptions import (
     ArtifactValidationError, 
     ArtifactNotFoundError, 
@@ -18,19 +20,21 @@ from ..services.exceptions import (
     DatabaseError, 
     InvalidRelationTypeError
 )
+from ..utils.logging_config import get_logger, create_request_context, create_entity_context
+from ..models.response import ArtifactResponse
 
 
 def register_artifact_tools(mcp: FastMCP) -> None:
     """Register artifact management tools with the FastMCP server."""
     
-    logger = logging.getLogger(__name__)
+    logger = get_logger(__name__)
     
     # Ensure database tables exist
     try:
         create_tables()
         logger.info("Database tables created/verified successfully")
     except Exception as e:
-        logger.error(f"Failed to create database tables: {e}")
+        logger.error("Failed to create database tables", error=str(e), operation="register_artifact_tools")
         raise
     
     @mcp.tool("artifacts.linkToStory")
@@ -49,27 +53,96 @@ def register_artifact_tools(mcp: FastMCP) -> None:
         Raises:
             McpError: If validation fails, story not found, or database operation fails
         """
+        request_id = str(uuid.uuid4())
         try:
+            logger.info(
+                "Processing link artifact to story request",
+                **create_request_context(request_id=request_id, tool_name="artifacts.linkToStory"),
+                **create_entity_context(story_id=story_id),
+                uri=uri[:100],
+                relation=relation
+            )
+            
             db_session = get_db()
             try:
                 artifact_repository = ArtifactRepository(db_session)
                 artifact_service = ArtifactService(artifact_repository)
                 
                 artifact_dict = artifact_service.link_artifact_to_story(story_id, uri, relation)
-                return artifact_dict
+                artifact_response = ArtifactResponse(**artifact_dict)
+                
+                logger.info(
+                    "Link artifact to story request completed successfully",
+                    **create_request_context(request_id=request_id, tool_name="artifacts.linkToStory"),
+                    **create_entity_context(story_id=story_id, artifact_id=artifact_dict["id"]),
+                    uri=uri[:100],
+                    relation=relation
+                )
+                
+                return artifact_response.model_dump()
                 
             finally:
                 db_session.close()
                 
         except ArtifactValidationError as e:
+            logger.error(
+                "Artifact validation error in link artifact to story",
+                **create_request_context(request_id=request_id, tool_name="artifacts.linkToStory"),
+                **create_entity_context(story_id=story_id),
+                uri=uri[:100],
+                relation=relation,
+                error_type="ArtifactValidationError",
+                error_message=str(e),
+                mcp_error_code=-32001
+            )
             raise McpError(ErrorData(code=-32001, message=f"Artifact validation error: {str(e)}", data={"story_id": story_id, "uri": uri, "relation": relation}))
         except InvalidRelationTypeError as e:
+            logger.error(
+                "Invalid relation type error in link artifact to story",
+                **create_request_context(request_id=request_id, tool_name="artifacts.linkToStory"),
+                **create_entity_context(story_id=story_id),
+                uri=uri[:100],
+                relation=relation,
+                error_type="InvalidRelationTypeError",
+                error_message=str(e),
+                mcp_error_code=-32001
+            )
             raise McpError(ErrorData(code=-32001, message=f"Invalid relation type: {str(e)}", data={"story_id": story_id, "uri": uri, "relation": relation}))
         except StoryNotFoundError as e:
+            logger.error(
+                "Story not found error in link artifact to story",
+                **create_request_context(request_id=request_id, tool_name="artifacts.linkToStory"),
+                **create_entity_context(story_id=story_id),
+                uri=uri[:100],
+                relation=relation,
+                error_type="StoryNotFoundError",
+                error_message=str(e),
+                mcp_error_code=-32001
+            )
             raise McpError(ErrorData(code=-32001, message=f"Story not found: {str(e)}", data={"story_id": story_id, "uri": uri, "relation": relation}))
         except DatabaseError as e:
+            logger.error(
+                "Database error in link artifact to story",
+                **create_request_context(request_id=request_id, tool_name="artifacts.linkToStory"),
+                **create_entity_context(story_id=story_id),
+                uri=uri[:100],
+                relation=relation,
+                error_type="DatabaseError",
+                error_message=str(e),
+                mcp_error_code=-32001
+            )
             raise McpError(ErrorData(code=-32001, message=f"Database error: {str(e)}", data={"story_id": story_id, "uri": uri, "relation": relation}))
         except Exception as e:
+            logger.error(
+                "Unexpected error in link artifact to story",
+                **create_request_context(request_id=request_id, tool_name="artifacts.linkToStory"),
+                **create_entity_context(story_id=story_id),
+                uri=uri[:100],
+                relation=relation,
+                error_type=type(e).__name__,
+                error_message=str(e),
+                mcp_error_code=-32001
+            )
             raise McpError(ErrorData(code=-32001, message=f"Unexpected error: {str(e)}", data={"story_id": story_id, "uri": uri, "relation": relation}))
     
     @mcp.tool("artifacts.listForStory")
@@ -93,7 +166,8 @@ def register_artifact_tools(mcp: FastMCP) -> None:
                 artifact_service = ArtifactService(artifact_repository)
                 
                 artifacts_list = artifact_service.get_artifacts_for_story(story_id)
-                return artifacts_list
+                artifacts_responses = [ArtifactResponse(**artifact_dict).model_dump() for artifact_dict in artifacts_list]
+                return artifacts_responses
                 
             finally:
                 db_session.close()

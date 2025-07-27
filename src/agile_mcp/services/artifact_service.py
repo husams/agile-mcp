@@ -8,6 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from ..repositories.artifact_repository import ArtifactRepository
 from ..models.artifact import Artifact
 from ..utils.validators import URIValidator, RelationValidator
+from ..utils.logging_config import get_logger, create_entity_context
 from .exceptions import (
     ArtifactValidationError, 
     ArtifactNotFoundError, 
@@ -26,6 +27,7 @@ class ArtifactService:
     def __init__(self, artifact_repository: ArtifactRepository):
         """Initialize service with repository dependency."""
         self.artifact_repository = artifact_repository
+        self.logger = get_logger(__name__)
     
     def link_artifact_to_story(self, story_id: str, uri: str, relation: str) -> Dict[str, Any]:
         """
@@ -73,7 +75,24 @@ class ArtifactService:
             raise InvalidRelationTypeError(str(e))
         
         try:
+            self.logger.info(
+                "Linking artifact to story",
+                **create_entity_context(story_id=story_id),
+                uri=uri[:100],  # Truncate URI for logging
+                relation=relation,
+                operation="link_artifact_to_story"
+            )
+            
             artifact = self.artifact_repository.create_artifact(uri, relation, story_id)
+            
+            self.logger.info(
+                "Artifact linked to story successfully",
+                **create_entity_context(story_id=story_id, artifact_id=artifact.id),
+                uri=uri[:100],
+                relation=relation,
+                operation="link_artifact_to_story"
+            )
+            
             return artifact.to_dict()
         except ValueError as e:
             # Handle SQLAlchemy model validation errors

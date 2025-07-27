@@ -3,6 +3,7 @@ FastMCP tools for backlog management operations.
 """
 
 import logging
+import uuid
 from typing import Dict, Any
 from fastmcp import FastMCP
 from fastmcp.exceptions import McpError
@@ -17,19 +18,22 @@ from ..services.exceptions import (
     StoryValidationError, StoryNotFoundError, SectionNotFoundError, DatabaseError,
     DependencyValidationError, CircularDependencyError, DuplicateDependencyError
 )
+from ..utils.logging_config import get_logger, create_request_context, create_entity_context
+from ..utils.mcp_response import MCPResponse
+from ..models.response import StorySectionResponse, DependencyAddResponse, StoryResponse, DependencyResponse
 
 
 def register_backlog_tools(mcp: FastMCP) -> None:
     """Register backlog management tools with the FastMCP server."""
     
-    logger = logging.getLogger(__name__)
+    logger = get_logger(__name__)
     
     # Ensure database tables exist
     try:
         create_tables()
         logger.info("Database tables created/verified successfully")
     except Exception as e:
-        logger.error(f"Failed to create database tables: {e}")
+        logger.error("Failed to create database tables", error=str(e), operation="register_backlog_tools")
         raise
     
     @mcp.tool("backlog.getStorySection")
@@ -47,7 +51,15 @@ def register_backlog_tools(mcp: FastMCP) -> None:
         Raises:
             McpError: If validation fails, story not found, section not found, or file operation fails
         """
+        request_id = str(uuid.uuid4())
         try:
+            logger.info(
+                "Processing get story section request",
+                **create_request_context(request_id=request_id, tool_name="backlog.getStorySection"),
+                **create_entity_context(story_id=story_id),
+                section_name=section_name
+            )
+            
             db_session = get_db()
             try:
                 story_repository = StoryRepository(db_session)
@@ -55,40 +67,95 @@ def register_backlog_tools(mcp: FastMCP) -> None:
                 
                 section_content = story_service.get_story_section(story_id, section_name)
                 
-                return {
+                logger.info(
+                    "Get story section request completed successfully",
+                    **create_request_context(request_id=request_id, tool_name="backlog.getStorySection"),
+                    **create_entity_context(story_id=story_id),
+                    section_name=section_name,
+                    content_length=len(section_content) if section_content else 0
+                )
+                
+                section_result = {
                     "story_id": story_id,
                     "section_name": section_name,
                     "content": section_content
                 }
+                section_response = StorySectionResponse(**section_result)
+                return section_response.model_dump()
                 
             finally:
                 db_session.close()
                 
         except StoryValidationError as e:
+            logger.error(
+                "Story validation error in get story section",
+                **create_request_context(request_id=request_id, tool_name="backlog.getStorySection"),
+                **create_entity_context(story_id=story_id),
+                section_name=section_name,
+                error_type="StoryValidationError",
+                error_message=str(e),
+                mcp_error_code=-32001
+            )
             raise McpError(ErrorData(
                 code=-32001,
                 message=f"Story validation error: {str(e)}",
                 data={"story_id": story_id, "section_name": section_name}
             ))
         except StoryNotFoundError as e:
+            logger.error(
+                "Story not found error in get story section",
+                **create_request_context(request_id=request_id, tool_name="backlog.getStorySection"),
+                **create_entity_context(story_id=story_id),
+                section_name=section_name,
+                error_type="StoryNotFoundError",
+                error_message=str(e),
+                mcp_error_code=-32001
+            )
             raise McpError(ErrorData(
                 code=-32001,
                 message=f"Story not found: {str(e)}",
                 data={"story_id": story_id, "section_name": section_name}
             ))
         except SectionNotFoundError as e:
+            logger.error(
+                "Section not found error in get story section",
+                **create_request_context(request_id=request_id, tool_name="backlog.getStorySection"),
+                **create_entity_context(story_id=story_id),
+                section_name=section_name,
+                error_type="SectionNotFoundError",
+                error_message=str(e),
+                mcp_error_code=-32001
+            )
             raise McpError(ErrorData(
                 code=-32001,
                 message=f"Section not found: {str(e)}",
                 data={"story_id": story_id, "section_name": section_name}
             ))
         except DatabaseError as e:
+            logger.error(
+                "Database error in get story section",
+                **create_request_context(request_id=request_id, tool_name="backlog.getStorySection"),
+                **create_entity_context(story_id=story_id),
+                section_name=section_name,
+                error_type="DatabaseError",
+                error_message=str(e),
+                mcp_error_code=-32001
+            )
             raise McpError(ErrorData(
                 code=-32001,
                 message=f"Database error: {str(e)}",
                 data={"story_id": story_id, "section_name": section_name}
             ))
         except Exception as e:
+            logger.error(
+                "Unexpected error in get story section",
+                **create_request_context(request_id=request_id, tool_name="backlog.getStorySection"),
+                **create_entity_context(story_id=story_id),
+                section_name=section_name,
+                error_type=type(e).__name__,
+                error_message=str(e),
+                mcp_error_code=-32001
+            )
             raise McpError(ErrorData(
                 code=-32001,
                 message=f"Unexpected error: {str(e)}",
@@ -96,7 +163,7 @@ def register_backlog_tools(mcp: FastMCP) -> None:
             ))
     
     @mcp.tool("backlog.addDependency")
-    def add_dependency(story_id: str, depends_on_story_id: str) -> Dict[str, Any]:
+    def add_dependency(story_id: str, depends_on_story_id: str) -> str:
         """
         Add a dependency relationship between two stories.
         
@@ -108,10 +175,7 @@ def register_backlog_tools(mcp: FastMCP) -> None:
             depends_on_story_id: The unique identifier of the story that must be completed first
             
         Returns:
-            Dict containing success status, story IDs, and confirmation message
-            
-        Raises:
-            McpError: If validation fails, stories not found, circular dependency detected, or database operation fails
+            JSON string containing success/error response
         """
         try:
             db_session = get_db()
@@ -119,23 +183,30 @@ def register_backlog_tools(mcp: FastMCP) -> None:
                 dependency_repository = DependencyRepository(db_session)
                 dependency_service = DependencyService(dependency_repository)
                 
-                result = dependency_service.add_story_dependency(story_id, depends_on_story_id)
+                dependency_service.add_story_dependency(story_id, depends_on_story_id)
                 
-                return result
+                # Return standardized success response using DependencyAddResponse model
+                response_data = DependencyAddResponse(
+                    status="success",
+                    story_id=story_id,
+                    depends_on_story_id=depends_on_story_id,
+                    message="Dependency added successfully"
+                )
+                return response_data.model_dump_json()
                 
             finally:
                 db_session.close()
                 
-        except DependencyValidationError as e:
-            raise McpError(ErrorData(
-                code=-32001,
-                message=f"Dependency validation error: {str(e)}",
-                data={"story_id": story_id, "depends_on_story_id": depends_on_story_id}
-            ))
         except CircularDependencyError as e:
             raise McpError(ErrorData(
                 code=-32001,
                 message=f"Circular dependency error: {str(e)}",
+                data={"story_id": story_id, "depends_on_story_id": depends_on_story_id}
+            ))
+        except StoryNotFoundError as e:
+            raise McpError(ErrorData(
+                code=-32001,
+                message=f"Story not found: {str(e)}",
                 data={"story_id": story_id, "depends_on_story_id": depends_on_story_id}
             ))
         except DuplicateDependencyError as e:
@@ -144,10 +215,10 @@ def register_backlog_tools(mcp: FastMCP) -> None:
                 message=f"Duplicate dependency error: {str(e)}",
                 data={"story_id": story_id, "depends_on_story_id": depends_on_story_id}
             ))
-        except StoryNotFoundError as e:
+        except DependencyValidationError as e:
             raise McpError(ErrorData(
                 code=-32001,
-                message=f"Story not found: {str(e)}",
+                message=f"Dependency validation error: {str(e)}",
                 data={"story_id": story_id, "depends_on_story_id": depends_on_story_id}
             ))
         except DatabaseError as e:
@@ -194,7 +265,8 @@ def register_backlog_tools(mcp: FastMCP) -> None:
                 story = story_service.get_next_ready_story()
                 
                 if story:
-                    return story
+                    story_response = StoryResponse(**story)
+                    return story_response.model_dump()
                 else:
                     return {}  # Empty dict when no stories ready
                     

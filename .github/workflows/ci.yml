@@ -7,8 +7,49 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  quality-checks:
+    name: Quality Checks
     runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pre-commit
+    
+    - name: Cache pre-commit hooks
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pre-commit
+        key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+    
+    - name: Run pre-commit hooks
+      run: |
+        pre-commit run --all-files --show-diff-on-failure
+    
+    # TODO: Add MCP validation scripts
+    # - name: Validate MCP Tool Response Formats
+    #   run: |
+    #     python scripts/validate_responses.py src/agile_mcp/api/*.py
+    # 
+    # - name: Validate MCP Protocol Compliance
+    #   run: |
+    #     python scripts/validate_mcp_protocol.py src/agile_mcp/api/*.py
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: quality-checks
     strategy:
       matrix:
         python-version: ['3.11', '3.12']
@@ -28,28 +69,98 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install flake8 mypy
     
-    - name: Lint with flake8
-      run: |
-        # Stop build if there are Python syntax errors or undefined names
-        flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
-        # Exit-zero treats all errors as warnings. Line length set to 88 (black default)
-        flake8 src/ --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
-    
-    - name: Type check with mypy
-      run: |
-        mypy src/ --ignore-missing-imports || true
-    
-    - name: Run tests
+    - name: Run unit tests
       env:
         PYTHONPATH: ${{ github.workspace }}
       run: |
-        pytest tests/ --verbose --tb=short
+        pytest tests/unit/ --verbose --tb=short --maxfail=10
     
     - name: Generate test coverage report
-      if: always()
+      if: matrix.python-version == '3.11'
       run: |
         pip install coverage
-        coverage run -m pytest tests/
-        coverage report --show-missing
+        coverage run -m pytest tests/unit/
+        coverage report --show-missing --fail-under=80
+
+  e2e-tests:
+    name: E2E Tests (Production Server)
+    runs-on: ubuntu-latest
+    needs: [quality-checks, unit-tests]
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Start MCP Server
+      run: |
+        python -m src.agile_mcp.main &
+        sleep 10  # Wait for server to start
+        
+    - name: Run E2E tests against production server
+      env:
+        PYTHONPATH: ${{ github.workspace }}
+        MCP_TEST_MODE: production
+        MCP_SERVER_URL: http://localhost:8000
+      run: |
+        pytest tests/e2e/ --verbose --tb=short --maxfail=5
+    
+    - name: Upload E2E test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: e2e-test-results
+        path: |
+          pytest-report.xml
+          test-results/
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: quality-checks
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install security tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install bandit safety
+    
+    - name: Run Bandit security scan
+      run: |
+        bandit -r src/ -f json -o bandit-report.json || true
+        bandit -r src/ -f txt
+    
+    - name: Check for known vulnerabilities
+      run: |
+        safety check --json --output safety-report.json || true
+        safety check
+    
+    - name: Upload security reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: security-reports
+        path: |
+          bandit-report.json
+          safety-report.json

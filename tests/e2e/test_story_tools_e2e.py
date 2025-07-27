@@ -10,20 +10,31 @@ import tempfile
 import pytest
 from pathlib import Path
 
+from .test_helpers import (
+    validate_full_tool_response, validate_story_tool_response,
+    validate_jsonrpc_response_format, validate_json_response,
+    validate_error_response_format
+)
+
 
 @pytest.fixture
-def mcp_server_process():
-    """Start MCP server as subprocess and return process handle."""
+def mcp_server_process(isolated_test_database):
+    """Start MCP server as subprocess with isolated database."""
     # Get the path to the run_server.py file
     run_server_path = Path(__file__).parent.parent.parent / "run_server.py"
     
-    # Start server process
+    # Set up environment with isolated test database
+    env = os.environ.copy()
+    env["TEST_DATABASE_URL"] = f"sqlite:///{isolated_test_database}"
+    
+    # Start server process with isolated database
     process = subprocess.Popen(
         [sys.executable, str(run_server_path)],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        text=True
+        text=True,
+        env=env
     )
     
     yield process
@@ -34,7 +45,7 @@ def mcp_server_process():
 
 
 def send_jsonrpc_request(process, method, params=None):
-    """Send JSON-RPC request to MCP server and return response."""
+    """Send JSON-RPC request to MCP server and return validated response."""
     request = {
         "jsonrpc": "2.0",
         "id": 1,
@@ -52,7 +63,13 @@ def send_jsonrpc_request(process, method, params=None):
         stderr_output = process.stderr.read()
         raise RuntimeError(f"No response from server. Stderr: {stderr_output}")
     
-    return json.loads(response_line.strip())
+    # Validate JSON parsing
+    response_json = validate_json_response(response_line.strip())
+    
+    # Validate JSON-RPC response format
+    validated_response = validate_jsonrpc_response_format(response_json)
+    
+    return validated_response
 
 
 def initialize_server(process):
@@ -148,20 +165,23 @@ def test_create_story_tool_success(mcp_server_process):
     assert len(response["result"]["content"]) == 1
     assert response["result"]["content"][0]["type"] == "text"
     
-    # Parse and verify story data
+    # Parse and validate story data using comprehensive validation helpers
     story_data = response["result"]["content"][0]["text"]
-    story = json.loads(story_data)
     
-    assert "id" in story
-    assert story["title"] == "Test Story"
-    assert story["description"] == "As a user, I want to test story creation via E2E tests"
-    assert story["acceptance_criteria"] == [
+    # Apply full validation chain: JSON parsing, tool format, schema validation
+    validated_story = validate_story_tool_response(story_data)
+    
+    # Production data validation with enhanced assertions
+    assert validated_story.title == "Test Story"
+    assert validated_story.description == "As a user, I want to test story creation via E2E tests"
+    assert validated_story.acceptance_criteria == [
         "Story should be created successfully",
         "Story should have default ToDo status",
         "Story should be associated with the epic"
     ]
-    assert story["epic_id"] == epic_id
-    assert story["status"] == "ToDo"
+    assert validated_story.epic_id == epic_id
+    assert validated_story.status == "ToDo"
+    assert validated_story.id is not None  # Production ID validation
 
 
 def test_create_story_with_missing_epic_id(mcp_server_process):
