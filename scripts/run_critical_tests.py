@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Pre-commit hook to run critical E2E tests against production server"""
+"""Pre-commit hook to run critical E2E tests against production server."""
 
 import argparse
 import os
-import subprocess
+import subprocess  # nosec B404
 import sys
 from pathlib import Path
 from typing import List, Set
 
 
 def get_changed_modules(file_paths: List[str]) -> Set[str]:
-    """Determine which test modules to run based on changed files"""
+    """Determine which test modules to run based on changed files."""
     modules = set()
 
     for file_path in file_paths:
@@ -59,7 +59,7 @@ def get_changed_modules(file_paths: List[str]) -> Set[str]:
 
 
 def run_test_module(module_name: str, production_server: bool = True) -> bool:
-    """Run a specific test module"""
+    """Run a specific test module."""
     test_file = f"tests/e2e/{module_name}.py"
 
     if not Path(test_file).exists():
@@ -77,7 +77,7 @@ def run_test_module(module_name: str, production_server: bool = True) -> bool:
         env = None
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603
             cmd, capture_output=True, text=True, env=env, timeout=120
         )
 
@@ -99,7 +99,7 @@ def run_test_module(module_name: str, production_server: bool = True) -> bool:
 
 
 def main():
-    """Main entry point for critical E2E test runner"""
+    """Run critical E2E test runner."""
     parser = argparse.ArgumentParser(
         description="Run critical E2E tests for pre-commit"
     )
