@@ -3,19 +3,18 @@ Story data model for the Agile Management MCP Server.
 """
 
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import (
     JSON,
     CheckConstraint,
-    Column,
     DateTime,
     ForeignKey,
     Integer,
     String,
     Text,
 )
-from sqlalchemy.orm import relationship, validates
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from .epic import Base
 from .story_dependency import story_dependencies
@@ -40,16 +39,16 @@ class Story(Base):
 
     __tablename__ = "stories"
 
-    id = Column(String, primary_key=True)
-    title = Column(String(200), nullable=False)
-    description = Column(Text, nullable=False)
-    acceptance_criteria = Column(JSON, nullable=False)
-    status = Column(String(20), nullable=False, default="ToDo")
-    priority = Column(Integer, nullable=False, default=0)
-    created_at = Column(
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    acceptance_criteria: Mapped[List[str]] = mapped_column(JSON, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="ToDo")
+    priority: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
     )
-    epic_id = Column(String, ForeignKey("epics.id"), nullable=False)
+    epic_id: Mapped[str] = mapped_column(String, ForeignKey("epics.id"), nullable=False)
 
     __table_args__ = (
         CheckConstraint("length(title) <= 200", name="ck_story_title_length"),
@@ -94,10 +93,11 @@ class Story(Base):
         epic_id: str,
         status: str = "ToDo",
         priority: int = 0,
-        created_at: datetime = None,
+        created_at: Optional[datetime] = None,
     ):
         """Initialize Story with default status of 'ToDo', priority 0, and current
         timestamp."""
+        super().__init__()
         self.id = id
         self.title = title
         self.description = description

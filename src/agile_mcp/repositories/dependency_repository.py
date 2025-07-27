@@ -196,7 +196,8 @@ class DependencyRepository:
             )
 
             self.db_session.commit()
-            return result.rowcount > 0
+            # Type ignore for SQLAlchemy Result.rowcount access
+            return result.rowcount > 0  # type: ignore
 
         except SQLAlchemyError as e:
             self.db_session.rollback()

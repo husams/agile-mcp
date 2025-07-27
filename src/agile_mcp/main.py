@@ -49,7 +49,7 @@ def create_server() -> FastMCP:
     """
     try:
         # Initialize FastMCP server with proper configuration
-        server = FastMCP("Agile Management Server")
+        server: FastMCP = FastMCP("Agile Management Server")
         logger.info("FastMCP server instance created successfully")
 
         # Register epic management tools

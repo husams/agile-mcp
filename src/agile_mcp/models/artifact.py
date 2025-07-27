@@ -4,8 +4,8 @@ Artifact data model for the Agile Management MCP Server.
 
 from typing import Any, Dict
 
-from sqlalchemy import CheckConstraint, Column, ForeignKey, String
-from sqlalchemy.orm import relationship, validates
+from sqlalchemy import CheckConstraint, ForeignKey, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from ..utils.validators import RelationValidator, URIValidator
 from .epic import Base
@@ -24,10 +24,12 @@ class Artifact(Base):
 
     __tablename__ = "artifacts"
 
-    id = Column(String, primary_key=True)
-    uri = Column(String(500), nullable=False)
-    relation = Column(String(50), nullable=False)
-    story_id = Column(String, ForeignKey("stories.id"), nullable=False)
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    uri: Mapped[str] = mapped_column(String(500), nullable=False)
+    relation: Mapped[str] = mapped_column(String(50), nullable=False)
+    story_id: Mapped[str] = mapped_column(
+        String, ForeignKey("stories.id"), nullable=False
+    )
 
     __table_args__ = (
         CheckConstraint("length(uri) <= 500", name="ck_artifact_uri_length"),
@@ -42,6 +44,7 @@ class Artifact(Base):
 
     def __init__(self, id: str, uri: str, relation: str, story_id: str):
         """Initialize Artifact with required fields."""
+        super().__init__()
         self.id = id
         self.uri = uri
         self.relation = relation

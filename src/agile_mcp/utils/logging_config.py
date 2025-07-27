@@ -7,7 +7,7 @@ for JSON-formatted output suitable for debugging and monitoring.
 
 import logging
 import sys
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import structlog
 
@@ -57,7 +57,7 @@ def configure_logging(
     root_logger.addHandler(handler)
 
     # Configure structlog processors
-    processors = [
+    processors: List[Any] = [
         structlog.stdlib.filter_by_level,
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,

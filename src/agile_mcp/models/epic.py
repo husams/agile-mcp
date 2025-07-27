@@ -4,8 +4,14 @@ Epic data model for the Agile Management MCP Server.
 
 from typing import Any, Dict
 
-from sqlalchemy import CheckConstraint, Column, String, Text
-from sqlalchemy.orm import DeclarativeBase, relationship, validates
+from sqlalchemy import CheckConstraint, String, Text
+from sqlalchemy.orm import (
+    DeclarativeBase,
+    Mapped,
+    mapped_column,
+    relationship,
+    validates,
+)
 
 
 class Base(DeclarativeBase):
@@ -25,10 +31,10 @@ class Epic(Base):
 
     __tablename__ = "epics"
 
-    id = Column(String, primary_key=True)
-    title = Column(String(200), nullable=False)
-    description = Column(Text, nullable=False)
-    status = Column(String(20), nullable=False, default="Draft")
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="Draft")
 
     __table_args__ = (
         CheckConstraint("length(title) <= 200", name="ck_epic_title_length"),
@@ -46,6 +52,7 @@ class Epic(Base):
 
     def __init__(self, id: str, title: str, description: str, status: str = "Draft"):
         """Initialize Epic with default status of 'Draft'."""
+        super().__init__()
         self.id = id
         self.title = title
         self.description = description
