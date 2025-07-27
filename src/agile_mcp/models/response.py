@@ -1,5 +1,7 @@
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
+
 
 class StoryResponse(BaseModel):
     id: str
@@ -11,11 +13,13 @@ class StoryResponse(BaseModel):
     created_at: Optional[str]
     epic_id: str
 
+
 class EpicResponse(BaseModel):
     id: str
     title: str
     description: str
     status: str
+
 
 class ArtifactResponse(BaseModel):
     id: str
@@ -23,20 +27,24 @@ class ArtifactResponse(BaseModel):
     uri: str
     relation: str
 
+
 class DependencyResponse(BaseModel):
     story_id: str
     depends_on_story_id: str
+
 
 class StorySectionResponse(BaseModel):
     story_id: str
     section_name: str
     content: str
 
+
 class DependencyAddResponse(BaseModel):
     status: str
     story_id: str
     depends_on_story_id: str
     message: str
+
 
 class DoDChecklistResponse(BaseModel):
     story_id: str

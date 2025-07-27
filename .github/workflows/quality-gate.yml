@@ -3,7 +3,7 @@ name: Quality Gate
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  
+
   # Allow manual trigger for testing
   workflow_dispatch:
 
@@ -11,25 +11,25 @@ jobs:
   quality-gate:
     name: Quality Gate Check
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0  # Full history for better analysis
-    
+
     - name: Set up Python 3.11
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
         cache: 'pip'
-    
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pre-commit
-    
+
     - name: Get changed files
       id: changed-files
       uses: tj-actions/changed-files@v44
@@ -39,13 +39,13 @@ jobs:
           tests/**/*.py
           .pre-commit-config.yaml
           requirements.txt
-    
+
     - name: Run pre-commit on changed files
       if: steps.changed-files.outputs.any_changed == 'true'
       run: |
         echo "Changed files: ${{ steps.changed-files.outputs.all_changed_files }}"
         pre-commit run --files ${{ steps.changed-files.outputs.all_changed_files }}
-    
+
     # TODO: Add validation scripts
     # - name: Validate JSON response formats
     #   if: steps.changed-files.outputs.any_changed == 'true'
@@ -57,7 +57,7 @@ jobs:
     #     else
     #       echo "No API files changed, skipping response validation"
     #     fi
-    # 
+    #
     # - name: Validate MCP protocol compliance
     #   if: steps.changed-files.outputs.any_changed == 'true'
     #   run: |
@@ -68,7 +68,7 @@ jobs:
     #     else
     #       echo "No API files changed, skipping MCP protocol validation"
     #     fi
-    
+
     # TODO: Add critical test script
     # - name: Run critical E2E tests on changed files
     #   if: steps.changed-files.outputs.any_changed == 'true'
@@ -80,7 +80,7 @@ jobs:
     #     else
     #       echo "No source files changed, skipping critical tests"
     #     fi
-    
+
     - name: Check code coverage impact
       if: steps.changed-files.outputs.any_changed == 'true'
       run: |
@@ -92,7 +92,7 @@ jobs:
           # Check if coverage is above threshold
           coverage report --fail-under=75
         fi
-    
+
     - name: Security scan on changed files
       if: steps.changed-files.outputs.any_changed == 'true'
       run: |
@@ -102,7 +102,7 @@ jobs:
           echo "Security scanning: $changed_src_files"
           bandit $changed_src_files || exit 1
         fi
-    
+
     - name: Quality Gate Summary
       if: always()
       run: |
@@ -115,7 +115,7 @@ jobs:
         echo "| Critical E2E Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
         echo "| Code Coverage | ✅ Above Threshold |" >> $GITHUB_STEP_SUMMARY
         echo "| Security Scan | ✅ No Issues |" >> $GITHUB_STEP_SUMMARY
-        
+
         echo ""
         echo "### Quality Standards Met ✅"
         echo "This PR meets all quality requirements and is ready for review."
@@ -127,7 +127,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: quality-gate
     if: always()
-    
+
     steps:
     - name: Check quality gate status
       run: |

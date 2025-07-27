@@ -6,15 +6,15 @@ This document outlines the overall project architecture for the Agile Lifecycle 
 
 ### Change Log
 
-| Date | Version | Description | Author |  
-| :--- | :--- | :--- | :--- |  
-| 2025-07-26 | 1.0 | Initial architecture draft | Winston (Architect) |  
-| 2025-07-26 | 1.1 | Revised architecture for local hosting. | Winston (Architect) |  
-| 2025-07-26 | 1.2 | Added Tech Stack section. | Winston (Architect) |  
-| 2025-07-26 | 1.3 | Added Data Models section. | Winston (Architect) |  
-| 2025-07-26 | 1.4 | Refined architecture with 3-layer pattern and error handling. | Winston (Architect) |  
-| 2025-07-26 | 1.5 | Switched technology stack to Python. | Winston (Architect) |  
-| 2025-07-26 | 1.6 | Replaced FastAPI with FastMCP SDK and added implementation example. | Winston (Architect) |  
+| Date | Version | Description | Author |
+| :--- | :--- | :--- | :--- |
+| 2025-07-26 | 1.0 | Initial architecture draft | Winston (Architect) |
+| 2025-07-26 | 1.1 | Revised architecture for local hosting. | Winston (Architect) |
+| 2025-07-26 | 1.2 | Added Tech Stack section. | Winston (Architect) |
+| 2025-07-26 | 1.3 | Added Data Models section. | Winston (Architect) |
+| 2025-07-26 | 1.4 | Refined architecture with 3-layer pattern and error handling. | Winston (Architect) |
+| 2025-07-26 | 1.5 | Switched technology stack to Python. | Winston (Architect) |
+| 2025-07-26 | 1.6 | Replaced FastAPI with FastMCP SDK and added implementation example. | Winston (Architect) |
 | 2025-07-26 | 1.7 | Added examples for all MCP primitives (Tools, Resources, Prompts). | Winston (Architect) |
 
 ---
@@ -31,7 +31,7 @@ The system will be implemented as a **single, monolithic service designed to be 
 graph TD
     subgraph "Local Machine"
         A[AI Agent Host]
-        
+
         subgraph "Agile Management Service (Local Process)"
             B[FastMCP Server]
             C["Service Logic<br>(Backlog, Artifacts, Dependencies)"]
@@ -49,13 +49,13 @@ graph TD
 
 ### **Architectural and Design Patterns**
 
-* **Monolithic Service Architecture**: The entire service will be a single, deployable unit.  
-  * *Rationale*: For a locally hosted service, a monolith is simpler to develop, test, and run.  
+* **Monolithic Service Architecture**: The entire service will be a single, deployable unit.
+  * *Rationale*: For a locally hosted service, a monolith is simpler to develop, test, and run.
 * **3-Layer Architecture**: The service will be strictly structured into three distinct layers to ensure separation of concerns.
   * **1. API/Tool Layer**: Implemented using the FastMCP SDK. This layer defines the tools available to the AI agent, validates parameters using type hints, and translates service layer exceptions into standard MCP errors.
   * **2. Service/Business Logic Layer**: This layer contains the core application logic (e.g., creating a story, checking dependencies). It is protocol-agnostic.
-  * **3. Data Access/Repository Layer**: This layer handles all interactions with the SQLite database, abstracting the data source from the service layer.  
-* **Repository Pattern**: The Data Access Layer will implement the repository pattern.  
+  * **3. Data Access/Repository Layer**: This layer handles all interactions with the SQLite database, abstracting the data source from the service layer.
+* **Repository Pattern**: The Data Access Layer will implement the repository pattern.
   * *Rationale*: This decouples the business logic from the SQLite database implementation, making the system more testable.
 
 ## **Tech Stack**
@@ -76,43 +76,43 @@ This section defines the core data entities for the service.
 
 ### **Epic**
 
-* **Purpose**: Represents a large body of work or a major feature. It acts as a container for related user stories.  
+* **Purpose**: Represents a large body of work or a major feature. It acts as a container for related user stories.
 * **Key Attributes**:
   * id: string - Unique identifier.
   * title: string - The name of the epic.
   * description: string - A detailed explanation of the epic's goal.
-  * status: string - The current state of the epic (e.g., Draft, Ready, In Progress, Done).  
-* **Relationships**:  
+  * status: string - The current state of the epic (e.g., Draft, Ready, In Progress, Done).
+* **Relationships**:
   * Has many Stories.
 
 ### **Story**
 
-* **Purpose**: Represents a single unit of work, such as a feature, bug fix, or task, from a user's perspective.  
+* **Purpose**: Represents a single unit of work, such as a feature, bug fix, or task, from a user's perspective.
 * **Key Attributes**:
   * id: string - Unique identifier.
   * title: string - A short, descriptive title.
   * description: string - The full user story text.
   * acceptanceCriteria: string[] - A list of conditions that must be met for the story to be considered complete.
-  * status: string - The current state of the story (e.g., ToDo, InProgress, Review, Done).  
-* **Relationships**:  
-  * Belongs to one Epic.  
-  * Has many Artifacts linked to it.  
-  * Can have dependencies on many other Stories (prerequisites).  
+  * status: string - The current state of the story (e.g., ToDo, InProgress, Review, Done).
+* **Relationships**:
+  * Belongs to one Epic.
+  * Has many Artifacts linked to it.
+  * Can have dependencies on many other Stories (prerequisites).
   * Can be a dependency for many other Stories.
 
 ### **Artifact**
 
-* **Purpose**: Represents a link to a resource generated or used during development, such as a source code file, a design document, or an API specification.  
+* **Purpose**: Represents a link to a resource generated or used during development, such as a source code file, a design document, or an API specification.
 * **Key Attributes**:
   * id: string - Unique identifier.
   * uri: string - The Uniform Resource Identifier for the artifact (e.g., file:///path/to/code.js).
-  * relation: string - Describes the artifact's relationship to the story (e.g., implementation, design, test).  
-* **Relationships**:  
+  * relation: string - Describes the artifact's relationship to the story (e.g., implementation, design, test).
+* **Relationships**:
   * Belongs to one Story.
 
 ## **Error Handling Strategy**
 
-* **Custom Exceptions**: The Service Layer will define and use custom exceptions for specific business logic failures (e.g., StoryNotFoundError, CircularDependencyError).  
+* **Custom Exceptions**: The Service Layer will define and use custom exceptions for specific business logic failures (e.g., StoryNotFoundError, CircularDependencyError).
 * **Exception Translation**: The API/Tool Layer is responsible for catching these custom exceptions and translating them into standard MCP errors with appropriate codes (e.g., -32001) and messages before sending the response to the client. This keeps the core business logic clean and protocol-agnostic.
 
 ## **MCP Server Implementation Examples**
@@ -157,7 +157,7 @@ def get_story(story_id: str) -> dict:
 def get_backlog() -> list[dict]:
     """
     Provides the current state of the entire project backlog.
-    
+
     Returns:
         A list of all stories in the backlog.
     """
@@ -175,7 +175,7 @@ def create_story_from_title(epic_id: str, title: str) -> dict:
     Args:
         epic_id: The ID of the parent epic for the new story.
         title: The title for the new story.
-    
+
     Returns:
         The newly created story object.
     """
@@ -190,7 +190,7 @@ def create_story_from_title(epic_id: str, title: str) -> dict:
 # The main entry point will run the mcp server
 if __name__ == "__main__":
      mcp.run()
-```  
+```
 
 ---
 
@@ -227,4 +227,4 @@ To ensure the reliability and correctness of the Agile Lifecycle Management Serv
     *   The test will write JSON-RPC request strings to the subprocess's `stdin`.
     *   It will read from `stdout` to capture the JSON-RPC response and from `stderr` to check for logs.
     *   Tests will assert that `stdout` contains *only* the valid JSON-RPC response and that any logging output is correctly directed to `stderr`.
-    *   Tests will be located in `tests/e2e`.  
+    *   Tests will be located in `tests/e2e`.

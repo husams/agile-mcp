@@ -119,13 +119,13 @@ All `@mcp.tool` decorated functions must:
 def get_story_details(story_id: int) -> str:
     """
     Get comprehensive details for a story by its ID.
-    
+
     Args:
         story_id: The unique identifier of the story to retrieve
-        
+
     Returns:
         JSON string containing story details, tasks, and metadata
-        
+
     Raises:
         ValueError: If story_id is invalid or story not found
     """

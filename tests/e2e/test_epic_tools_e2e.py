@@ -3,17 +3,20 @@ End-to-end tests for Epic tools via MCP JSON-RPC over stdio transport.
 """
 
 import json
+import os
 import subprocess
 import sys
-import os
 import tempfile
-import pytest
 from pathlib import Path
 
+import pytest
+
 from .test_helpers import (
-    validate_full_tool_response, validate_epic_tool_response,
-    validate_jsonrpc_response_format, validate_json_response,
-    validate_error_response_format
+    validate_epic_tool_response,
+    validate_error_response_format,
+    validate_full_tool_response,
+    validate_json_response,
+    validate_jsonrpc_response_format,
 )
 
 
@@ -22,11 +25,11 @@ def mcp_server_process(isolated_test_database):
     """Start MCP server as subprocess with isolated database."""
     # Get the path to the run_server.py file
     run_server_path = Path(__file__).parent.parent.parent / "run_server.py"
-    
+
     # Set up environment with isolated test database
     env = os.environ.copy()
     env["TEST_DATABASE_URL"] = f"sqlite:///{isolated_test_database}"
-    
+
     # Start server process with isolated database
     process = subprocess.Popen(
         [sys.executable, str(run_server_path)],
@@ -34,11 +37,11 @@ def mcp_server_process(isolated_test_database):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
-        env=env
+        env=env,
     )
-    
+
     yield process
-    
+
     # Cleanup
     process.terminate()
     process.wait()
@@ -46,23 +49,18 @@ def mcp_server_process(isolated_test_database):
 
 def send_jsonrpc_request(process, method, params=None):
     """Send JSON-RPC request to MCP server and return response."""
-    request = {
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": method,
-        "params": params or {}
-    }
-    
+    request = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params or {}}
+
     request_json = json.dumps(request) + "\n"
     process.stdin.write(request_json)
     process.stdin.flush()
-    
+
     # Read response
     response_line = process.stdout.readline()
     if not response_line:
         stderr_output = process.stderr.read()
         raise RuntimeError(f"No response from server. Stderr: {stderr_output}")
-    
+
     return json.loads(response_line.strip())
 
 
@@ -75,10 +73,10 @@ def test_mcp_server_initialization(mcp_server_process):
         {
             "protocolVersion": "2024-11-05",
             "capabilities": {"tools": {}},
-            "clientInfo": {"name": "test-client", "version": "1.0.0"}
-        }
+            "clientInfo": {"name": "test-client", "version": "1.0.0"},
+        },
     )
-    
+
     # Verify response structure
     assert "result" in response
     assert "capabilities" in response["result"]
@@ -95,20 +93,16 @@ def test_create_epic_tool_success(mcp_server_process):
         {
             "protocolVersion": "2024-11-05",
             "capabilities": {"tools": {}},
-            "clientInfo": {"name": "test-client", "version": "1.0.0"}
-        }
+            "clientInfo": {"name": "test-client", "version": "1.0.0"},
+        },
     )
-    
+
     # Send initialized notification (no response expected)
-    request = {
-        "jsonrpc": "2.0",
-        "method": "notifications/initialized",
-        "params": {}
-    }
+    request = {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}}
     request_json = json.dumps(request) + "\n"
     mcp_server_process.stdin.write(request_json)
     mcp_server_process.stdin.flush()
-    
+
     # Call create_epic tool
     response = send_jsonrpc_request(
         mcp_server_process,
@@ -117,19 +111,19 @@ def test_create_epic_tool_success(mcp_server_process):
             "name": "backlog.createEpic",
             "arguments": {
                 "title": "Test Epic E2E",
-                "description": "This is an end-to-end test epic"
-            }
-        }
+                "description": "This is an end-to-end test epic",
+            },
+        },
     )
-    
+
     # Verify response
     assert "result" in response
     result = response["result"]
     assert "content" in result
-    
+
     epic_data = result["content"][0]["text"]
     epic_dict = json.loads(epic_data)
-    
+
     assert epic_dict["title"] == "Test Epic E2E"
     assert epic_dict["description"] == "This is an end-to-end test epic"
     assert epic_dict["status"] == "Draft"
@@ -145,20 +139,16 @@ def test_find_epics_tool_success(mcp_server_process):
         {
             "protocolVersion": "2024-11-05",
             "capabilities": {"tools": {}},
-            "clientInfo": {"name": "test-client", "version": "1.0.0"}
-        }
+            "clientInfo": {"name": "test-client", "version": "1.0.0"},
+        },
     )
-    
+
     # Send initialized notification (no response expected)
-    request = {
-        "jsonrpc": "2.0",
-        "method": "notifications/initialized",
-        "params": {}
-    }
+    request = {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}}
     request_json = json.dumps(request) + "\n"
     mcp_server_process.stdin.write(request_json)
     mcp_server_process.stdin.flush()
-    
+
     # Create an epic first
     create_response = send_jsonrpc_request(
         mcp_server_process,
@@ -167,34 +157,31 @@ def test_find_epics_tool_success(mcp_server_process):
             "name": "backlog.createEpic",
             "arguments": {
                 "title": "Findable Epic",
-                "description": "This epic should be findable"
-            }
-        }
+                "description": "This epic should be findable",
+            },
+        },
     )
-    
+
     # Call find_epics tool
     response = send_jsonrpc_request(
-        mcp_server_process,
-        "tools/call",
-        {
-            "name": "backlog.findEpics",
-            "arguments": {}
-        }
+        mcp_server_process, "tools/call", {"name": "backlog.findEpics", "arguments": {}}
     )
-    
+
     # Verify response
     assert "result" in response
     result = response["result"]
     assert "content" in result
-    
+
     epics_data = result["content"][0]["text"]
     epics_list = json.loads(epics_data)
-    
+
     assert isinstance(epics_list, list)
     assert len(epics_list) >= 1
-    
+
     # Find our created epic
-    findable_epic = next((epic for epic in epics_list if epic["title"] == "Findable Epic"), None)
+    findable_epic = next(
+        (epic for epic in epics_list if epic["title"] == "Findable Epic"), None
+    )
     assert findable_epic is not None
     assert findable_epic["description"] == "This epic should be findable"
     assert findable_epic["status"] == "Draft"
@@ -209,33 +196,26 @@ def test_create_epic_validation_error(mcp_server_process):
         {
             "protocolVersion": "2024-11-05",
             "capabilities": {"tools": {}},
-            "clientInfo": {"name": "test-client", "version": "1.0.0"}
-        }
+            "clientInfo": {"name": "test-client", "version": "1.0.0"},
+        },
     )
-    
+
     # Send initialized notification (no response expected)
-    request = {
-        "jsonrpc": "2.0",
-        "method": "notifications/initialized",
-        "params": {}
-    }
+    request = {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}}
     request_json = json.dumps(request) + "\n"
     mcp_server_process.stdin.write(request_json)
     mcp_server_process.stdin.flush()
-    
+
     # Call create_epic tool with empty title
     response = send_jsonrpc_request(
         mcp_server_process,
         "tools/call",
         {
             "name": "backlog.createEpic",
-            "arguments": {
-                "title": "",
-                "description": "Valid description"
-            }
-        }
+            "arguments": {"title": "", "description": "Valid description"},
+        },
     )
-    
+
     # Verify error response (FastMCP format)
     assert "result" in response
     assert response["result"]["isError"] == True
@@ -254,20 +234,16 @@ def test_create_epic_with_long_title_error(mcp_server_process):
         {
             "protocolVersion": "2024-11-05",
             "capabilities": {"tools": {}},
-            "clientInfo": {"name": "test-client", "version": "1.0.0"}
-        }
+            "clientInfo": {"name": "test-client", "version": "1.0.0"},
+        },
     )
-    
+
     # Send initialized notification (no response expected)
-    request = {
-        "jsonrpc": "2.0",
-        "method": "notifications/initialized",
-        "params": {}
-    }
+    request = {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}}
     request_json = json.dumps(request) + "\n"
     mcp_server_process.stdin.write(request_json)
     mcp_server_process.stdin.flush()
-    
+
     # Call create_epic tool with title too long
     long_title = "x" * 201  # Exceeds 200 character limit
     response = send_jsonrpc_request(
@@ -275,20 +251,20 @@ def test_create_epic_with_long_title_error(mcp_server_process):
         "tools/call",
         {
             "name": "backlog.createEpic",
-            "arguments": {
-                "title": long_title,
-                "description": "Valid description"
-            }
-        }
+            "arguments": {"title": long_title, "description": "Valid description"},
+        },
     )
-    
+
     # Verify error response (FastMCP format)
     assert "result" in response
     assert response["result"]["isError"] == True
     assert "content" in response["result"]
     assert len(response["result"]["content"]) > 0
     assert "Validation error" in response["result"]["content"][0]["text"]
-    assert "Epic title cannot exceed 200 characters" in response["result"]["content"][0]["text"]
+    assert (
+        "Epic title cannot exceed 200 characters"
+        in response["result"]["content"][0]["text"]
+    )
 
 
 def initialize_server(mcp_server_process):
@@ -300,16 +276,12 @@ def initialize_server(mcp_server_process):
         {
             "protocolVersion": "2024-11-05",
             "capabilities": {"tools": {}},
-            "clientInfo": {"name": "test-client", "version": "1.0.0"}
-        }
+            "clientInfo": {"name": "test-client", "version": "1.0.0"},
+        },
     )
-    
+
     # Send initialized notification (no response expected)
-    request = {
-        "jsonrpc": "2.0",
-        "method": "notifications/initialized",
-        "params": {}
-    }
+    request = {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}}
     request_json = json.dumps(request) + "\n"
     mcp_server_process.stdin.write(request_json)
     mcp_server_process.stdin.flush()
@@ -318,7 +290,7 @@ def initialize_server(mcp_server_process):
 def test_update_epic_status_tool_success(mcp_server_process):
     """Test successful epic status update via MCP tool."""
     initialize_server(mcp_server_process)
-    
+
     # Create an epic first
     create_response = send_jsonrpc_request(
         mcp_server_process,
@@ -327,37 +299,34 @@ def test_update_epic_status_tool_success(mcp_server_process):
             "name": "backlog.createEpic",
             "arguments": {
                 "title": "Epic to Update",
-                "description": "This epic will be updated"
-            }
-        }
+                "description": "This epic will be updated",
+            },
+        },
     )
-    
+
     # Extract the epic ID from create response
     epic_data = create_response["result"]["content"][0]["text"]
     epic_dict = json.loads(epic_data)
     epic_id = epic_dict["id"]
-    
+
     # Update epic status
     response = send_jsonrpc_request(
         mcp_server_process,
         "tools/call",
         {
             "name": "backlog.updateEpicStatus",
-            "arguments": {
-                "epic_id": epic_id,
-                "status": "Ready"
-            }
-        }
+            "arguments": {"epic_id": epic_id, "status": "Ready"},
+        },
     )
-    
+
     # Verify response
     assert "result" in response
     result = response["result"]
     assert "content" in result
-    
+
     updated_epic_data = result["content"][0]["text"]
     updated_epic_dict = json.loads(updated_epic_data)
-    
+
     assert updated_epic_dict["id"] == epic_id
     assert updated_epic_dict["title"] == "Epic to Update"
     assert updated_epic_dict["description"] == "This epic will be updated"
@@ -367,9 +336,9 @@ def test_update_epic_status_tool_success(mcp_server_process):
 def test_update_epic_status_all_valid_statuses(mcp_server_process):
     """Test updating epic status to all valid status values."""
     initialize_server(mcp_server_process)
-    
+
     valid_statuses = ["Draft", "Ready", "In Progress", "Done", "On Hold"]
-    
+
     for status in valid_statuses:
         # Create an epic
         create_response = send_jsonrpc_request(
@@ -379,28 +348,25 @@ def test_update_epic_status_all_valid_statuses(mcp_server_process):
                 "name": "backlog.createEpic",
                 "arguments": {
                     "title": f"Epic {status}",
-                    "description": f"Epic for testing {status} status"
-                }
-            }
+                    "description": f"Epic for testing {status} status",
+                },
+            },
         )
-        
+
         epic_data = create_response["result"]["content"][0]["text"]
         epic_dict = json.loads(epic_data)
         epic_id = epic_dict["id"]
-        
+
         # Update status
         response = send_jsonrpc_request(
             mcp_server_process,
             "tools/call",
             {
                 "name": "backlog.updateEpicStatus",
-                "arguments": {
-                    "epic_id": epic_id,
-                    "status": status
-                }
-            }
+                "arguments": {"epic_id": epic_id, "status": status},
+            },
         )
-        
+
         # Verify response
         updated_epic_data = response["result"]["content"][0]["text"]
         updated_epic_dict = json.loads(updated_epic_data)
@@ -410,31 +376,31 @@ def test_update_epic_status_all_valid_statuses(mcp_server_process):
 def test_update_epic_status_not_found(mcp_server_process):
     """Test updating status of non-existent epic."""
     initialize_server(mcp_server_process)
-    
+
     # Try to update non-existent epic
     response = send_jsonrpc_request(
         mcp_server_process,
         "tools/call",
         {
             "name": "backlog.updateEpicStatus",
-            "arguments": {
-                "epic_id": "nonexistent-id",
-                "status": "Ready"
-            }
-        }
+            "arguments": {"epic_id": "nonexistent-id", "status": "Ready"},
+        },
     )
-    
+
     # Verify error response
     assert "result" in response
     assert response["result"]["isError"] == True
     assert "content" in response["result"]
-    assert "Epic with ID 'nonexistent-id' not found" in response["result"]["content"][0]["text"]
+    assert (
+        "Epic with ID 'nonexistent-id' not found"
+        in response["result"]["content"][0]["text"]
+    )
 
 
 def test_update_epic_status_invalid_status(mcp_server_process):
     """Test updating epic with invalid status values."""
     initialize_server(mcp_server_process)
-    
+
     # Create an epic first
     create_response = send_jsonrpc_request(
         mcp_server_process,
@@ -443,30 +409,27 @@ def test_update_epic_status_invalid_status(mcp_server_process):
             "name": "backlog.createEpic",
             "arguments": {
                 "title": "Epic for Invalid Status",
-                "description": "This epic will test invalid status"
-            }
-        }
+                "description": "This epic will test invalid status",
+            },
+        },
     )
-    
+
     epic_data = create_response["result"]["content"][0]["text"]
     epic_dict = json.loads(epic_data)
     epic_id = epic_dict["id"]
-    
+
     invalid_statuses = ["InvalidStatus", "DRAFT", "draft", "Complete", "Finished"]
-    
+
     for invalid_status in invalid_statuses:
         response = send_jsonrpc_request(
             mcp_server_process,
             "tools/call",
             {
                 "name": "backlog.updateEpicStatus",
-                "arguments": {
-                    "epic_id": epic_id,
-                    "status": invalid_status
-                }
-            }
+                "arguments": {"epic_id": epic_id, "status": invalid_status},
+            },
         )
-        
+
         # Verify error response
         assert "result" in response
         assert response["result"]["isError"] == True
@@ -477,37 +440,31 @@ def test_update_epic_status_invalid_status(mcp_server_process):
 def test_update_epic_status_empty_parameters(mcp_server_process):
     """Test updating epic with empty parameters."""
     initialize_server(mcp_server_process)
-    
+
     # Test empty epic_id
     response = send_jsonrpc_request(
         mcp_server_process,
         "tools/call",
         {
             "name": "backlog.updateEpicStatus",
-            "arguments": {
-                "epic_id": "",
-                "status": "Ready"
-            }
-        }
+            "arguments": {"epic_id": "", "status": "Ready"},
+        },
     )
-    
+
     assert "result" in response
     assert response["result"]["isError"] == True
     assert "Epic ID cannot be empty" in response["result"]["content"][0]["text"]
-    
+
     # Test empty status
     response = send_jsonrpc_request(
         mcp_server_process,
         "tools/call",
         {
             "name": "backlog.updateEpicStatus",
-            "arguments": {
-                "epic_id": "some-id",
-                "status": ""
-            }
-        }
+            "arguments": {"epic_id": "some-id", "status": ""},
+        },
     )
-    
+
     assert "result" in response
     assert response["result"]["isError"] == True
     assert "Epic status cannot be empty" in response["result"]["content"][0]["text"]
@@ -516,7 +473,7 @@ def test_update_epic_status_empty_parameters(mcp_server_process):
 def test_update_epic_status_integration_with_find_epics(mcp_server_process):
     """Test that status updates are reflected in findEpics calls (AC 4)."""
     initialize_server(mcp_server_process)
-    
+
     # Create an epic
     create_response = send_jsonrpc_request(
         mcp_server_process,
@@ -525,41 +482,33 @@ def test_update_epic_status_integration_with_find_epics(mcp_server_process):
             "name": "backlog.createEpic",
             "arguments": {
                 "title": "Integration Test Epic",
-                "description": "Epic for testing integration with findEpics"
-            }
-        }
+                "description": "Epic for testing integration with findEpics",
+            },
+        },
     )
-    
+
     epic_data = create_response["result"]["content"][0]["text"]
     epic_dict = json.loads(epic_data)
     epic_id = epic_dict["id"]
-    
+
     # Update status
     send_jsonrpc_request(
         mcp_server_process,
         "tools/call",
         {
             "name": "backlog.updateEpicStatus",
-            "arguments": {
-                "epic_id": epic_id,
-                "status": "In Progress"
-            }
-        }
+            "arguments": {"epic_id": epic_id, "status": "In Progress"},
+        },
     )
-    
+
     # Verify change is reflected in findEpics
     find_response = send_jsonrpc_request(
-        mcp_server_process,
-        "tools/call",
-        {
-            "name": "backlog.findEpics",
-            "arguments": {}
-        }
+        mcp_server_process, "tools/call", {"name": "backlog.findEpics", "arguments": {}}
     )
-    
+
     epics_data = find_response["result"]["content"][0]["text"]
     epics_list = json.loads(epics_data)
-    
+
     # Find our updated epic
     updated_epic = next((epic for epic in epics_list if epic["id"] == epic_id), None)
     assert updated_epic is not None
@@ -569,7 +518,7 @@ def test_update_epic_status_integration_with_find_epics(mcp_server_process):
 def test_multiple_status_transitions_workflow(mcp_server_process):
     """Test multiple status transitions through workflow states."""
     initialize_server(mcp_server_process)
-    
+
     # Create an epic
     create_response = send_jsonrpc_request(
         mcp_server_process,
@@ -578,53 +527,45 @@ def test_multiple_status_transitions_workflow(mcp_server_process):
             "name": "backlog.createEpic",
             "arguments": {
                 "title": "Workflow Epic",
-                "description": "Epic for testing workflow transitions"
-            }
-        }
+                "description": "Epic for testing workflow transitions",
+            },
+        },
     )
-    
+
     epic_data = create_response["result"]["content"][0]["text"]
     epic_dict = json.loads(epic_data)
     epic_id = epic_dict["id"]
-    
+
     # Test workflow: Draft -> Ready -> In Progress -> Done
     workflow_transitions = [
         ("Ready", "Epic should be Ready"),
         ("In Progress", "Epic should be In Progress"),
-        ("Done", "Epic should be Done")
+        ("Done", "Epic should be Done"),
     ]
-    
+
     for target_status, description in workflow_transitions:
         response = send_jsonrpc_request(
             mcp_server_process,
             "tools/call",
             {
                 "name": "backlog.updateEpicStatus",
-                "arguments": {
-                    "epic_id": epic_id,
-                    "status": target_status
-                }
-            }
+                "arguments": {"epic_id": epic_id, "status": target_status},
+            },
         )
-        
+
         # Verify transition
         updated_epic_data = response["result"]["content"][0]["text"]
         updated_epic_dict = json.loads(updated_epic_data)
         assert updated_epic_dict["status"] == target_status, description
-    
+
     # Verify final state in findEpics
     find_response = send_jsonrpc_request(
-        mcp_server_process,
-        "tools/call",
-        {
-            "name": "backlog.findEpics",
-            "arguments": {}
-        }
+        mcp_server_process, "tools/call", {"name": "backlog.findEpics", "arguments": {}}
     )
-    
+
     epics_data = find_response["result"]["content"][0]["text"]
     epics_list = json.loads(epics_data)
-    
+
     final_epic = next((epic for epic in epics_list if epic["id"] == epic_id), None)
     assert final_epic["status"] == "Done"
 
@@ -632,7 +573,7 @@ def test_multiple_status_transitions_workflow(mcp_server_process):
 def test_create_update_retrieve_complete_workflow(mcp_server_process):
     """Test complete workflow: create epic, update status, then retrieve updated epic."""
     initialize_server(mcp_server_process)
-    
+
     # Step 1: Create epic
     create_response = send_jsonrpc_request(
         mcp_server_process,
@@ -641,53 +582,45 @@ def test_create_update_retrieve_complete_workflow(mcp_server_process):
             "name": "backlog.createEpic",
             "arguments": {
                 "title": "Complete Workflow Epic",
-                "description": "Epic for testing complete workflow"
-            }
-        }
+                "description": "Epic for testing complete workflow",
+            },
+        },
     )
-    
+
     epic_data = create_response["result"]["content"][0]["text"]
     epic_dict = json.loads(epic_data)
     epic_id = epic_dict["id"]
-    
+
     # Verify initial state
     assert epic_dict["status"] == "Draft"
-    
+
     # Step 2: Update status
     update_response = send_jsonrpc_request(
         mcp_server_process,
         "tools/call",
         {
             "name": "backlog.updateEpicStatus",
-            "arguments": {
-                "epic_id": epic_id,
-                "status": "On Hold"
-            }
-        }
+            "arguments": {"epic_id": epic_id, "status": "On Hold"},
+        },
     )
-    
+
     updated_epic_data = update_response["result"]["content"][0]["text"]
     updated_epic_dict = json.loads(updated_epic_data)
-    
+
     # Verify update response
     assert updated_epic_dict["id"] == epic_id
     assert updated_epic_dict["status"] == "On Hold"
     assert updated_epic_dict["title"] == "Complete Workflow Epic"
     assert updated_epic_dict["description"] == "Epic for testing complete workflow"
-    
+
     # Step 3: Retrieve updated epic via findEpics
     find_response = send_jsonrpc_request(
-        mcp_server_process,
-        "tools/call",
-        {
-            "name": "backlog.findEpics",
-            "arguments": {}
-        }
+        mcp_server_process, "tools/call", {"name": "backlog.findEpics", "arguments": {}}
     )
-    
+
     epics_data = find_response["result"]["content"][0]["text"]
     epics_list = json.loads(epics_data)
-    
+
     # Verify retrieved epic has updated status
     retrieved_epic = next((epic for epic in epics_list if epic["id"] == epic_id), None)
     assert retrieved_epic is not None

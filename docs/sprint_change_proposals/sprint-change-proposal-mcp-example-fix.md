@@ -66,7 +66,7 @@ def get_story(story_id: str) -> dict:
 def get_backlog() -> list[dict]:
     """
     Provides the current state of the entire project backlog.
-    
+
     Returns:
         A list of all stories in the backlog.
     """
@@ -84,7 +84,7 @@ def create_story_from_title(epic_id: str, title: str) -> dict:
     Args:
         epic_id: The ID of the parent epic for the new story.
         title: The title for the new story.
-    
+
     Returns:
         The newly created story object.
     """

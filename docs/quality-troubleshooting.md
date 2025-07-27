@@ -21,7 +21,7 @@ If your commit is blocked by pre-commit hooks, follow these steps:
 ❌ src/agile_mcp/api/story_tools.py:45 - Tool function 'get_story' must return JSON string
 ```
 
-**Cause**: Function doesn't return a valid JSON string  
+**Cause**: Function doesn't return a valid JSON string
 **Solution**: Ensure function returns `json.dumps(...)` or uses helper functions:
 
 ```python
@@ -46,7 +46,7 @@ def get_story(story_id: int) -> str:
 ❌ Function 'get_stories' has complex data structures but no Pydantic serialization
 ```
 
-**Cause**: Complex data without proper serialization  
+**Cause**: Complex data without proper serialization
 **Solution**: Use Pydantic models for consistent JSON output:
 
 ```python

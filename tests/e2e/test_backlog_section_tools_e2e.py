@@ -2,25 +2,26 @@
 End-to-end tests for backlog management tools integration.
 """
 
-import pytest
 import os
-from unittest.mock import patch, mock_open
+from unittest.mock import mock_open, patch
+
+import pytest
+
 from src.agile_mcp.main import create_server
 
 from .test_helpers import (
-    validate_full_tool_response, validate_story_tool_response,
-    validate_jsonrpc_response_format, validate_json_response,
-    validate_error_response_format
+    validate_error_response_format,
+    validate_full_tool_response,
+    validate_json_response,
+    validate_jsonrpc_response_format,
+    validate_story_tool_response,
 )
-
-
-
 
 
 @pytest.fixture
 def sample_story_content():
     """Sample story markdown content for E2E testing."""
-    return '''# Story 1.1: Test Story for E2E
+    return """# Story 1.1: Test Story for E2E
 
 ## Status
 Done
@@ -48,33 +49,33 @@ This is a comprehensive E2E test story with multiple sections for testing purpos
 
 ## Testing
 The testing section contains information about test execution requirements.
-'''
+"""
 
 
 class TestBacklogSectionToolsE2E:
     """End-to-end test cases for backlog section management tools."""
-    
+
     def test_server_initialization_with_backlog_tools(self, mcp_server_subprocess):
         """Test that server initialization successfully includes backlog tools."""
         process, env_vars, communicate_json_rpc = mcp_server_subprocess
         # Verify server process was created successfully
         assert process is not None
-        
-        # The server should exit cleanly after showing startup banner 
+
+        # The server should exit cleanly after showing startup banner
         # This indicates successful initialization with all tools including backlog tools
-        
+
         # This test verifies that the server can be created without errors
         # when backlog tools are registered, which indicates successful integration
-    
+
     def test_backlog_tools_registration_during_server_creation(self):
         """Test that backlog tools are registered during server creation without errors."""
         # Create a new server instance to test registration process
         from src.agile_mcp.main import create_server
-        
+
         # This should complete without throwing exceptions
         server = create_server()
         assert server is not None
         assert server.name == "Agile Management Server"
-        
+
         # The fact that create_server() completes successfully means
         # all tools including backlog tools were registered properly

@@ -3,41 +3,42 @@
 Script to create Epic 5 for Database Isolation using MCP server tools.
 """
 
-import sys
 import json
 import subprocess
+import sys
 import time
-from typing import Dict, Any
+from typing import Any, Dict
 
-def send_mcp_request(process: subprocess.Popen, method: str, params: Dict[str, Any] = None) -> Dict[str, Any]:
+
+def send_mcp_request(
+    process: subprocess.Popen, method: str, params: Dict[str, Any] = None
+) -> Dict[str, Any]:
     """Send JSON-RPC request to MCP server and return response."""
-    request = {
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": method,
-        "params": params or {}
-    }
-    
+    request = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params or {}}
+
     request_json = json.dumps(request) + "\n"
-    
+
     try:
         process.stdin.write(request_json)
         process.stdin.flush()
-        
+
         response_line = process.stdout.readline()
         if not response_line:
             stderr_output = process.stderr.read()
             raise Exception(f"No response from server. STDERR: {stderr_output}")
-        
+
         return json.loads(response_line)
-    
+
     except Exception as e:
         # Capture any remaining stderr
         process.poll()  # Update return code
         if process.returncode is not None:
             stdout, stderr = process.communicate()
-            raise Exception(f"Server process died. Return code: {process.returncode}, STDERR: {stderr}")
+            raise Exception(
+                f"Server process died. Return code: {process.returncode}, STDERR: {stderr}"
+            )
         raise e
+
 
 def create_mcp_server() -> subprocess.Popen:
     """Start the MCP server process."""
@@ -46,22 +47,23 @@ def create_mcp_server() -> subprocess.Popen:
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        text=True
+        text=True,
     )
-    
+
     # Give server time to start
     time.sleep(1.0)
-    
+
     # Verify process started successfully
     if process.poll() is not None:
         stdout, stderr = process.communicate()
         raise Exception(f"Server failed to start. STDOUT: {stdout}, STDERR: {stderr}")
-    
+
     return process
+
 
 def main():
     """Create Epic 5 and its stories using MCP tools."""
-    
+
     # Epic 5 data
     epic_data = {
         "title": "E2E Test Failure Remediation & Database Isolation",
@@ -92,9 +94,9 @@ Current QA assessment identified 4 critical E2E test failures due to database st
 - Zero test pollution between test runs
 - Production server code unchanged
 - Support for concurrent test execution
-- Database isolation prevents all test interference"""
+- Database isolation prevents all test interference""",
     }
-    
+
     # Stories for Epic 5
     stories = [
         {
@@ -124,8 +126,8 @@ As a developer, I need a bulletproof test-only database manager so that I can ac
                 "Context manager provides automatic session cleanup",
                 "Health check method validates database connections",
                 "Legacy compatibility functions maintain existing API",
-                "Documentation includes usage examples and patterns"
-            ]
+                "Documentation includes usage examples and patterns",
+            ],
         },
         {
             "title": "5.2 Enhanced Test Fixtures with Bulletproof Isolation",
@@ -154,8 +156,8 @@ As a QA engineer, I need enhanced test fixtures that provide bulletproof databas
                 "mock_database_dependencies comprehensively patches all imports",
                 "TestDataFactory creates consistent test data patterns",
                 "DatabaseIsolationValidator helps debug isolation issues",
-                "All fixtures include proper cleanup mechanisms"
-            ]
+                "All fixtures include proper cleanup mechanisms",
+            ],
         },
         {
             "title": "5.3 Fix Artifact Tools MCP Protocol Compliance",
@@ -186,8 +188,8 @@ As a developer using the MCP server, I need all error responses to follow JSON-R
                 "Error response format standardized across all tools",
                 "All 4 failing E2E tests now pass consistently",
                 "MCP protocol compliance maintained for all scenarios",
-                "Error messages remain informative while being properly structured"
-            ]
+                "Error messages remain informative while being properly structured",
+            ],
         },
         {
             "title": "5.4 E2E Test Configuration with Subprocess Isolation",
@@ -215,8 +217,8 @@ As a QA engineer, I need E2E tests that run in completely isolated subprocesses 
                 "e2e_test_data fixture creates isolated test data",
                 "Process cleanup handles both normal and error scenarios",
                 "Environment variables properly isolate subprocess database",
-                "Server startup validation prevents flaky test failures"
-            ]
+                "Server startup validation prevents flaky test failures",
+            ],
         },
         {
             "title": "5.5 Migrate All Test Types to New Isolation Architecture",
@@ -245,8 +247,8 @@ As a developer, I need all tests to use the new isolation system so that I get r
                 "Unit tests execute in under 5 seconds (10x improvement)",
                 "Integration tests maintain consistent performance",
                 "All 61 E2E tests pass with 100% reliability",
-                "Parallel execution works safely for unit/integration tests"
-            ]
+                "Parallel execution works safely for unit/integration tests",
+            ],
         },
         {
             "title": "5.6 CI/CD Pipeline Optimization for Parallel Execution",
@@ -275,8 +277,8 @@ As a DevOps engineer, I need the CI/CD pipeline to run tests in parallel safely 
                 "Test execution time monitored and reported",
                 "Coverage collection works with parallel execution",
                 "Quality gates prevent performance regressions",
-                "Overall CI execution time reduced significantly"
-            ]
+                "Overall CI execution time reduced significantly",
+            ],
         },
         {
             "title": "5.7 Documentation and Validation Testing",
@@ -304,17 +306,17 @@ As a team member, I need clear documentation and validation tests so that I can 
                 "Documentation includes clear usage examples",
                 "Performance benchmarks demonstrate 10x improvement",
                 "Troubleshooting guide helps debug isolation issues",
-                "All validation tests pass consistently in CI/CD"
-            ]
-        }
+                "All validation tests pass consistently in CI/CD",
+            ],
+        },
     ]
-    
+
     print("🚀 Starting Epic 5 creation process...")
-    
+
     # Start MCP server
     print("📡 Starting MCP server...")
     server_process = create_mcp_server()
-    
+
     try:
         # Initialize MCP server first
         print("🔧 Initializing MCP server...")
@@ -324,44 +326,43 @@ As a team member, I need clear documentation and validation tests so that I can 
             {
                 "protocolVersion": "2024-11-05",
                 "capabilities": {"tools": {}},
-                "clientInfo": {"name": "epic-creator", "version": "1.0.0"}
-            }
+                "clientInfo": {"name": "epic-creator", "version": "1.0.0"},
+            },
         )
-        
+
         if "error" in init_response:
             print(f"❌ Error initializing server: {init_response['error']}")
             return
-        
+
         print("✅ MCP server initialized successfully")
-        
+
         # Send initialized notification (no response expected)
         print("📡 Sending initialized notification...")
         request = {
             "jsonrpc": "2.0",
             "method": "notifications/initialized",
-            "params": {}
+            "params": {},
         }
         request_json = json.dumps(request) + "\n"
         server_process.stdin.write(request_json)
         server_process.stdin.flush()
-        
+
         # Create Epic 5
-        print("📝 Creating Epic 5: E2E Test Failure Remediation & Database Isolation...")
+        print(
+            "📝 Creating Epic 5: E2E Test Failure Remediation & Database Isolation..."
+        )
         epic_response = send_mcp_request(
             server_process,
             "tools/call",
-            {
-                "name": "backlog.createEpic",
-                "arguments": epic_data
-            }
+            {"name": "backlog.createEpic", "arguments": epic_data},
         )
-        
+
         if "error" in epic_response:
             print(f"❌ Error creating epic: {epic_response['error']}")
             return
-        
+
         print(f"📊 Epic creation response: {json.dumps(epic_response, indent=2)}")
-        
+
         # Parse the epic response - it might be in a different format
         if "result" in epic_response and "content" in epic_response["result"]:
             epic_data_text = epic_response["result"]["content"][0]["text"]
@@ -370,12 +371,12 @@ As a team member, I need clear documentation and validation tests so that I can 
         else:
             epic_id = epic_response["result"]["id"]
         print(f"✅ Epic 5 created successfully with ID: {epic_id}")
-        
+
         # Create all stories
         story_ids = []
         for i, story_data in enumerate(stories, 1):
             print(f"📖 Creating Story 5.{i}: {story_data['title'][:50]}...")
-            
+
             story_response = send_mcp_request(
                 server_process,
                 "tools/call",
@@ -385,15 +386,15 @@ As a team member, I need clear documentation and validation tests so that I can 
                         "epic_id": epic_id,
                         "title": story_data["title"],
                         "description": story_data["description"],
-                        "acceptance_criteria": story_data["acceptance_criteria"]
-                    }
-                }
+                        "acceptance_criteria": story_data["acceptance_criteria"],
+                    },
+                },
             )
-            
+
             if "error" in story_response:
                 print(f"❌ Error creating story {i}: {story_response['error']}")
                 continue
-            
+
             # Parse the story response - same format as epic
             if "result" in story_response and "content" in story_response["result"]:
                 story_data_text = story_response["result"]["content"][0]["text"]
@@ -403,20 +404,20 @@ As a team member, I need clear documentation and validation tests so that I can 
                 story_id = story_response["result"]["id"]
             story_ids.append(story_id)
             print(f"✅ Story 5.{i} created successfully with ID: {story_id}")
-        
+
         print(f"\n🎉 Epic 5 creation completed!")
         print(f"📊 Summary:")
         print(f"   Epic ID: {epic_id}")
         print(f"   Stories created: {len(story_ids)}")
         print(f"   Story IDs: {story_ids}")
-        
+
         # Display epic summary
         print(f"\n📋 Epic 5 Summary:")
         print(f"Title: {epic_data['title']}")
         print(f"Total Stories: {len(stories)}")
         print(f"Focus: Database isolation and E2E test reliability")
         print(f"Target: 93.4% → 100% E2E pass rate")
-        
+
     finally:
         # Cleanup server process
         print("🧹 Cleaning up server process...")
@@ -427,6 +428,7 @@ As a team member, I need clear documentation and validation tests so that I can 
             server_process.kill()
             server_process.wait()
         print("✅ Server cleanup completed")
+
 
 if __name__ == "__main__":
     main()

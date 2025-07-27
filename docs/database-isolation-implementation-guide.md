@@ -1,15 +1,15 @@
 # 🗄️ Database Isolation Implementation Guide
 
-**Document Version**: 2.0  
-**Last Updated**: 2025-07-27  
-**Author**: Quinn (Senior Developer & QA Architect)  
+**Document Version**: 2.0
+**Last Updated**: 2025-07-27
+**Author**: Quinn (Senior Developer & QA Architect)
 **Target Audience**: Development Team, QA Engineers
 
 ---
 
 ## 📖 Overview
 
-This guide provides a **test-only** implementation plan for bulletproof database isolation in the Agile MCP Server test suite. The current implementation has partial isolation with some test failures due to database state bleeding. 
+This guide provides a **test-only** implementation plan for bulletproof database isolation in the Agile MCP Server test suite. The current implementation has partial isolation with some test failures due to database state bleeding.
 
 **Key Strategy**: **Keep production server unchanged**, enhance test infrastructure only using a test utilities directory approach.
 
@@ -138,23 +138,23 @@ class TestDatabaseManager:
     Test-only database manager with bulletproof isolation.
     NOT used by production server - only for test cases.
     """
-    
+
     def __init__(self):
         self._engines: Dict[str, any] = {}
         self._session_factories: Dict[str, sessionmaker] = {}
         self._lock = threading.Lock()
-    
+
     def get_test_database_url(self, test_id: Optional[str] = None) -> str:
         """Generate unique test database URL."""
         if test_id is None:
             test_id = str(uuid.uuid4())
         return f"sqlite:///:memory:?cache=shared&uri=true&test_id={test_id}"
-    
+
     def get_engine(self, database_url: str):
         """Get or create engine for test database."""
         thread_id = threading.get_ident()
         cache_key = f"{database_url}_{thread_id}"
-        
+
         with self._lock:
             if cache_key not in self._engines:
                 engine = create_engine(
@@ -167,9 +167,9 @@ class TestDatabaseManager:
                 self._session_factories[cache_key] = sessionmaker(
                     autocommit=False, autoflush=False, bind=engine
                 )
-            
+
             return self._engines[cache_key]
-    
+
     def _create_engine(self, database_url: str) -> Engine:
         """Create database engine with proper configuration."""
         # Configure based on database type
@@ -180,7 +180,7 @@ class TestDatabaseManager:
                 connect_args={"check_same_thread": False},
                 echo=self._should_echo_sql()
             )
-            
+
             # Enable foreign key constraints for SQLite
             @event.listens_for(engine, "connect")
             def set_sqlite_pragma(dbapi_connection, connection_record):
@@ -194,25 +194,25 @@ class TestDatabaseManager:
                 database_url,
                 echo=self._should_echo_sql()
             )
-        
+
         return engine
-    
+
     def get_session_factory(self, database_url: Optional[str] = None) -> sessionmaker:
         """Get session factory for the given database URL."""
         # Ensure engine exists (and corresponding session factory)
         self.get_engine(database_url)
-        
+
         thread_id = threading.get_ident()
         cache_key = f"{database_url or self._get_database_url()}_{thread_id}"
-        
+
         return self._session_factories[cache_key]
-    
+
     @contextmanager
     def get_session(self, database_url: Optional[str] = None):
         """Get database session with automatic cleanup and transaction management."""
         SessionLocal = self.get_session_factory(database_url)
         session = SessionLocal()
-        
+
         try:
             yield session
             session.commit()
@@ -221,17 +221,17 @@ class TestDatabaseManager:
             raise e
         finally:
             session.close()
-    
+
     def create_tables(self, database_url: Optional[str] = None):
         """Create all database tables."""
         engine = self.get_engine(database_url)
         Base.metadata.create_all(bind=engine)
-    
+
     def drop_tables(self, database_url: Optional[str] = None):
         """Drop all database tables."""
         engine = self.get_engine(database_url)
         Base.metadata.drop_all(bind=engine)
-    
+
     def clear_cache(self, database_url: Optional[str] = None):
         """Clear cached engines and session factories."""
         with self._lock:
@@ -250,15 +250,15 @@ class TestDatabaseManager:
                         del self._engines[key]
                     if key in self._session_factories:
                         del self._session_factories[key]
-    
+
     def _get_database_url(self) -> str:
         """Get database URL with test environment support."""
         return os.getenv("TEST_DATABASE_URL", "sqlite:///agile_mcp.db")
-    
+
     def _should_echo_sql(self) -> bool:
         """Determine if SQL queries should be echoed."""
         return os.getenv("SQL_DEBUG", "false").lower() == "true"
-    
+
     def health_check(self, database_url: Optional[str] = None) -> Dict[str, Any]:
         """Perform health check on database connection."""
         try:
@@ -297,7 +297,7 @@ def get_test_database_url(test_id: Optional[str] = None) -> str:
     """Generate unique test database URL."""
     if test_id is None:
         test_id = str(uuid.uuid4())
-    
+
     if os.getenv("MCP_TEST_MODE") == "true":
         # In-memory database for tests
         return f"sqlite:///:memory:?cache=shared&uri=true&test_id={test_id}"
@@ -368,17 +368,17 @@ def isolated_file_db(test_isolation_id) -> Generator[str, None, None]:
     """Function-scoped file database for subprocess testing."""
     with tempfile.NamedTemporaryFile(delete=False, suffix='.db') as temp_db:
         db_path = temp_db.name
-    
+
     db_url = f"sqlite:///{db_path}"
-    
+
     try:
         # Initialize database
         engine = create_engine(db_url)
         Base.metadata.create_all(engine)
         engine.dispose()
-        
+
         yield db_url
-        
+
     finally:
         if os.path.exists(db_path):
             try:
@@ -391,41 +391,41 @@ def test_session(isolated_memory_db, test_database_manager) -> Generator[Session
     """Get isolated test session with automatic cleanup."""
     # Create tables in isolated database
     test_database_manager.create_tables(isolated_memory_db)
-    
+
     with test_database_manager.get_session(isolated_memory_db) as session:
         yield session
 
 @pytest.fixture(scope="function")
 def mock_database_dependencies(test_session, monkeypatch, isolated_memory_db):
     """Comprehensively patch all database dependencies for complete isolation."""
-    
+
     def mock_get_db():
         """Mock get_db function that returns isolated test session."""
         return test_session
-    
+
     def mock_get_session():
         """Mock get_session that returns isolated test session."""
         return test_session
-    
+
     # Patch core database functions
     monkeypatch.setattr("src.agile_mcp.database.get_db", mock_get_db)
     monkeypatch.setenv("TEST_DATABASE_URL", isolated_memory_db)
-    
+
     # Patch all API tool imports - comprehensive coverage
     api_modules = [
         "src.agile_mcp.api.artifact_tools",
         "src.agile_mcp.api.backlog_tools",
-        "src.agile_mcp.api.epic_tools", 
+        "src.agile_mcp.api.epic_tools",
         "src.agile_mcp.api.story_tools"
     ]
-    
+
     for module in api_modules:
         try:
             monkeypatch.setattr(f"{module}.get_db", mock_get_db)
         except AttributeError:
             # Module might not import get_db directly, that's okay
             pass
-    
+
     # Patch service layer database access
     service_modules = [
         "src.agile_mcp.services.artifact_service",
@@ -433,13 +433,13 @@ def mock_database_dependencies(test_session, monkeypatch, isolated_memory_db):
         "src.agile_mcp.services.story_service",
         "src.agile_mcp.services.dependency_service"
     ]
-    
+
     for module in service_modules:
         try:
             monkeypatch.setattr(f"{module}.get_db", mock_get_db)
         except AttributeError:
             pass
-    
+
     # Patch repository layer if it directly uses get_db
     repository_modules = [
         "src.agile_mcp.repositories.artifact_repository",
@@ -447,23 +447,23 @@ def mock_database_dependencies(test_session, monkeypatch, isolated_memory_db):
         "src.agile_mcp.repositories.story_repository",
         "src.agile_mcp.repositories.dependency_repository"
     ]
-    
+
     for module in repository_modules:
         try:
             monkeypatch.setattr(f"{module}.get_db", mock_get_db)
         except AttributeError:
             pass
-    
+
     yield test_session
 
 class TestDataFactory:
     """Factory for creating consistent test data across isolated databases."""
-    
+
     @staticmethod
     def create_default_epic(session: Session, epic_id: str = "test-epic-1") -> 'Epic':
         """Create a default epic for testing."""
         from src.agile_mcp.models.epic import Epic
-        
+
         epic = Epic(
             id=epic_id,
             title="Test Epic",
@@ -474,21 +474,21 @@ class TestDataFactory:
         session.commit()
         session.refresh(epic)
         return epic
-    
+
     @staticmethod
     def create_test_story(
-        session: Session, 
-        epic_id: str = "test-epic-1", 
+        session: Session,
+        epic_id: str = "test-epic-1",
         story_id: str = None,
         title: str = "Test Story",
         status: str = "ToDo"
     ) -> 'Story':
         """Create a test story."""
         from src.agile_mcp.models.story import Story
-        
+
         if story_id is None:
             story_id = f"test-story-{uuid.uuid4()}"
-        
+
         story = Story(
             id=story_id,
             title=title,
@@ -502,7 +502,7 @@ class TestDataFactory:
         session.commit()
         session.refresh(story)
         return story
-    
+
     @staticmethod
     def create_test_artifact(
         session: Session,
@@ -512,7 +512,7 @@ class TestDataFactory:
     ) -> 'Artifact':
         """Create a test artifact."""
         from src.agile_mcp.models.artifact import Artifact
-        
+
         artifact = Artifact(
             id=f"test-artifact-{uuid.uuid4()}",
             story_id=story_id,
@@ -531,27 +531,27 @@ def test_data_factory():
 
 class DatabaseIsolationValidator:
     """Utilities to validate database isolation is working correctly."""
-    
+
     @staticmethod
     def assert_clean_database(session: Session):
         """Assert database is in clean state - no data from other tests."""
         from src.agile_mcp.models.epic import Epic
         from src.agile_mcp.models.story import Story
         from src.agile_mcp.models.artifact import Artifact
-        
+
         epic_count = session.query(Epic).count()
         story_count = session.query(Story).count()
         artifact_count = session.query(Artifact).count()
-        
+
         assert epic_count == 0, f"Database not clean: {epic_count} epics found"
         assert story_count == 0, f"Database not clean: {story_count} stories found"
         assert artifact_count == 0, f"Database not clean: {artifact_count} artifacts found"
-    
+
     @staticmethod
     def assert_isolated_from_production():
         """Assert test is not using production database."""
         db_url = os.getenv("TEST_DATABASE_URL", "sqlite:///agile_mcp.db")
-        
+
         # Check for test indicators
         is_test_db = any([
             ":memory:" in db_url,
@@ -559,18 +559,18 @@ class DatabaseIsolationValidator:
             os.getenv("MCP_TEST_MODE") == "true",
             os.getenv("PYTEST_CURRENT_TEST") is not None
         ])
-        
+
         assert is_test_db, f"Test appears to be using production database: {db_url}"
-    
+
     @staticmethod
     def get_database_info(session: Session) -> dict:
         """Get information about current database for debugging."""
         from sqlalchemy import text
-        
+
         try:
             result = session.execute(text("SELECT name FROM sqlite_master WHERE type='table'")).fetchall()
             tables = [row[0] for row in result]
-            
+
             return {
                 "database_url": os.getenv("TEST_DATABASE_URL", "unknown"),
                 "thread_id": threading.get_ident(),
@@ -607,21 +607,21 @@ from tests.conftest import isolated_file_db, TestDataFactory, DatabaseIsolationV
 @pytest.fixture(scope="function")
 def mcp_server_subprocess(isolated_file_db) -> Generator[Tuple[subprocess.Popen, str], None, None]:
     """Start MCP server in subprocess with completely isolated database."""
-    
+
     # Get server script path
     run_server_path = Path(__file__).parent.parent.parent / "run_server.py"
-    
+
     # Verify server script exists
     if not run_server_path.exists():
         pytest.skip(f"Server script not found: {run_server_path}")
-    
+
     # Setup completely isolated environment
     env = os.environ.copy()
     env["TEST_DATABASE_URL"] = isolated_file_db
     env["MCP_TEST_MODE"] = "true"
     env["PYTHONPATH"] = str(Path(__file__).parent.parent.parent)
     env["SQL_DEBUG"] = "false"  # Disable SQL debug in subprocess
-    
+
     # Start server process
     process = subprocess.Popen(
         [sys.executable, str(run_server_path)],
@@ -632,15 +632,15 @@ def mcp_server_subprocess(isolated_file_db) -> Generator[Tuple[subprocess.Popen,
         env=env,
         cwd=Path(__file__).parent.parent.parent
     )
-    
+
     # Give server time to start
     time.sleep(0.5)
-    
+
     # Verify process started successfully
     if process.poll() is not None:
         stdout, stderr = process.communicate()
         pytest.fail(f"Server failed to start. STDOUT: {stdout}, STDERR: {stderr}")
-    
+
     try:
         yield process, isolated_file_db
     finally:
@@ -655,27 +655,27 @@ def mcp_server_subprocess(isolated_file_db) -> Generator[Tuple[subprocess.Popen,
 def send_jsonrpc_request(process: subprocess.Popen, method: str, params=None):
     """Send JSON-RPC request to MCP server and return response."""
     import json
-    
+
     request = {
         "jsonrpc": "2.0",
         "id": 1,
         "method": method,
         "params": params or {}
     }
-    
+
     request_json = json.dumps(request) + "\n"
-    
+
     try:
         process.stdin.write(request_json)
         process.stdin.flush()
-        
+
         response_line = process.stdout.readline()
         if not response_line:
             stderr_output = process.stderr.read()
             raise Exception(f"No response from server. STDERR: {stderr_output}")
-        
+
         return json.loads(response_line)
-    
+
     except Exception as e:
         # Capture any remaining stderr
         process.poll()  # Update return code
@@ -694,18 +694,18 @@ def jsonrpc_client():
 def e2e_test_data(isolated_file_db):
     """Create test data in isolated file database for E2E tests."""
     from src.agile_mcp.database import DatabaseManager
-    
+
     db_manager = DatabaseManager()
-    
+
     # Initialize database with tables
     db_manager.create_tables(isolated_file_db)
-    
+
     # Create test data
     with db_manager.get_session(isolated_file_db) as session:
         factory = TestDataFactory()
         epic = factory.create_default_epic(session)
         story = factory.create_test_story(session, epic.id)
-        
+
         return {
             "epic": {"id": epic.id, "title": epic.title},
             "story": {"id": story.id, "title": story.title, "epic_id": story.epic_id}
@@ -723,14 +723,14 @@ from src.agile_mcp.services.story_service import StoryService
 @pytest.mark.unit
 def test_create_story_success(test_session, mock_database_dependencies, test_data_factory, db_validator):
     """Test story creation with isolated database."""
-    
+
     # Verify isolation
     db_validator.assert_clean_database(test_session)
     db_validator.assert_isolated_from_production()
-    
+
     # Create test data
     epic = test_data_factory.create_default_epic(test_session)
-    
+
     # Test story creation
     service = StoryService()
     story_data = {
@@ -739,12 +739,12 @@ def test_create_story_success(test_session, mock_database_dependencies, test_dat
         "acceptance_criteria": ["Criterion 1"],
         "epic_id": epic.id
     }
-    
+
     result = service.create_story(**story_data)
-    
+
     assert result["success"] is True
     assert result["data"]["title"] == "New Test Story"
-    
+
     # Verify data exists in isolated database
     assert test_session.query(Story).count() == 1
 ```
@@ -759,10 +759,10 @@ class TestStoryToolsE2E:
     def test_create_story_tool_success(self, mcp_server_subprocess, jsonrpc_client, e2e_test_data):
         """Test story creation via MCP JSON-RPC with isolated database."""
         process, db_url = mcp_server_subprocess
-        
+
         # Use test data
         epic_id = e2e_test_data["epic"]["id"]
-        
+
         # Send create story request
         response = jsonrpc_client(process, "tools/call", {
             "name": "stories.create",
@@ -773,11 +773,11 @@ class TestStoryToolsE2E:
                 "epic_id": epic_id
             }
         })
-        
+
         # Validate response
         assert "result" in response
         assert response["result"]["success"] is True
-        
+
         story_data = response["result"]["data"]
         assert story_data["title"] == "E2E Test Story"
         assert story_data["epic_id"] == epic_id
@@ -803,7 +803,7 @@ markers =
     slow: Tests that take longer than 1 second
 
 # Environment defaults for testing
-env = 
+env =
     MCP_TEST_MODE = true
     SQL_DEBUG = false
 
@@ -850,7 +850,7 @@ def test_database_isolation_between_tests(test_session, test_data_factory):
     """Verify each test gets completely isolated database."""
     # This test should never see data from other tests
     assert test_session.query(Story).count() == 0
-    
+
     # Create data that should not appear in other tests
     test_data_factory.create_test_story(test_session)
     assert test_session.query(Story).count() == 1
@@ -858,29 +858,29 @@ def test_database_isolation_between_tests(test_session, test_data_factory):
 def test_thread_safety_isolation():
     """Verify thread-safe database isolation."""
     from src.agile_mcp.database import db_manager
-    
+
     results = []
-    
+
     def create_isolated_data(thread_id):
         db_url = f"sqlite:///:memory:?thread={thread_id}"
         db_manager.create_tables(db_url)
-        
+
         with db_manager.get_session(db_url) as session:
             from tests.conftest import TestDataFactory
             factory = TestDataFactory()
             epic = factory.create_default_epic(session, f"epic-{thread_id}")
             results.append(epic.id)
-    
+
     # Run multiple threads
     threads = []
     for i in range(5):
         thread = threading.Thread(target=create_isolated_data, args=(i,))
         threads.append(thread)
         thread.start()
-    
+
     for thread in threads:
         thread.join()
-    
+
     # Verify each thread got unique data
     assert len(results) == 5
     assert len(set(results)) == 5  # All unique
@@ -896,7 +896,7 @@ def test_thread_safety_isolation():
 3. **Day 2**: Update root `tests/conftest.py` with new fixtures using test-only manager
 4. **Day 2**: Optional: Add minimal test environment detection to `src/agile_mcp/database.py`
 
-### Phase 2: E2E Test Fixes (2 days) 
+### Phase 2: E2E Test Fixes (2 days)
 1. **Day 1**: Update `tests/e2e/conftest.py` with isolated file database fixtures
 2. **Day 1**: Migrate the 4 failing E2E tests to use new fixtures
 3. **Day 2**: Validate all 61 E2E tests pass consistently
@@ -929,7 +929,7 @@ def test_thread_safety_isolation():
 
 ---
 
-**Implementation Guide Complete**  
+**Implementation Guide Complete**
 **Next Steps**: Begin Phase 1 implementation with TestDatabaseManager creation in `tests/utils/` directory
 
 ---

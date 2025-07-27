@@ -11,7 +11,7 @@ The Agile MCP Server addresses the need for a specialized tooling layer in AI-au
 ## Key Features
 
 - **Backlog Management**: Create, update, and organize user stories, epics, and tasks
-- **Artifact Tracking**: Maintain context and relationships between generated development artifacts  
+- **Artifact Tracking**: Maintain context and relationships between generated development artifacts
 - **Story Workflows**: Advanced workflow management for user story lifecycle
 - **MCP Protocol**: Built on the Model Context Protocol standard for reliable agent-service communication
 
@@ -19,7 +19,7 @@ The Agile MCP Server addresses the need for a specialized tooling layer in AI-au
 
 This server implements the Model Context Protocol (MCP) specification, providing:
 - Structured resource access for development artifacts
-- Tool-based operations for backlog management  
+- Tool-based operations for backlog management
 - Secure and predictable agent-service interactions
 
 ## Getting Started
@@ -66,7 +66,7 @@ agile-mcp/
 │   ├── repositories/       # Data access layer
 │   └── services/           # Business logic
 ├── docs/                   # Project documentation
-│   ├── prd.md              # Product Requirements Document  
+│   ├── prd.md              # Product Requirements Document
 │   ├── architecture/       # Architecture documentation
 │   ├── prd/                # Detailed PRD sections
 │   └── stories/            # User story documentation
