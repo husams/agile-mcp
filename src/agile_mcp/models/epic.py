@@ -36,8 +36,8 @@ class Epic(Base):
                        name="ck_epic_status_values"),
     )
     
-    # Relationship to stories (one-to-many) - will be implemented later
-    # stories = relationship("Story", back_populates="epic")
+    # Relationship to stories (one-to-many)
+    stories = relationship("Story", back_populates="epic")
     
     def __init__(self, id: str, title: str, description: str, status: str = "Draft"):
         """Initialize Epic with default status of 'Draft'."""

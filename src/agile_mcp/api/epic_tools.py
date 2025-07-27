@@ -6,6 +6,7 @@ import logging
 from typing import Dict, Any, List
 from fastmcp import FastMCP
 from fastmcp.exceptions import McpError
+from mcp.types import ErrorData
 
 from ..database import get_db, create_tables
 from ..repositories.epic_repository import EpicRepository
@@ -26,7 +27,7 @@ def register_epic_tools(mcp: FastMCP) -> None:
         logger.error(f"Failed to create database tables: {e}")
         raise
     
-    @mcp.tool()
+    @mcp.tool("backlog.createEpic")
     def create_epic(title: str, description: str) -> Dict[str, Any]:
         """
         Create a new epic with the specified title and description.
@@ -54,13 +55,13 @@ def register_epic_tools(mcp: FastMCP) -> None:
                 db_session.close()
                 
         except EpicValidationError as e:
-            raise McpError(code=-32001, message=f"Validation error: {str(e)}")
+            raise McpError(ErrorData(code=-32001, message=f"Validation error: {str(e)}"))
         except DatabaseError as e:
-            raise McpError(code=-32001, message=f"Database error: {str(e)}")
+            raise McpError(ErrorData(code=-32001, message=f"Database error: {str(e)}"))
         except Exception as e:
-            raise McpError(code=-32001, message=f"Unexpected error: {str(e)}")
+            raise McpError(ErrorData(code=-32001, message=f"Unexpected error: {str(e)}"))
     
-    @mcp.tool()
+    @mcp.tool("backlog.findEpics")
     def find_epics() -> List[Dict[str, Any]]:
         """
         Retrieve a list of all existing epics.
@@ -84,6 +85,6 @@ def register_epic_tools(mcp: FastMCP) -> None:
                 db_session.close()
                 
         except DatabaseError as e:
-            raise McpError(code=-32001, message=f"Database error: {str(e)}")
+            raise McpError(ErrorData(code=-32001, message=f"Database error: {str(e)}"))
         except Exception as e:
-            raise McpError(code=-32001, message=f"Unexpected error: {str(e)}")
+            raise McpError(ErrorData(code=-32001, message=f"Unexpected error: {str(e)}"))

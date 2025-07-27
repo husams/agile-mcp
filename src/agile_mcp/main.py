@@ -6,7 +6,6 @@ This module serves as the primary entry point for the Agile Management MCP Serve
 It initializes the FastMCP server instance and handles MCP protocol communications.
 """
 
-import asyncio
 import logging
 import sys
 from typing import Optional
@@ -14,13 +13,13 @@ from typing import Optional
 from fastmcp import FastMCP
 
 try:
-    from .api import register_epic_tools
+    from .api import register_epic_tools, register_story_tools
 except ImportError:
     # Handle when running as script directly
     import sys
     import os
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from api import register_epic_tools
+    from api import register_epic_tools, register_story_tools
 
 # Configure logging to stderr to avoid contaminating stdout JSON-RPC
 logging.basicConfig(
@@ -50,6 +49,10 @@ def create_server() -> FastMCP:
         register_epic_tools(server)
         logger.info("Epic management tools registered successfully")
         
+        # Register story management tools
+        register_story_tools(server)
+        logger.info("Story management tools registered successfully")
+        
         # FastMCP automatically handles:
         # - MCP initialize request handling
         # - Capabilities response with tool support declaration
@@ -63,7 +66,7 @@ def create_server() -> FastMCP:
         raise
 
 
-async def main() -> None:
+def main() -> None:
     """
     Main entry point for the Agile Management MCP Server.
     
@@ -79,7 +82,7 @@ async def main() -> None:
         
         # Run server with stdio transport (JSON-RPC over stdin/stdout)
         logger.info("Starting server with stdio transport")
-        await server.run(transport="stdio")
+        server.run(transport="stdio")
         
     except KeyboardInterrupt:
         logger.info("Server shutdown requested via keyboard interrupt")
@@ -92,4 +95,4 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

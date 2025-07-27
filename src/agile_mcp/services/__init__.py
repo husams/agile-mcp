@@ -6,6 +6,21 @@ All core application functionality is implemented here.
 """
 
 from .epic_service import EpicService
-from .exceptions import EpicValidationError, EpicNotFoundError, DatabaseError
+from .story_service import StoryService
+from .exceptions import (
+    EpicValidationError, 
+    EpicNotFoundError, 
+    StoryValidationError, 
+    StoryNotFoundError, 
+    DatabaseError
+)
 
-__all__ = ["EpicService", "EpicValidationError", "EpicNotFoundError", "DatabaseError"]
+__all__ = [
+    "EpicService", 
+    "StoryService",
+    "EpicValidationError", 
+    "EpicNotFoundError", 
+    "StoryValidationError", 
+    "StoryNotFoundError", 
+    "DatabaseError"
+]

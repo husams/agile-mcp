@@ -87,7 +87,7 @@ def test_create_epic_database_error(epic_service, mock_repository):
     # Setup mock to raise SQLAlchemy error
     mock_repository.create_epic.side_effect = SQLAlchemyError("Database connection failed")
     
-    with pytest.raises(DatabaseError, match="Failed to create epic: Database connection failed"):
+    with pytest.raises(DatabaseError, match="Database operation failed: Database connection failed"):
         epic_service.create_epic("Valid title", "Valid description")
 
 
@@ -141,5 +141,5 @@ def test_find_epics_database_error(epic_service, mock_repository):
     """Test epic retrieval with database error."""
     mock_repository.find_all_epics.side_effect = SQLAlchemyError("Connection lost")
     
-    with pytest.raises(DatabaseError, match="Failed to retrieve epics: Connection lost"):
+    with pytest.raises(DatabaseError, match="Database operation failed while retrieving epics: Connection lost"):
         epic_service.find_epics()

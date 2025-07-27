@@ -88,15 +88,22 @@ def test_create_epic_tool_success(mcp_server_process):
         }
     )
     
-    # Send initialized notification
-    send_jsonrpc_request(mcp_server_process, "notifications/initialized")
+    # Send initialized notification (no response expected)
+    request = {
+        "jsonrpc": "2.0",
+        "method": "notifications/initialized",
+        "params": {}
+    }
+    request_json = json.dumps(request) + "\n"
+    mcp_server_process.stdin.write(request_json)
+    mcp_server_process.stdin.flush()
     
     # Call create_epic tool
     response = send_jsonrpc_request(
         mcp_server_process,
         "tools/call",
         {
-            "name": "create_epic",
+            "name": "backlog.createEpic",
             "arguments": {
                 "title": "Test Epic E2E",
                 "description": "This is an end-to-end test epic"
@@ -131,15 +138,22 @@ def test_find_epics_tool_success(mcp_server_process):
         }
     )
     
-    # Send initialized notification
-    send_jsonrpc_request(mcp_server_process, "notifications/initialized")
+    # Send initialized notification (no response expected)
+    request = {
+        "jsonrpc": "2.0",
+        "method": "notifications/initialized",
+        "params": {}
+    }
+    request_json = json.dumps(request) + "\n"
+    mcp_server_process.stdin.write(request_json)
+    mcp_server_process.stdin.flush()
     
     # Create an epic first
     create_response = send_jsonrpc_request(
         mcp_server_process,
         "tools/call",
         {
-            "name": "create_epic",
+            "name": "backlog.createEpic",
             "arguments": {
                 "title": "Findable Epic",
                 "description": "This epic should be findable"
@@ -152,7 +166,7 @@ def test_find_epics_tool_success(mcp_server_process):
         mcp_server_process,
         "tools/call",
         {
-            "name": "find_epics",
+            "name": "backlog.findEpics",
             "arguments": {}
         }
     )
@@ -188,15 +202,22 @@ def test_create_epic_validation_error(mcp_server_process):
         }
     )
     
-    # Send initialized notification
-    send_jsonrpc_request(mcp_server_process, "notifications/initialized")
+    # Send initialized notification (no response expected)
+    request = {
+        "jsonrpc": "2.0",
+        "method": "notifications/initialized",
+        "params": {}
+    }
+    request_json = json.dumps(request) + "\n"
+    mcp_server_process.stdin.write(request_json)
+    mcp_server_process.stdin.flush()
     
     # Call create_epic tool with empty title
     response = send_jsonrpc_request(
         mcp_server_process,
         "tools/call",
         {
-            "name": "create_epic",
+            "name": "backlog.createEpic",
             "arguments": {
                 "title": "",
                 "description": "Valid description"
@@ -204,11 +225,13 @@ def test_create_epic_validation_error(mcp_server_process):
         }
     )
     
-    # Verify error response
-    assert "error" in response
-    assert response["error"]["code"] == -32001
-    assert "Validation error" in response["error"]["message"]
-    assert "Epic title cannot be empty" in response["error"]["message"]
+    # Verify error response (FastMCP format)
+    assert "result" in response
+    assert response["result"]["isError"] == True
+    assert "content" in response["result"]
+    assert len(response["result"]["content"]) > 0
+    assert "Validation error" in response["result"]["content"][0]["text"]
+    assert "Epic title cannot be empty" in response["result"]["content"][0]["text"]
 
 
 def test_create_epic_with_long_title_error(mcp_server_process):
@@ -224,8 +247,15 @@ def test_create_epic_with_long_title_error(mcp_server_process):
         }
     )
     
-    # Send initialized notification
-    send_jsonrpc_request(mcp_server_process, "notifications/initialized")
+    # Send initialized notification (no response expected)
+    request = {
+        "jsonrpc": "2.0",
+        "method": "notifications/initialized",
+        "params": {}
+    }
+    request_json = json.dumps(request) + "\n"
+    mcp_server_process.stdin.write(request_json)
+    mcp_server_process.stdin.flush()
     
     # Call create_epic tool with title too long
     long_title = "x" * 201  # Exceeds 200 character limit
@@ -233,7 +263,7 @@ def test_create_epic_with_long_title_error(mcp_server_process):
         mcp_server_process,
         "tools/call",
         {
-            "name": "create_epic",
+            "name": "backlog.createEpic",
             "arguments": {
                 "title": long_title,
                 "description": "Valid description"
@@ -241,8 +271,10 @@ def test_create_epic_with_long_title_error(mcp_server_process):
         }
     )
     
-    # Verify error response
-    assert "error" in response
-    assert response["error"]["code"] == -32001
-    assert "Validation error" in response["error"]["message"]
-    assert "Epic title cannot exceed 200 characters" in response["error"]["message"]
+    # Verify error response (FastMCP format)
+    assert "result" in response
+    assert response["result"]["isError"] == True
+    assert "content" in response["result"]
+    assert len(response["result"]["content"]) > 0
+    assert "Validation error" in response["result"]["content"][0]["text"]
+    assert "Epic title cannot exceed 200 characters" in response["result"]["content"][0]["text"]

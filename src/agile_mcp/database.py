@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
 
 from .models.epic import Base
+from .models import Story  # Import to register with metadata
 
 # Database file path
 DATABASE_URL = "sqlite:///agile_mcp.db"
