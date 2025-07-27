@@ -184,3 +184,32 @@ class DependencyRepository:
         except SQLAlchemyError as e:
             self.db_session.rollback()
             raise e
+    
+    def has_incomplete_dependencies(self, story_id: str) -> bool:
+        """
+        Check if a story has any incomplete dependencies.
+        A dependency is incomplete if the story it depends on has status other than "Done".
+        
+        Args:
+            story_id: The story to check dependencies for
+            
+        Returns:
+            bool: True if story has incomplete dependencies, False otherwise
+            
+        Raises:
+            SQLAlchemyError: If database operation fails
+        """
+        try:
+            # Get count of dependencies that are not "Done"
+            incomplete_count = (
+                self.db_session.query(Story)
+                .join(story_dependencies, Story.id == story_dependencies.c.depends_on_story_id)
+                .filter(story_dependencies.c.story_id == story_id)
+                .filter(Story.status != "Done")
+                .count()
+            )
+            
+            return incomplete_count > 0
+            
+        except SQLAlchemyError as e:
+            raise e

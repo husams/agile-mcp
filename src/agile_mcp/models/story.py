@@ -3,7 +3,8 @@ Story data model for the Agile Management MCP Server.
 """
 
 from typing import Dict, Any, List
-from sqlalchemy import Column, String, Text, JSON, ForeignKey, CheckConstraint
+from datetime import datetime, timezone
+from sqlalchemy import Column, String, Text, JSON, ForeignKey, CheckConstraint, Integer, DateTime
 from sqlalchemy.orm import relationship, validates
 from .epic import Base
 from .story_dependency import story_dependencies
@@ -19,6 +20,8 @@ class Story(Base):
         description: The full user story text
         acceptance_criteria: A list of conditions that must be met for the story to be considered complete
         status: Current state (ToDo, InProgress, Review, Done)
+        priority: Priority level for ordering (higher number = higher priority), default 0
+        created_at: Timestamp when story was created (for ordering)
         epic_id: Foreign key reference to the parent Epic
     """
     
@@ -29,6 +32,8 @@ class Story(Base):
     description = Column(Text, nullable=False)
     acceptance_criteria = Column(JSON, nullable=False)
     status = Column(String(20), nullable=False, default="ToDo")
+    priority = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     epic_id = Column(String, ForeignKey("epics.id"), nullable=False)
     
     __table_args__ = (
@@ -57,14 +62,16 @@ class Story(Base):
                             secondaryjoin="Story.id == story_dependencies.c.story_id",
                             back_populates="dependencies")
     
-    def __init__(self, id: str, title: str, description: str, acceptance_criteria: List[str], epic_id: str, status: str = "ToDo"):
-        """Initialize Story with default status of 'ToDo'."""
+    def __init__(self, id: str, title: str, description: str, acceptance_criteria: List[str], epic_id: str, status: str = "ToDo", priority: int = 0, created_at: datetime = None):
+        """Initialize Story with default status of 'ToDo', priority 0, and current timestamp."""
         self.id = id
         self.title = title
         self.description = description
         self.acceptance_criteria = acceptance_criteria
         self.epic_id = epic_id
         self.status = status
+        self.priority = priority
+        self.created_at = created_at or datetime.now(timezone.utc)
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert Story instance to dictionary representation."""
@@ -74,6 +81,8 @@ class Story(Base):
             "description": self.description,
             "acceptance_criteria": self.acceptance_criteria,
             "status": self.status,
+            "priority": self.priority,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
             "epic_id": self.epic_id
         }
     

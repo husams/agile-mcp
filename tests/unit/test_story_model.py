@@ -3,6 +3,7 @@ Unit tests for Story model.
 """
 
 import pytest
+from datetime import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -49,6 +50,8 @@ def test_story_creation():
     assert story.acceptance_criteria == ["Should create successfully", "Should have all required fields"]
     assert story.epic_id == "test-epic-1"
     assert story.status == "ToDo"
+    assert story.priority == 0  # default priority
+    assert isinstance(story.created_at, datetime)
 
 
 def test_story_default_status():
@@ -62,6 +65,8 @@ def test_story_default_status():
     )
     
     assert story.status == "ToDo"
+    assert story.priority == 0  # default priority
+    assert isinstance(story.created_at, datetime)
 
 
 def test_story_to_dict():
@@ -83,7 +88,9 @@ def test_story_to_dict():
         "description": "Third test story",
         "acceptance_criteria": ["AC1", "AC2", "AC3"],
         "epic_id": "test-epic-1",
-        "status": "InProgress"
+        "status": "InProgress",
+        "priority": 0,
+        "created_at": story.created_at.isoformat()
     }
     
     assert story_dict == expected
@@ -254,3 +261,113 @@ def test_story_status_validation():
             epic_id="test-epic-1",
             status="InvalidStatus"
         )
+
+
+def test_story_priority_field():
+    """Test Story model priority field."""
+    # Test with custom priority
+    story = Story(
+        id="test-story-15",
+        title="Priority Story",
+        description="Story with custom priority",
+        acceptance_criteria=["Should have priority"],
+        epic_id="test-epic-1",
+        priority=5
+    )
+    
+    assert story.priority == 5
+    
+    # Test default priority
+    story_default = Story(
+        id="test-story-16",
+        title="Default Priority Story",
+        description="Story with default priority",
+        acceptance_criteria=["Should have default priority"],
+        epic_id="test-epic-1"
+    )
+    
+    assert story_default.priority == 0
+
+
+def test_story_created_at_field():
+    """Test Story model created_at field."""
+    # Test with custom created_at
+    custom_time = datetime(2023, 1, 1, 12, 0, 0)
+    story = Story(
+        id="test-story-17",
+        title="Custom Time Story",
+        description="Story with custom created_at",
+        acceptance_criteria=["Should have custom time"],
+        epic_id="test-epic-1",
+        created_at=custom_time
+    )
+    
+    assert story.created_at == custom_time
+    
+    # Test default created_at (should be current time)
+    before_creation = datetime.utcnow()
+    story_default = Story(
+        id="test-story-18",
+        title="Default Time Story",
+        description="Story with default created_at",
+        acceptance_criteria=["Should have default time"],
+        epic_id="test-epic-1"
+    )
+    after_creation = datetime.utcnow()
+    
+    assert before_creation <= story_default.created_at <= after_creation
+
+
+def test_story_priority_created_at_persistence(in_memory_db):
+    """Test Story model priority and created_at persistence in database."""
+    custom_time = datetime(2023, 6, 15, 10, 30, 0)
+    story = Story(
+        id="test-story-19",
+        title="Persistent Priority Story",
+        description="Story with priority and created_at to persist",
+        acceptance_criteria=["Should persist priority", "Should persist created_at"],
+        epic_id="test-epic-1",
+        priority=10,
+        created_at=custom_time
+    )
+    
+    # Save to database
+    in_memory_db.add(story)
+    in_memory_db.commit()
+    
+    # Retrieve from database
+    retrieved_story = in_memory_db.query(Story).filter_by(id="test-story-19").first()
+    
+    assert retrieved_story is not None
+    assert retrieved_story.priority == 10
+    assert retrieved_story.created_at == custom_time
+
+
+def test_story_to_dict_with_priority_created_at():
+    """Test Story model to_dict method includes priority and created_at."""
+    custom_time = datetime(2023, 8, 20, 15, 45, 30)
+    story = Story(
+        id="test-story-20",
+        title="Dict Test Story",
+        description="Story for testing to_dict with new fields",
+        acceptance_criteria=["Should include priority", "Should include created_at"],
+        epic_id="test-epic-1",
+        status="Review",
+        priority=7,
+        created_at=custom_time
+    )
+    
+    story_dict = story.to_dict()
+    
+    expected = {
+        "id": "test-story-20",
+        "title": "Dict Test Story",
+        "description": "Story for testing to_dict with new fields",
+        "acceptance_criteria": ["Should include priority", "Should include created_at"],
+        "epic_id": "test-epic-1",
+        "status": "Review",
+        "priority": 7,
+        "created_at": custom_time.isoformat()
+    }
+    
+    assert story_dict == expected

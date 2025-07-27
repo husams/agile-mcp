@@ -162,3 +162,60 @@ def register_backlog_tools(mcp: FastMCP) -> None:
                 message=f"Unexpected error: {str(e)}",
                 data={"story_id": story_id, "depends_on_story_id": depends_on_story_id}
             ))
+    
+    @mcp.tool("backlog.getNextReadyStory")
+    def get_next_ready_story() -> Dict[str, Any]:
+        """
+        Gets the next story that is ready for implementation.
+        Returns the highest-priority ToDo story with no incomplete dependencies.
+        Automatically updates the story status to InProgress.
+        
+        A story is ready if:
+        - Status is "ToDo"
+        - All stories it depends on have status "Done"
+        
+        Stories are ordered by:
+        1. Priority (highest first)
+        2. Created date (earliest first) for same priority
+        
+        Returns:
+            Dict containing the story details if one is found, or empty dict if no stories are ready
+            
+        Raises:
+            McpError: If database operation fails or service error occurs
+        """
+        try:
+            db_session = get_db()
+            try:
+                story_repository = StoryRepository(db_session)
+                dependency_repository = DependencyRepository(db_session)
+                story_service = StoryService(story_repository, dependency_repository)
+                
+                story = story_service.get_next_ready_story()
+                
+                if story:
+                    return story
+                else:
+                    return {}  # Empty dict when no stories ready
+                    
+            finally:
+                db_session.close()
+                
+        except StoryValidationError as e:
+            raise McpError(ErrorData(
+                code=-32001,
+                message=f"Story validation error: {str(e)}",
+                data={}
+            ))
+        except DatabaseError as e:
+            raise McpError(ErrorData(
+                code=-32001,
+                message=f"Database error: {str(e)}",
+                data={}
+            ))
+        except Exception as e:
+            raise McpError(ErrorData(
+                code=-32001,
+                message=f"Unexpected error: {str(e)}",
+                data={}
+            ))

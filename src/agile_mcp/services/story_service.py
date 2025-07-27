@@ -2,11 +2,12 @@
 Service layer for Story business logic operations.
 """
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 import os
 
 from ..repositories.story_repository import StoryRepository
+from ..repositories.dependency_repository import DependencyRepository
 from ..models.story import Story
 from ..utils.story_parser import StoryParser
 from .exceptions import StoryValidationError, StoryNotFoundError, EpicNotFoundError, DatabaseError, InvalidStoryStatusError, SectionNotFoundError
@@ -21,9 +22,10 @@ class StoryService:
     DEFAULT_STATUS = "ToDo"
     VALID_STATUSES = {"ToDo", "InProgress", "Review", "Done"}
     
-    def __init__(self, story_repository: StoryRepository):
-        """Initialize service with repository dependency."""
+    def __init__(self, story_repository: StoryRepository, dependency_repository: Optional[DependencyRepository] = None):
+        """Initialize service with repository dependencies."""
         self.story_repository = story_repository
+        self.dependency_repository = dependency_repository
         self.story_parser = StoryParser()
     
     def create_story(self, title: str, description: str, acceptance_criteria: List[str], epic_id: str) -> Dict[str, Any]:
@@ -243,3 +245,50 @@ class StoryService:
             if isinstance(e, (StoryValidationError, StoryNotFoundError, SectionNotFoundError)):
                 raise
             raise DatabaseError(f"Unexpected error while processing story section: {str(e)}")
+    
+    def get_next_ready_story(self) -> Optional[Dict[str, Any]]:
+        """
+        Get the next story that is ready for implementation.
+        
+        A story is ready if:
+        - Status is "ToDo"
+        - All stories it depends on have status "Done"
+        
+        Stories are ordered by:
+        1. Priority (highest first)
+        2. Created date (earliest first) for same priority
+        
+        When a story is retrieved, its status is automatically updated to "InProgress".
+        
+        Returns:
+            Optional[Dict[str, Any]]: Dictionary representation of the next ready story,
+                                    or None if no stories are ready
+            
+        Raises:
+            DatabaseError: If database operation fails
+            StoryValidationError: If dependency repository is not available
+        """
+        if not self.dependency_repository:
+            raise StoryValidationError("Dependency repository required for get_next_ready_story operation")
+        
+        try:
+            # Get all ToDo stories ordered by priority (desc) and created_at (asc)
+            todo_stories = self.story_repository.find_stories_by_status_ordered("ToDo")
+            
+            # Find the first story that has no incomplete dependencies
+            for story in todo_stories:
+                if not self.dependency_repository.has_incomplete_dependencies(story.id):
+                    # This story is ready - update its status to InProgress
+                    updated_story = self.story_repository.update_story_status(story.id, "InProgress")
+                    if updated_story:
+                        return updated_story.to_dict()
+            
+            # No ready stories found
+            return None
+            
+        except SQLAlchemyError as e:
+            raise DatabaseError(f"Database operation failed while finding next ready story: {str(e)}")
+        except Exception as e:
+            if isinstance(e, (StoryValidationError, DatabaseError)):
+                raise
+            raise DatabaseError(f"Unexpected error while finding next ready story: {str(e)}")

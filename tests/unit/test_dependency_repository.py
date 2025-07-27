@@ -279,3 +279,87 @@ def test_database_constraint_self_dependency(dependency_repository, test_stories
     
     # Verify it's the check constraint that prevented it
     assert "CHECK constraint failed" in str(exc_info.value) or "ck_no_self_dependency" in str(exc_info.value)
+
+
+def test_has_incomplete_dependencies_false_no_dependencies(dependency_repository, test_stories):
+    """Test has_incomplete_dependencies returns False when story has no dependencies."""
+    result = dependency_repository.has_incomplete_dependencies("story-1")
+    assert result is False
+
+
+def test_has_incomplete_dependencies_false_all_done(dependency_repository, test_stories, test_session):
+    """Test has_incomplete_dependencies returns False when all dependencies are Done."""
+    # Set dependent stories to Done status
+    story_2 = test_session.query(Story).filter(Story.id == "story-2").first()
+    story_3 = test_session.query(Story).filter(Story.id == "story-3").first()
+    story_2.status = "Done"
+    story_3.status = "Done"
+    test_session.commit()
+    
+    # Add dependencies
+    dependency_repository.add_dependency("story-1", "story-2")
+    dependency_repository.add_dependency("story-1", "story-3")
+    
+    # Test - should return False since all dependencies are Done
+    result = dependency_repository.has_incomplete_dependencies("story-1")
+    assert result is False
+
+
+def test_has_incomplete_dependencies_true_some_incomplete(dependency_repository, test_stories, test_session):
+    """Test has_incomplete_dependencies returns True when some dependencies are incomplete."""
+    # Set one dependency to Done, leave others as ToDo
+    story_2 = test_session.query(Story).filter(Story.id == "story-2").first()
+    story_2.status = "Done"
+    test_session.commit()
+    
+    # Add dependencies (story-3 remains ToDo status)
+    dependency_repository.add_dependency("story-1", "story-2")
+    dependency_repository.add_dependency("story-1", "story-3")
+    
+    # Test - should return True since story-3 is ToDo (not Done)
+    result = dependency_repository.has_incomplete_dependencies("story-1")
+    assert result is True
+
+
+def test_has_incomplete_dependencies_true_all_incomplete(dependency_repository, test_stories):
+    """Test has_incomplete_dependencies returns True when all dependencies are incomplete."""
+    # Add dependencies (all stories have default ToDo status)
+    dependency_repository.add_dependency("story-1", "story-2")
+    dependency_repository.add_dependency("story-1", "story-3")
+    
+    # Test - should return True since dependencies are ToDo (not Done)
+    result = dependency_repository.has_incomplete_dependencies("story-1")
+    assert result is True
+
+
+def test_has_incomplete_dependencies_various_statuses(dependency_repository, test_stories, test_session):
+    """Test has_incomplete_dependencies with various non-Done statuses."""
+    # Create additional test stories with different statuses
+    story_4 = Story(
+        id="story-4",
+        title="Story 4",
+        description="Fourth test story",
+        acceptance_criteria=["AC4"],
+        epic_id="test-epic-1",
+        status="InProgress"
+    )
+    story_5 = Story(
+        id="story-5", 
+        title="Story 5",
+        description="Fifth test story",
+        acceptance_criteria=["AC5"],
+        epic_id="test-epic-1",
+        status="Review"
+    )
+    test_session.add(story_4)
+    test_session.add(story_5)
+    test_session.commit()
+    
+    # Add dependencies with various statuses (InProgress, Review, ToDo)
+    dependency_repository.add_dependency("story-1", "story-2")  # ToDo
+    dependency_repository.add_dependency("story-1", "story-4")  # InProgress  
+    dependency_repository.add_dependency("story-1", "story-5")  # Review
+    
+    # Test - should return True since none are Done
+    result = dependency_repository.has_incomplete_dependencies("story-1")
+    assert result is True

@@ -327,3 +327,190 @@ def test_update_story_status_multiple_stories(story_repository):
     
     assert found_story1.status == "InProgress"
     assert found_story2.status == "Review"
+
+
+def test_find_stories_by_status_ordered_empty(story_repository):
+    """Test find_stories_by_status_ordered with no matching stories."""
+    stories = story_repository.find_stories_by_status_ordered("Review")
+    assert stories == []
+
+
+def test_find_stories_by_status_ordered_single_priority(story_repository, in_memory_db):
+    """Test find_stories_by_status_ordered with stories of same priority, ordered by created_at."""
+    from datetime import datetime, timedelta
+    
+    # Create stories with same priority but different creation times
+    base_time = datetime(2023, 1, 1, 12, 0, 0)
+    
+    story1 = Story(
+        id="order-story-1",
+        title="Second Created Story",
+        description="Story created second",
+        acceptance_criteria=["AC1"],
+        epic_id="test-epic-1",
+        status="ToDo",
+        priority=1,
+        created_at=base_time + timedelta(minutes=5)  # Later
+    )
+    
+    story2 = Story(
+        id="order-story-2", 
+        title="First Created Story",
+        description="Story created first",
+        acceptance_criteria=["AC2"],
+        epic_id="test-epic-1",
+        status="ToDo",
+        priority=1,
+        created_at=base_time  # Earlier
+    )
+    
+    story3 = Story(
+        id="order-story-3",
+        title="Third Created Story", 
+        description="Story created third",
+        acceptance_criteria=["AC3"],
+        epic_id="test-epic-1",
+        status="ToDo",
+        priority=1,
+        created_at=base_time + timedelta(minutes=10)  # Latest
+    )
+    
+    # Add in random order
+    in_memory_db.add(story3)
+    in_memory_db.add(story1)
+    in_memory_db.add(story2)
+    in_memory_db.commit()
+    
+    # Get stories - should be ordered by created_at (earliest first) since priority is same
+    stories = story_repository.find_stories_by_status_ordered("ToDo")
+    
+    assert len(stories) == 3
+    assert stories[0].id == "order-story-2"  # Earliest created_at
+    assert stories[1].id == "order-story-1"  # Middle created_at
+    assert stories[2].id == "order-story-3"  # Latest created_at
+
+
+def test_find_stories_by_status_ordered_by_priority(story_repository, in_memory_db):
+    """Test find_stories_by_status_ordered prioritizes by priority first."""
+    from datetime import datetime, timedelta
+    
+    base_time = datetime(2023, 1, 1, 12, 0, 0)
+    
+    # Create stories with different priorities
+    story_low_priority = Story(
+        id="priority-story-1",
+        title="Low Priority Story",
+        description="Story with low priority but early creation",
+        acceptance_criteria=["AC1"],
+        epic_id="test-epic-1",
+        status="ToDo",
+        priority=1,
+        created_at=base_time  # Earliest created
+    )
+    
+    story_high_priority = Story(
+        id="priority-story-2",
+        title="High Priority Story",
+        description="Story with high priority but late creation",
+        acceptance_criteria=["AC2"],
+        epic_id="test-epic-1",
+        status="ToDo",
+        priority=10,
+        created_at=base_time + timedelta(hours=1)  # Later created
+    )
+    
+    story_medium_priority = Story(
+        id="priority-story-3",
+        title="Medium Priority Story",
+        description="Story with medium priority",
+        acceptance_criteria=["AC3"],
+        epic_id="test-epic-1",
+        status="ToDo",
+        priority=5,
+        created_at=base_time + timedelta(minutes=30)
+    )
+    
+    # Add in random order
+    in_memory_db.add(story_low_priority)
+    in_memory_db.add(story_high_priority)
+    in_memory_db.add(story_medium_priority)
+    in_memory_db.commit()
+    
+    # Get stories - should be ordered by priority (highest first), then created_at
+    stories = story_repository.find_stories_by_status_ordered("ToDo")
+    
+    assert len(stories) == 3
+    assert stories[0].id == "priority-story-2"  # Highest priority (10)
+    assert stories[1].id == "priority-story-3"  # Medium priority (5)
+    assert stories[2].id == "priority-story-1"  # Lowest priority (1)
+
+
+def test_find_stories_by_status_ordered_mixed(story_repository, in_memory_db):
+    """Test find_stories_by_status_ordered with mixed priorities and creation times."""
+    from datetime import datetime, timedelta
+    
+    base_time = datetime(2023, 1, 1, 12, 0, 0)
+    
+    # Create stories with same priority but different creation times
+    story_same_priority_early = Story(
+        id="mixed-story-1",
+        title="Same Priority Early",
+        description="Priority 3, created early",
+        acceptance_criteria=["AC1"],
+        epic_id="test-epic-1",
+        status="ToDo",
+        priority=3,
+        created_at=base_time
+    )
+    
+    story_same_priority_late = Story(
+        id="mixed-story-2",
+        title="Same Priority Late", 
+        description="Priority 3, created late",
+        acceptance_criteria=["AC2"],
+        epic_id="test-epic-1",
+        status="ToDo",
+        priority=3,
+        created_at=base_time + timedelta(minutes=30)
+    )
+    
+    story_higher_priority = Story(
+        id="mixed-story-3",
+        title="Higher Priority",
+        description="Priority 7, created in middle",
+        acceptance_criteria=["AC3"],
+        epic_id="test-epic-1",
+        status="ToDo",
+        priority=7,
+        created_at=base_time + timedelta(minutes=15)
+    )
+    
+    # Add some stories with different status to verify filtering
+    story_different_status = Story(
+        id="mixed-story-4",
+        title="Different Status",
+        description="InProgress status should be filtered out",
+        acceptance_criteria=["AC4"],
+        epic_id="test-epic-1",
+        status="InProgress",  # Different status
+        priority=10,  # High priority but wrong status
+        created_at=base_time
+    )
+    
+    in_memory_db.add(story_same_priority_early)
+    in_memory_db.add(story_same_priority_late)
+    in_memory_db.add(story_higher_priority)
+    in_memory_db.add(story_different_status)
+    in_memory_db.commit()
+    
+    # Get ToDo stories only
+    stories = story_repository.find_stories_by_status_ordered("ToDo")
+    
+    assert len(stories) == 3  # Only ToDo stories
+    assert stories[0].id == "mixed-story-3"  # Highest priority (7)
+    assert stories[1].id == "mixed-story-1"  # Priority 3, earlier created_at
+    assert stories[2].id == "mixed-story-2"  # Priority 3, later created_at
+    
+    # Verify the InProgress story is not included
+    story_ids = [s.id for s in stories]
+    assert "mixed-story-4" not in story_ids

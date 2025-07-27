@@ -44,16 +44,15 @@ def test_create_story_success(story_service, mock_repository):
         epic_id="test-epic-id"
     )
     
-    # Verify result
-    expected = {
-        "id": "test-story-id",
-        "title": "Test Story",
-        "description": "As a user, I want to test",
-        "acceptance_criteria": ["Should work", "Should pass tests"],
-        "epic_id": "test-epic-id",
-        "status": "ToDo"
-    }
-    assert result == expected
+    # Verify result contains all expected fields
+    assert result["id"] == "test-story-id"
+    assert result["title"] == "Test Story"
+    assert result["description"] == "As a user, I want to test"
+    assert result["acceptance_criteria"] == ["Should work", "Should pass tests"]
+    assert result["epic_id"] == "test-epic-id"
+    assert result["status"] == "ToDo"
+    assert result["priority"] == 0
+    assert "created_at" in result
     mock_repository.create_story.assert_called_once_with(
         "Test Story",
         "As a user, I want to test",
@@ -216,15 +215,15 @@ def test_get_story_success(story_service, mock_repository):
     
     result = story_service.get_story("test-story-id")
     
-    expected = {
-        "id": "test-story-id",
-        "title": "Found Story",
-        "description": "This story was found",
-        "acceptance_criteria": ["Should be found"],
-        "epic_id": "test-epic-id",
-        "status": "InProgress"
-    }
-    assert result == expected
+    # Verify result contains all expected fields
+    assert result["id"] == "test-story-id"
+    assert result["title"] == "Found Story"
+    assert result["description"] == "This story was found"
+    assert result["acceptance_criteria"] == ["Should be found"]
+    assert result["epic_id"] == "test-epic-id"
+    assert result["status"] == "InProgress"
+    assert result["priority"] == 0
+    assert "created_at" in result
     mock_repository.find_story_by_id.assert_called_once_with("test-story-id")
 
 
@@ -275,25 +274,28 @@ def test_find_stories_by_epic_success(story_service, mock_repository):
     
     result = story_service.find_stories_by_epic("test-epic-id")
     
-    expected = [
-        {
-            "id": "story-1",
-            "title": "Story 1",
-            "description": "First story",
-            "acceptance_criteria": ["AC1"],
-            "epic_id": "test-epic-id",
-            "status": "ToDo"
-        },
-        {
-            "id": "story-2",
-            "title": "Story 2", 
-            "description": "Second story",
-            "acceptance_criteria": ["AC2"],
-            "epic_id": "test-epic-id",
-            "status": "Done"
-        }
-    ]
-    assert result == expected
+    # Verify result structure and content
+    assert len(result) == 2
+    
+    # Check first story
+    assert result[0]["id"] == "story-1"
+    assert result[0]["title"] == "Story 1"
+    assert result[0]["description"] == "First story"
+    assert result[0]["acceptance_criteria"] == ["AC1"]
+    assert result[0]["epic_id"] == "test-epic-id"
+    assert result[0]["status"] == "ToDo"
+    assert result[0]["priority"] == 0
+    assert "created_at" in result[0]
+    
+    # Check second story
+    assert result[1]["id"] == "story-2"
+    assert result[1]["title"] == "Story 2"
+    assert result[1]["description"] == "Second story"
+    assert result[1]["acceptance_criteria"] == ["AC2"]
+    assert result[1]["epic_id"] == "test-epic-id"
+    assert result[1]["status"] == "Done"
+    assert result[1]["priority"] == 0
+    assert "created_at" in result[1]
     mock_repository.find_stories_by_epic_id.assert_called_once_with("test-epic-id")
 
 
@@ -353,15 +355,15 @@ def test_update_story_status_success(story_service, mock_repository):
     
     result = story_service.update_story_status("test-story-id", "InProgress")
     
-    expected = {
-        "id": "test-story-id",
-        "title": "Test Story",
-        "description": "Test description",
-        "acceptance_criteria": ["AC1"],
-        "epic_id": "test-epic-id",
-        "status": "InProgress"
-    }
-    assert result == expected
+    # Verify result contains all expected fields
+    assert result["id"] == "test-story-id"
+    assert result["title"] == "Test Story"
+    assert result["description"] == "Test description"
+    assert result["acceptance_criteria"] == ["AC1"]
+    assert result["epic_id"] == "test-epic-id"
+    assert result["status"] == "InProgress"
+    assert result["priority"] == 0
+    assert "created_at" in result
     mock_repository.update_story_status.assert_called_once_with("test-story-id", "InProgress")
 
 
@@ -460,3 +462,234 @@ def test_update_story_status_strips_whitespace(story_service, mock_repository):
     story_service.update_story_status("  test-story-id  ", "InProgress")
     
     mock_repository.update_story_status.assert_called_once_with("test-story-id", "InProgress")
+
+
+# Tests for get_next_ready_story method
+
+@pytest.fixture
+def mock_dependency_repository():
+    """Create a mock Dependency repository."""
+    return Mock()
+
+
+@pytest.fixture
+def story_service_with_dependencies(mock_repository, mock_dependency_repository):
+    """Create Story service with both repository mocks."""
+    return StoryService(mock_repository, mock_dependency_repository)
+
+
+def test_get_next_ready_story_no_dependency_repository(story_service):
+    """Test get_next_ready_story raises error when dependency repository is not provided."""
+    with pytest.raises(StoryValidationError, match="Dependency repository required"):
+        story_service.get_next_ready_story()
+
+
+def test_get_next_ready_story_no_stories(story_service_with_dependencies, mock_repository, mock_dependency_repository):
+    """Test get_next_ready_story returns None when no ToDo stories exist."""
+    # Setup mocks - no ToDo stories
+    mock_repository.find_stories_by_status_ordered.return_value = []
+    
+    result = story_service_with_dependencies.get_next_ready_story()
+    
+    assert result is None
+    mock_repository.find_stories_by_status_ordered.assert_called_once_with("ToDo")
+
+
+def test_get_next_ready_story_all_have_dependencies(story_service_with_dependencies, mock_repository, mock_dependency_repository):
+    """Test get_next_ready_story returns None when all stories have incomplete dependencies."""
+    from datetime import datetime
+    
+    # Setup mock stories - all have incomplete dependencies
+    story1 = Story(
+        id="story-1",
+        title="Story 1",
+        description="Description 1",
+        acceptance_criteria=["AC1"],
+        epic_id="epic-1",
+        status="ToDo",
+        priority=1,
+        created_at=datetime(2023, 1, 1)
+    )
+    story2 = Story(
+        id="story-2",
+        title="Story 2", 
+        description="Description 2",
+        acceptance_criteria=["AC2"],
+        epic_id="epic-1",
+        status="ToDo",
+        priority=2,
+        created_at=datetime(2023, 1, 2)
+    )
+    
+    mock_repository.find_stories_by_status_ordered.return_value = [story2, story1]  # Ordered by priority
+    mock_dependency_repository.has_incomplete_dependencies.side_effect = [True, True]  # Both have dependencies
+    
+    result = story_service_with_dependencies.get_next_ready_story()
+    
+    assert result is None
+    mock_repository.find_stories_by_status_ordered.assert_called_once_with("ToDo")
+    assert mock_dependency_repository.has_incomplete_dependencies.call_count == 2
+
+
+def test_get_next_ready_story_first_story_ready(story_service_with_dependencies, mock_repository, mock_dependency_repository):
+    """Test get_next_ready_story returns first story when it has no dependencies."""
+    from datetime import datetime
+    
+    # Setup mock stories
+    story1 = Story(
+        id="story-1",
+        title="Story 1",
+        description="Description 1",
+        acceptance_criteria=["AC1"],
+        epic_id="epic-1",
+        status="ToDo",
+        priority=5,
+        created_at=datetime(2023, 1, 1)
+    )
+    story2 = Story(
+        id="story-2",
+        title="Story 2",
+        description="Description 2", 
+        acceptance_criteria=["AC2"],
+        epic_id="epic-1",
+        status="ToDo",
+        priority=3,
+        created_at=datetime(2023, 1, 2)
+    )
+    
+    # Updated story after status change
+    updated_story1 = Story(
+        id="story-1",
+        title="Story 1",
+        description="Description 1",
+        acceptance_criteria=["AC1"],
+        epic_id="epic-1",
+        status="InProgress",
+        priority=5,
+        created_at=datetime(2023, 1, 1)
+    )
+    
+    mock_repository.find_stories_by_status_ordered.return_value = [story1, story2]  # Ordered by priority
+    mock_dependency_repository.has_incomplete_dependencies.return_value = False  # First story is ready
+    mock_repository.update_story_status.return_value = updated_story1
+    
+    result = story_service_with_dependencies.get_next_ready_story()
+    
+    # Verify result
+    assert result is not None
+    assert result["id"] == "story-1"
+    assert result["status"] == "InProgress"
+    
+    # Verify calls
+    mock_repository.find_stories_by_status_ordered.assert_called_once_with("ToDo")
+    mock_dependency_repository.has_incomplete_dependencies.assert_called_once_with("story-1")
+    mock_repository.update_story_status.assert_called_once_with("story-1", "InProgress")
+
+
+def test_get_next_ready_story_second_story_ready(story_service_with_dependencies, mock_repository, mock_dependency_repository):
+    """Test get_next_ready_story returns second story when first has dependencies."""
+    from datetime import datetime
+    
+    # Setup mock stories
+    story1 = Story(
+        id="story-1",
+        title="Story 1",
+        description="Description 1",
+        acceptance_criteria=["AC1"],
+        epic_id="epic-1",
+        status="ToDo",
+        priority=5,
+        created_at=datetime(2023, 1, 1)
+    )
+    story2 = Story(
+        id="story-2", 
+        title="Story 2",
+        description="Description 2",
+        acceptance_criteria=["AC2"],
+        epic_id="epic-1",
+        status="ToDo",
+        priority=3,
+        created_at=datetime(2023, 1, 2)
+    )
+    
+    # Updated story after status change
+    updated_story2 = Story(
+        id="story-2",
+        title="Story 2",
+        description="Description 2",
+        acceptance_criteria=["AC2"],
+        epic_id="epic-1", 
+        status="InProgress",
+        priority=3,
+        created_at=datetime(2023, 1, 2)
+    )
+    
+    mock_repository.find_stories_by_status_ordered.return_value = [story1, story2]  # Ordered by priority
+    mock_dependency_repository.has_incomplete_dependencies.side_effect = [True, False]  # First has deps, second doesn't
+    mock_repository.update_story_status.return_value = updated_story2
+    
+    result = story_service_with_dependencies.get_next_ready_story()
+    
+    # Verify result
+    assert result is not None
+    assert result["id"] == "story-2"
+    assert result["status"] == "InProgress"
+    
+    # Verify calls
+    mock_repository.find_stories_by_status_ordered.assert_called_once_with("ToDo")
+    assert mock_dependency_repository.has_incomplete_dependencies.call_count == 2
+    mock_repository.update_story_status.assert_called_once_with("story-2", "InProgress")
+
+
+def test_get_next_ready_story_status_update_fails(story_service_with_dependencies, mock_repository, mock_dependency_repository):
+    """Test get_next_ready_story handles status update failure gracefully."""
+    from datetime import datetime
+    
+    story1 = Story(
+        id="story-1",
+        title="Story 1",
+        description="Description 1",
+        acceptance_criteria=["AC1"],
+        epic_id="epic-1",
+        status="ToDo",
+        priority=1,
+        created_at=datetime(2023, 1, 1)
+    )
+    
+    mock_repository.find_stories_by_status_ordered.return_value = [story1]
+    mock_dependency_repository.has_incomplete_dependencies.return_value = False
+    mock_repository.update_story_status.return_value = None  # Update fails
+    
+    result = story_service_with_dependencies.get_next_ready_story()
+    
+    assert result is None  # Should return None when update fails
+
+
+def test_get_next_ready_story_database_error(story_service_with_dependencies, mock_repository, mock_dependency_repository):
+    """Test get_next_ready_story raises DatabaseError on SQLAlchemy exception."""
+    mock_repository.find_stories_by_status_ordered.side_effect = SQLAlchemyError("Database error")
+    
+    with pytest.raises(DatabaseError, match="Database operation failed"):
+        story_service_with_dependencies.get_next_ready_story()
+
+
+def test_get_next_ready_story_dependency_check_error(story_service_with_dependencies, mock_repository, mock_dependency_repository):
+    """Test get_next_ready_story handles dependency check errors."""
+    from datetime import datetime
+    
+    story1 = Story(
+        id="story-1",
+        title="Story 1",
+        description="Description 1",
+        acceptance_criteria=["AC1"],
+        epic_id="epic-1",
+        status="ToDo",
+        priority=1,
+        created_at=datetime(2023, 1, 1)
+    )
+    
+    mock_repository.find_stories_by_status_ordered.return_value = [story1]
+    mock_dependency_repository.has_incomplete_dependencies.side_effect = SQLAlchemyError("Dependency check failed")
+    
+    with pytest.raises(DatabaseError, match="Database operation failed"):
+        story_service_with_dependencies.get_next_ready_story()

@@ -124,3 +124,27 @@ class StoryRepository:
         except SQLAlchemyError as e:
             self.db_session.rollback()
             raise e
+    
+    def find_stories_by_status_ordered(self, status: str) -> List[Story]:
+        """
+        Find all stories with the given status, ordered by priority (desc) then created_at (asc).
+        Higher priority numbers come first, then earlier creation dates.
+        
+        Args:
+            status: The status to filter stories by
+            
+        Returns:
+            List[Story]: List of story instances with the given status, ordered by priority and creation date
+            
+        Raises:
+            SQLAlchemyError: If database operation fails
+        """
+        try:
+            return (
+                self.db_session.query(Story)
+                .filter(Story.status == status)
+                .order_by(Story.priority.desc(), Story.created_at.asc())
+                .all()
+            )
+        except SQLAlchemyError as e:
+            raise e
