@@ -690,3 +690,435 @@ def register_story_tools(mcp: FastMCP) -> None:
             raise McpError(
                 ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
             )
+
+    @mcp.tool("tasks.addToStory")
+    def add_task_to_story(
+        story_id: str, description: str, order: int = None
+    ) -> Dict[str, Any]:
+        """
+        Add a new task to a story.
+
+        Args:
+            story_id: The unique identifier of the story
+            description: Description of the task
+            order: Optional order for the task (auto-incremented if not provided)
+
+        Returns:
+            Dict containing the updated story with the new task
+
+        Raises:
+            McpError: If validation fails, story not found, or database operation fails
+        """
+        request_id = str(uuid.uuid4())
+        try:
+            logger.info(
+                "Processing add task to story request",
+                **create_request_context(
+                    request_id=request_id, tool_name="tasks.addToStory"
+                ),
+                **create_entity_context(story_id=story_id),
+                task_description=description[:50] if description else None,
+            )
+
+            db_session = get_db()
+            try:
+                story_repository = StoryRepository(db_session)
+                story_service = StoryService(story_repository)
+
+                story_dict = story_service.add_task_to_story(
+                    story_id, description, order
+                )
+                story_response = StoryResponse(**story_dict)
+
+                logger.info(
+                    "Add task to story request completed successfully",
+                    **create_request_context(
+                        request_id=request_id, tool_name="tasks.addToStory"
+                    ),
+                    **create_entity_context(story_id=story_id),
+                )
+
+                return story_response.model_dump()
+
+            finally:
+                db_session.close()
+
+        except StoryValidationError as e:
+            logger.error(
+                "Story validation error in add task to story",
+                **create_request_context(
+                    request_id=request_id, tool_name="tasks.addToStory"
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type="StoryValidationError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(
+                ErrorData(code=-32001, message=f"Validation error: {str(e)}")
+            )
+        except StoryNotFoundError as e:
+            logger.error(
+                "Story not found error in add task to story",
+                **create_request_context(
+                    request_id=request_id, tool_name="tasks.addToStory"
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type="StoryNotFoundError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(ErrorData(code=-32001, message=f"Story not found: {str(e)}"))
+        except DatabaseError as e:
+            logger.error(
+                "Database error in add task to story",
+                **create_request_context(
+                    request_id=request_id, tool_name="tasks.addToStory"
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type="DatabaseError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(ErrorData(code=-32001, message=f"Database error: {str(e)}"))
+        except Exception as e:
+            logger.error(
+                "Unexpected error in add task to story",
+                **create_request_context(
+                    request_id=request_id, tool_name="tasks.addToStory"
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type=type(e).__name__,
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(
+                ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
+            )
+
+    @mcp.tool("tasks.updateTaskStatus")
+    def update_task_status(
+        story_id: str, task_id: str, completed: bool
+    ) -> Dict[str, Any]:
+        """
+        Update the completion status of a task within a story.
+
+        Args:
+            story_id: The unique identifier of the story
+            task_id: The unique identifier of the task
+            completed: New completion status
+
+        Returns:
+            Dict containing the updated story with modified task
+
+        Raises:
+            McpError: If validation fails, story or task not found, or database
+                operation fails
+        """
+        request_id = str(uuid.uuid4())
+        try:
+            logger.info(
+                "Processing update task status request",
+                **create_request_context(
+                    request_id=request_id, tool_name="tasks.updateTaskStatus"
+                ),
+                **create_entity_context(story_id=story_id),
+                task_id=task_id,
+                new_completed=completed,
+            )
+
+            db_session = get_db()
+            try:
+                story_repository = StoryRepository(db_session)
+                story_service = StoryService(story_repository)
+
+                story_dict = story_service.update_task_status(
+                    story_id, task_id, completed
+                )
+                story_response = StoryResponse(**story_dict)
+
+                logger.info(
+                    "Update task status request completed successfully",
+                    **create_request_context(
+                        request_id=request_id, tool_name="tasks.updateTaskStatus"
+                    ),
+                    **create_entity_context(story_id=story_id),
+                    task_id=task_id,
+                )
+
+                return story_response.model_dump()
+
+            finally:
+                db_session.close()
+
+        except StoryValidationError as e:
+            logger.error(
+                "Story validation error in update task status",
+                **create_request_context(
+                    request_id=request_id, tool_name="tasks.updateTaskStatus"
+                ),
+                **create_entity_context(story_id=story_id),
+                task_id=task_id,
+                error_type="StoryValidationError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(
+                ErrorData(code=-32001, message=f"Validation error: {str(e)}")
+            )
+        except StoryNotFoundError as e:
+            logger.error(
+                "Story not found error in update task status",
+                **create_request_context(
+                    request_id=request_id, tool_name="tasks.updateTaskStatus"
+                ),
+                **create_entity_context(story_id=story_id),
+                task_id=task_id,
+                error_type="StoryNotFoundError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(ErrorData(code=-32001, message=f"Story not found: {str(e)}"))
+        except DatabaseError as e:
+            logger.error(
+                "Database error in update task status",
+                **create_request_context(
+                    request_id=request_id, tool_name="tasks.updateTaskStatus"
+                ),
+                **create_entity_context(story_id=story_id),
+                task_id=task_id,
+                error_type="DatabaseError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(ErrorData(code=-32001, message=f"Database error: {str(e)}"))
+        except Exception as e:
+            logger.error(
+                "Unexpected error in update task status",
+                **create_request_context(
+                    request_id=request_id, tool_name="tasks.updateTaskStatus"
+                ),
+                **create_entity_context(story_id=story_id),
+                task_id=task_id,
+                error_type=type(e).__name__,
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(
+                ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
+            )
+
+    @mcp.tool("tasks.updateTaskDescription")
+    def update_task_description(
+        story_id: str, task_id: str, description: str
+    ) -> Dict[str, Any]:
+        """
+        Update the description of a task within a story.
+
+        Args:
+            story_id: The unique identifier of the story
+            task_id: The unique identifier of the task
+            description: New task description
+
+        Returns:
+            Dict containing the updated story with modified task
+
+        Raises:
+            McpError: If validation fails, story or task not found, or database
+                operation fails
+        """
+        request_id = str(uuid.uuid4())
+        try:
+            logger.info(
+                "Processing update task description request",
+                **create_request_context(
+                    request_id=request_id, tool_name="tasks.updateTaskDescription"
+                ),
+                **create_entity_context(story_id=story_id),
+                task_id=task_id,
+                new_description=description[:50] if description else None,
+            )
+
+            db_session = get_db()
+            try:
+                story_repository = StoryRepository(db_session)
+                story_service = StoryService(story_repository)
+
+                story_dict = story_service.update_task_description(
+                    story_id, task_id, description
+                )
+                story_response = StoryResponse(**story_dict)
+
+                logger.info(
+                    "Update task description request completed successfully",
+                    **create_request_context(
+                        request_id=request_id, tool_name="tasks.updateTaskDescription"
+                    ),
+                    **create_entity_context(story_id=story_id),
+                    task_id=task_id,
+                )
+
+                return story_response.model_dump()
+
+            finally:
+                db_session.close()
+
+        except StoryValidationError as e:
+            logger.error(
+                "Story validation error in update task description",
+                **create_request_context(
+                    request_id=request_id, tool_name="tasks.updateTaskDescription"
+                ),
+                **create_entity_context(story_id=story_id),
+                task_id=task_id,
+                error_type="StoryValidationError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(
+                ErrorData(code=-32001, message=f"Validation error: {str(e)}")
+            )
+        except StoryNotFoundError as e:
+            logger.error(
+                "Story not found error in update task description",
+                **create_request_context(
+                    request_id=request_id, tool_name="tasks.updateTaskDescription"
+                ),
+                **create_entity_context(story_id=story_id),
+                task_id=task_id,
+                error_type="StoryNotFoundError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(ErrorData(code=-32001, message=f"Story not found: {str(e)}"))
+        except DatabaseError as e:
+            logger.error(
+                "Database error in update task description",
+                **create_request_context(
+                    request_id=request_id, tool_name="tasks.updateTaskDescription"
+                ),
+                **create_entity_context(story_id=story_id),
+                task_id=task_id,
+                error_type="DatabaseError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(ErrorData(code=-32001, message=f"Database error: {str(e)}"))
+        except Exception as e:
+            logger.error(
+                "Unexpected error in update task description",
+                **create_request_context(
+                    request_id=request_id, tool_name="tasks.updateTaskDescription"
+                ),
+                **create_entity_context(story_id=story_id),
+                task_id=task_id,
+                error_type=type(e).__name__,
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(
+                ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
+            )
+
+    @mcp.tool("tasks.reorderTasks")
+    def reorder_tasks(
+        story_id: str, task_orders: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        Reorder tasks within a story.
+
+        Args:
+            story_id: The unique identifier of the story
+            task_orders: List of dicts with task_id and new order
+                Format: [{'task_id': 'id1', 'order': 1}, {'task_id': 'id2', 'order': 2}]
+
+        Returns:
+            Dict containing the updated story with reordered tasks
+
+        Raises:
+            McpError: If validation fails, story not found, or database operation fails
+        """
+        request_id = str(uuid.uuid4())
+        try:
+            logger.info(
+                "Processing reorder tasks request",
+                **create_request_context(
+                    request_id=request_id, tool_name="tasks.reorderTasks"
+                ),
+                **create_entity_context(story_id=story_id),
+                task_count=len(task_orders) if task_orders else 0,
+            )
+
+            db_session = get_db()
+            try:
+                story_repository = StoryRepository(db_session)
+                story_service = StoryService(story_repository)
+
+                story_dict = story_service.reorder_tasks(story_id, task_orders)
+                story_response = StoryResponse(**story_dict)
+
+                logger.info(
+                    "Reorder tasks request completed successfully",
+                    **create_request_context(
+                        request_id=request_id, tool_name="tasks.reorderTasks"
+                    ),
+                    **create_entity_context(story_id=story_id),
+                )
+
+                return story_response.model_dump()
+
+            finally:
+                db_session.close()
+
+        except StoryValidationError as e:
+            logger.error(
+                "Story validation error in reorder tasks",
+                **create_request_context(
+                    request_id=request_id, tool_name="tasks.reorderTasks"
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type="StoryValidationError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(
+                ErrorData(code=-32001, message=f"Validation error: {str(e)}")
+            )
+        except StoryNotFoundError as e:
+            logger.error(
+                "Story not found error in reorder tasks",
+                **create_request_context(
+                    request_id=request_id, tool_name="tasks.reorderTasks"
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type="StoryNotFoundError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(ErrorData(code=-32001, message=f"Story not found: {str(e)}"))
+        except DatabaseError as e:
+            logger.error(
+                "Database error in reorder tasks",
+                **create_request_context(
+                    request_id=request_id, tool_name="tasks.reorderTasks"
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type="DatabaseError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(ErrorData(code=-32001, message=f"Database error: {str(e)}"))
+        except Exception as e:
+            logger.error(
+                "Unexpected error in reorder tasks",
+                **create_request_context(
+                    request_id=request_id, tool_name="tasks.reorderTasks"
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type=type(e).__name__,
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(
+                ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
+            )

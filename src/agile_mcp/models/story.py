@@ -30,6 +30,9 @@ class Story(Base):
         description: The full user story text
         acceptance_criteria: A list of conditions that must be met for the
             story to be considered complete
+        tasks: A list of individual tasks that break down the story work.
+            Each task has: {'id': str, 'description': str, 'completed': bool,
+            'order': int}
         status: Current state (ToDo, InProgress, Review, Done)
         priority: Priority level for ordering (higher number = higher priority),
             default 0
@@ -43,6 +46,9 @@ class Story(Base):
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     acceptance_criteria: Mapped[List[str]] = mapped_column(JSON, nullable=False)
+    tasks: Mapped[List[Dict[str, Any]]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="ToDo")
     priority: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(
@@ -91,6 +97,7 @@ class Story(Base):
         description: str,
         acceptance_criteria: List[str],
         epic_id: str,
+        tasks: Optional[List[Dict[str, Any]]] = None,
         status: str = "ToDo",
         priority: int = 0,
         created_at: Optional[datetime] = None,
@@ -102,6 +109,7 @@ class Story(Base):
         self.title = title
         self.description = description
         self.acceptance_criteria = acceptance_criteria
+        self.tasks = tasks or []
         self.epic_id = epic_id
         self.status = status
         self.priority = priority
@@ -114,6 +122,7 @@ class Story(Base):
             "title": self.title,
             "description": self.description,
             "acceptance_criteria": self.acceptance_criteria,
+            "tasks": self.tasks,
             "status": self.status,
             "priority": self.priority,
             "created_at": self.created_at.isoformat() if self.created_at else None,
@@ -149,6 +158,56 @@ class Story(Base):
             if not isinstance(criterion, str) or not criterion.strip():
                 raise ValueError("Each acceptance criterion must be a non-empty string")
         return acceptance_criteria
+
+    @validates("tasks")
+    def validate_tasks(self, key, tasks):
+        """Validate story tasks."""
+        if not isinstance(tasks, list):
+            raise ValueError("Tasks must be a list")
+
+        required_fields = {"id", "description", "completed", "order"}
+        used_ids = set()
+        used_orders = set()
+
+        for i, task in enumerate(tasks):
+            if not isinstance(task, dict):
+                raise ValueError(f"Task at index {i} must be a dictionary")
+
+            # Check required fields
+            if not required_fields.issubset(task.keys()):
+                missing = required_fields - task.keys()
+                raise ValueError(
+                    f"Task at index {i} missing required fields: {missing}"
+                )
+
+            # Validate id
+            if not isinstance(task["id"], str) or not task["id"].strip():
+                raise ValueError(f"Task at index {i} must have a non-empty string id")
+            if task["id"] in used_ids:
+                raise ValueError(f"Task id '{task['id']}' is not unique")
+            used_ids.add(task["id"])
+
+            # Validate description
+            if (
+                not isinstance(task["description"], str)
+                or not task["description"].strip()
+            ):
+                raise ValueError(
+                    f"Task at index {i} must have a non-empty string description"
+                )
+
+            # Validate completed
+            if not isinstance(task["completed"], bool):
+                raise ValueError(f"Task at index {i} completed field must be a boolean")
+
+            # Validate order
+            if not isinstance(task["order"], int):
+                raise ValueError(f"Task at index {i} order field must be an integer")
+            if task["order"] in used_orders:
+                raise ValueError(f"Task order {task['order']} is not unique")
+            used_orders.add(task["order"])
+
+        return tasks
 
     @validates("status")
     def validate_status(self, key, status):

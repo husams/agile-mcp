@@ -94,6 +94,7 @@ def test_story_to_dict():
         "title": "Test Story 3",
         "description": "Third test story",
         "acceptance_criteria": ["AC1", "AC2", "AC3"],
+        "tasks": [],
         "epic_id": "test-epic-1",
         "status": "InProgress",
         "priority": 0,
@@ -382,6 +383,7 @@ def test_story_to_dict_with_priority_created_at():
         "title": "Dict Test Story",
         "description": "Story for testing to_dict with new fields",
         "acceptance_criteria": ["Should include priority", "Should include created_at"],
+        "tasks": [],
         "epic_id": "test-epic-1",
         "status": "Review",
         "priority": 7,
@@ -389,3 +391,239 @@ def test_story_to_dict_with_priority_created_at():
     }
 
     assert story_dict == expected
+
+
+def test_story_with_empty_tasks():
+    """Test Story model creation with empty tasks list."""
+    story = Story(
+        id="test-story-21",
+        title="Empty Tasks Story",
+        description="Story with empty tasks list",
+        acceptance_criteria=["Should have empty tasks"],
+        epic_id="test-epic-1",
+    )
+
+    assert story.tasks == []
+    assert isinstance(story.tasks, list)
+
+
+def test_story_with_tasks():
+    """Test Story model creation with tasks."""
+    tasks = [
+        {"id": "task-1", "description": "First task", "completed": False, "order": 1},
+        {"id": "task-2", "description": "Second task", "completed": True, "order": 2},
+    ]
+
+    story = Story(
+        id="test-story-22",
+        title="Tasks Story",
+        description="Story with tasks",
+        acceptance_criteria=["Should have tasks"],
+        epic_id="test-epic-1",
+        tasks=tasks,
+    )
+
+    assert len(story.tasks) == 2
+    assert story.tasks[0]["id"] == "task-1"
+    assert story.tasks[0]["description"] == "First task"
+    assert story.tasks[0]["completed"] is False
+    assert story.tasks[0]["order"] == 1
+    assert story.tasks[1]["completed"] is True
+
+
+def test_story_to_dict_with_tasks():
+    """Test Story model to_dict method includes tasks."""
+    tasks = [
+        {"id": "task-1", "description": "Test task", "completed": False, "order": 1}
+    ]
+
+    story = Story(
+        id="test-story-23",
+        title="Dict Tasks Story",
+        description="Story for testing to_dict with tasks",
+        acceptance_criteria=["Should include tasks"],
+        epic_id="test-epic-1",
+        tasks=tasks,
+    )
+
+    story_dict = story.to_dict()
+
+    assert "tasks" in story_dict
+    assert story_dict["tasks"] == tasks
+    assert len(story_dict["tasks"]) == 1
+    assert story_dict["tasks"][0]["id"] == "task-1"
+
+
+def test_story_tasks_validation_empty_list():
+    """Test Story model tasks validation with empty list."""
+    story = Story(
+        id="test-story-24",
+        title="Valid Empty Tasks",
+        description="Story with valid empty tasks",
+        acceptance_criteria=["Should accept empty tasks"],
+        epic_id="test-epic-1",
+        tasks=[],
+    )
+
+    assert story.tasks == []
+
+
+def test_story_tasks_validation_invalid_type():
+    """Test Story model tasks validation with invalid type."""
+    with pytest.raises(ValueError, match="Tasks must be a list"):
+        Story(
+            id="test-story-25",
+            title="Invalid Tasks Type",
+            description="Story with invalid tasks type",
+            acceptance_criteria=["Should fail validation"],
+            epic_id="test-epic-1",
+            tasks="not a list",
+        )
+
+
+def test_story_tasks_validation_invalid_task_structure():
+    """Test Story model tasks validation with invalid task structure."""
+    # Missing required fields
+    with pytest.raises(ValueError, match="missing required fields"):
+        Story(
+            id="test-story-26",
+            title="Invalid Task Structure",
+            description="Story with invalid task structure",
+            acceptance_criteria=["Should fail validation"],
+            epic_id="test-epic-1",
+            tasks=[{"id": "task-1", "description": "Missing fields"}],
+        )
+
+    # Empty description
+    with pytest.raises(ValueError, match="must have a non-empty string description"):
+        Story(
+            id="test-story-27",
+            title="Empty Task Description",
+            description="Story with empty task description",
+            acceptance_criteria=["Should fail validation"],
+            epic_id="test-epic-1",
+            tasks=[{"id": "task-1", "description": "", "completed": False, "order": 1}],
+        )
+
+    # Invalid completed type
+    with pytest.raises(ValueError, match="completed field must be a boolean"):
+        Story(
+            id="test-story-28",
+            title="Invalid Completed Type",
+            description="Story with invalid completed type",
+            acceptance_criteria=["Should fail validation"],
+            epic_id="test-epic-1",
+            tasks=[
+                {
+                    "id": "task-1",
+                    "description": "Valid description",
+                    "completed": "not a boolean",
+                    "order": 1,
+                }
+            ],
+        )
+
+    # Invalid order type
+    with pytest.raises(ValueError, match="order field must be an integer"):
+        Story(
+            id="test-story-29",
+            title="Invalid Order Type",
+            description="Story with invalid order type",
+            acceptance_criteria=["Should fail validation"],
+            epic_id="test-epic-1",
+            tasks=[
+                {
+                    "id": "task-1",
+                    "description": "Valid description",
+                    "completed": False,
+                    "order": "not an integer",
+                }
+            ],
+        )
+
+
+def test_story_tasks_validation_duplicate_ids():
+    """Test Story model tasks validation with duplicate task IDs."""
+    with pytest.raises(ValueError, match="Task id 'task-1' is not unique"):
+        Story(
+            id="test-story-30",
+            title="Duplicate Task IDs",
+            description="Story with duplicate task IDs",
+            acceptance_criteria=["Should fail validation"],
+            epic_id="test-epic-1",
+            tasks=[
+                {
+                    "id": "task-1",
+                    "description": "First task",
+                    "completed": False,
+                    "order": 1,
+                },
+                {
+                    "id": "task-1",
+                    "description": "Duplicate ID task",
+                    "completed": False,
+                    "order": 2,
+                },
+            ],
+        )
+
+
+def test_story_tasks_validation_duplicate_orders():
+    """Test Story model tasks validation with duplicate task orders."""
+    with pytest.raises(ValueError, match="Task order 1 is not unique"):
+        Story(
+            id="test-story-31",
+            title="Duplicate Task Orders",
+            description="Story with duplicate task orders",
+            acceptance_criteria=["Should fail validation"],
+            epic_id="test-epic-1",
+            tasks=[
+                {
+                    "id": "task-1",
+                    "description": "First task",
+                    "completed": False,
+                    "order": 1,
+                },
+                {
+                    "id": "task-2",
+                    "description": "Duplicate order task",
+                    "completed": False,
+                    "order": 1,
+                },
+            ],
+        )
+
+
+def test_story_tasks_database_persistence(in_memory_db):
+    """Test Story model tasks persistence in database."""
+    tasks = [
+        {
+            "id": "task-1",
+            "description": "Persistent task",
+            "completed": True,
+            "order": 1,
+        }
+    ]
+
+    story = Story(
+        id="test-story-32",
+        title="Persistent Tasks Story",
+        description="Story with tasks to persist",
+        acceptance_criteria=["Should persist tasks"],
+        epic_id="test-epic-1",
+        tasks=tasks,
+    )
+
+    # Save to database
+    in_memory_db.add(story)
+    in_memory_db.commit()
+
+    # Retrieve from database
+    retrieved_story = in_memory_db.query(Story).filter_by(id="test-story-32").first()
+
+    assert retrieved_story is not None
+    assert len(retrieved_story.tasks) == 1
+    assert retrieved_story.tasks[0]["id"] == "task-1"
+    assert retrieved_story.tasks[0]["description"] == "Persistent task"
+    assert retrieved_story.tasks[0]["completed"] is True
+    assert retrieved_story.tasks[0]["order"] == 1
