@@ -45,10 +45,10 @@ graph TD
     *   *Rationale*: This enforces isolation of work in progress, prevents destabilizing the main branch, and ensures all changes are reviewed.
 *   **Pull Request for Story Completion**: A story is only considered **DONE** when its associated feature branch has been merged into the main branch via a successfully reviewed and approved Pull Request (PR). Developers are **REQUIRED** to create a Pull Request for every story before marking it as complete.
     *   *Rationale*: This mandates that all code changes undergo necessary quality checks and team consensus before being integrated into the main codebase, ensuring traceability and accountability.
-*   **Strict PR Quality Gates**: All Pull Requests **MUST** pass a series of automated quality gates before they can be merged. Failure to pass any of these gates will prevent the PR from being merged. These gates include:
-    *   **Linting**: All code must adhere to established style guidelines and pass linting checks.
-    *   **Static Analysis (Mypy)**: All type hints must be correct, and the codebase must pass `mypy` checks without errors.
+*   **Strict PR Quality Gates**: All Pull Requests containing changes to source code or tests **MUST** pass a series of automated quality gates before they can be merged. These gates apply only to changes in the `src/` and `tests/` directories. Failure to pass any of these gates will prevent the PR from being merged. These gates include:
+    *   **Linting**: All code in `src/` and `tests/` must adhere to established style guidelines and pass linting checks.
+    *   **Static Analysis (Mypy)**: All type hints in `src/` and `tests/` must be correct, and the codebase must pass `mypy` checks without errors.
     *   **Unit Tests**: All unit tests must pass.
     *   **Integration Tests**: All integration tests must pass.
     *   **End-to-End (E2E) Tests**: All E2E tests must pass.
-    *   *Rationale*: These automated checks rigorously enforce code quality, correctness, and adherence to architectural standards, preventing regressions and maintaining a high-quality main branch.
+    *   *Rationale*: These automated checks rigorously enforce code quality, correctness, and adherence to architectural standards for production code, preventing regressions and maintaining a high-quality main branch. Documentation-only changes bypass these checks to enable rapid documentation updates.
