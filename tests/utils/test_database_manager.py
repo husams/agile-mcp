@@ -65,9 +65,7 @@ class DatabaseManager:
         # - no caching for unit tests
         # Use unique identifier to ensure complete isolation
         unique_id = f"{test_id}_{uuid.uuid4().hex[:8]}"
-        db_url = (
-            f"sqlite:///:memory:?cache=private&uri=true&test_id={unique_id}"
-        )
+        db_url = f"sqlite:///:memory:?cache=private&uri=true&test_id={unique_id}"
 
         engine = create_engine(
             db_url,
@@ -80,9 +78,7 @@ class DatabaseManager:
         Base.metadata.create_all(engine)
 
         # Create session factory
-        session_factory = sessionmaker(
-            autocommit=False, autoflush=False, bind=engine
-        )
+        session_factory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
         return engine, session_factory
 
@@ -107,8 +103,7 @@ class DatabaseManager:
             # This allows multiple sessions to share the same database
             # within a test suite
             db_url = (
-                f"sqlite:///:memory:?cache=shared&uri=true&"
-                f"suite_id={test_suite_id}"
+                f"sqlite:///:memory:?cache=shared&uri=true&" f"suite_id={test_suite_id}"
             )
 
             engine = create_engine(
@@ -170,9 +165,7 @@ class DatabaseManager:
         Base.metadata.create_all(engine)
 
         # Create session factory
-        session_factory = sessionmaker(
-            autocommit=False, autoflush=False, bind=engine
-        )
+        session_factory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
         self._engines[cache_key] = engine
         self._session_factories[cache_key] = session_factory
@@ -180,9 +173,7 @@ class DatabaseManager:
         return engine, session_factory, db_path
 
     @contextmanager
-    def get_test_session(
-        self, test_type: str = "unit", test_id: Optional[str] = None
-    ):
+    def get_test_session(self, test_type: str = "unit", test_id: Optional[str] = None):
         """
         Context manager for getting a test session with automatic cleanup.
 
@@ -198,9 +189,7 @@ class DatabaseManager:
         elif test_type == "integration":
             engine, session_factory = self.create_shared_memory_database()
         elif test_type == "e2e":
-            engine, session_factory, db_path = self.create_file_database(
-                test_id
-            )
+            engine, session_factory, db_path = self.create_file_database(test_id)
         else:
             raise ValueError(f"Unknown test type: {test_type}")
 
@@ -324,9 +313,7 @@ class DatabaseManager:
         elif test_type == "integration":
             engine, session_factory = self.create_shared_memory_database()
         elif test_type == "e2e":
-            engine, session_factory, db_path = self.create_file_database(
-                test_id
-            )
+            engine, session_factory, db_path = self.create_file_database(test_id)
         else:
             raise ValueError(f"Unknown test type: {test_type}")
 
