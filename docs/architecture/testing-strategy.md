@@ -31,4 +31,4 @@ To ensure the reliability and correctness of the Agile Lifecycle Management Serv
     *   The test will write JSON-RPC request strings to the subprocess's `stdin`.
     *   It will read from `stdout` to capture the JSON-RPC response and from `stderr` to check for logs.
     *   Tests will assert that `stdout` contains *only* the valid JSON-RPC response and that any logging output is correctly directed to `stderr`.
-    *   Tests will be located in `tests/e2e`.  
+    *   Tests will be located in `tests/e2e`.

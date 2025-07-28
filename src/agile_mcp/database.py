@@ -1,16 +1,15 @@
-"""
-Database configuration and setup for the Agile Management MCP Server.
-"""
+"""Database configuration and setup for the Agile Management MCP Server."""
 
 import os
+
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from .models import Artifact  # Import to register with metadata  # noqa: F401
+from .models import Story  # Import to register with metadata  # noqa: F401
+from .models import story_dependency  # Import to register with metadata  # noqa: F401
 from .models.epic import Base
-from .models import Story  # Import to register with metadata
-from .models import Artifact  # Import to register with metadata
-from .models import story_dependency  # Import to register association table with metadata
 
 # Database file path - use TEST_DATABASE_URL for E2E test isolation
 DATABASE_URL = os.getenv("TEST_DATABASE_URL", "sqlite:///agile_mcp.db")
@@ -20,7 +19,7 @@ engine = create_engine(
     DATABASE_URL,
     poolclass=StaticPool,
     connect_args={"check_same_thread": False},
-    echo=False
+    echo=False,
 )
 
 # Session factory

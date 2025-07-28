@@ -48,7 +48,7 @@ This pattern is crucial for providing clear feedback to the client and for debug
     from ..services.task_service import TaskService
 
     # Create an instance of the FastMCP server
-    mcp = FastMCP("task-server") 
+    mcp = FastMCP("task-server")
     task_service = TaskService()
 
     @mcp.tool()
@@ -172,7 +172,7 @@ def test_e2e_http_auth_failure(http_server):
     }
     with httpx.Client() as client:
         response = client.post(f"{http_server}/mcp", json=request_body)
-    
+
     assert response.status_code == 403 # Or 401 depending on implementation
 
 def test_e2e_http_list_tasks_success(http_server):
@@ -184,7 +184,7 @@ def test_e2e_http_list_tasks_success(http_server):
 
     with httpx.Client() as client:
         response = client.post(f"{http_server}/mcp", json=request_body, headers=headers)
-    
+
     assert response.status_code == 200
     response_data = response.json()
     assert response_data["id"] == 2

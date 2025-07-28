@@ -99,7 +99,7 @@ async def getStory(story_id: str) -> str:
         story = await story_service.get_story(story_id)
         if not story:
             return json.dumps({"error": "story_not_found", "story_id": story_id})
-        
+
         return json.dumps({
             "id": story.id,
             "title": story.title,
@@ -181,22 +181,22 @@ async def test_database():
     """Create a test database for each E2E test"""
     engine = create_engine("sqlite:///:memory:", echo=False)
     Base.metadata.create_all(engine)
-    
+
     TestSessionLocal = sessionmaker(bind=engine)
-    
+
     def override_get_session():
         session = TestSessionLocal()
         try:
             yield session
         finally:
             session.close()
-    
+
     # Override the dependency
     from src.agile_mcp import database
     database.get_session = override_get_session
-    
+
     yield engine
-    
+
     Base.metadata.drop_all(engine)
 
 @pytest.fixture
@@ -221,7 +221,7 @@ from typing import Any, Dict, Optional
 
 class MCPResponse:
     """Standardized MCP tool response formatter"""
-    
+
     @staticmethod
     def success(data: Any, message: Optional[str] = None) -> str:
         """Format successful response as JSON string"""
@@ -229,7 +229,7 @@ class MCPResponse:
         if message:
             response["message"] = message
         return json.dumps(response, default=str)
-    
+
     @staticmethod
     def error(error_type: str, message: str, details: Any = None) -> str:
         """Format error response as JSON string"""
@@ -241,7 +241,7 @@ class MCPResponse:
         if details:
             response["details"] = details
         return json.dumps(response, default=str)
-    
+
     @staticmethod
     def validation_error(validation_errors: list) -> str:
         """Format validation error response"""
@@ -274,7 +274,7 @@ source venv/bin/activate
 # Test artifact tools only
 python -m pytest tests/e2e/test_artifact_tools_e2e.py -v
 
-# Test story tools only  
+# Test story tools only
 python -m pytest tests/e2e/test_story_tools_e2e.py -v
 
 # Test dependency tools only
@@ -318,7 +318,7 @@ After implementing fixes:
 
 ### Phase 2 (High - Week 1)
 1. Fix story tools JSON responses
-2. Fix dependency tools JSON responses  
+2. Fix dependency tools JSON responses
 3. Implement database session management for E2E tests
 
 ### Phase 3 (Medium - Week 2)
@@ -358,7 +358,7 @@ For questions regarding these recommendations:
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: 2025-07-27  
-**Author**: Quinn (QA Architect)  
+**Document Version**: 1.0
+**Last Updated**: 2025-07-27
+**Author**: Quinn (QA Architect)
 **Status**: Ready for Implementation

@@ -234,3 +234,189 @@ This epic focuses on ensuring the project is maintainable and deployable by esta
 2.  The application is configured to output logs in a structured format.
 3.  Key events in the service layer (e.g., story creation, status updates) are logged with relevant context (e.g., story ID).
 4.  Errors in the API/Tool layer are logged with their associated request ID and error details.
+
+---
+
+## Epic List
+
+Here is the proposed high-level list of epics to build the service. Please review the overall structure.
+
+*   **Epic 1: Core Service & Backlog Management**: Establish the foundational MCP server, implement core data models, and provide basic tools for managing epics and stories, including their lifecycles.
+*   **Epic 2: Artifact & Context Management**: Implement functionality for agents to link and retrieve artifacts, including the ability to query specific sections of documents and stories.
+*   **Epic 3: Advanced Story Workflow**: Introduce story dependencies and the intelligent "next ready story" tool for developer agents.
+*   **Epic 4: DevOps & Observability**: Establish a CI/CD pipeline for automated testing and implement structured logging for service monitoring.
+*   **Epic 5: Enhanced Database Abstraction**: Decouple the application from SQLite, allowing for different database backends (e.g., PostgreSQL, Document, Graph).
+*   **Epic 6: Advanced Story Structure & BMAD Method Alignment**: Enrich the story data model to support more granular details like tasks, acceptance criteria, and comments, aligning with the BMAD method.
+*   **Epic 7: Role-Based Access Control (RBAC)**: Implement user roles (Scrum Master, Product Owner, etc.) and permissions to control access to tools and data.
+*   **Epic 8: Project Documentation Enhancements**: Integrate newly created documentation files (configuration, coding guidelines, technical debt) into the project's main documentation.
+
+---
+
+## Epic 5: Enhanced Database Abstraction
+
+This epic focuses on decoupling the application from SQLite, allowing for support of various database backends, including relational, document-based, and graph databases.
+
+### Story 5.1: Database Abstraction Layer
+
+**As a** Developer Agent,
+**I want** the database interactions to be abstracted,
+**so that** the service can support different database technologies without significant code changes.
+
+**Acceptance Criteria:**
+1.  A clear abstraction layer is defined for database operations.
+2.  Existing data models and repository methods are adapted to use this abstraction.
+3.  The service can still function with SQLite using the new abstraction.
+
+### Story 5.2: PostgreSQL Database Integration
+
+**As a** Developer Agent,
+**I want** the service to support PostgreSQL as a database backend,
+**so that** the service can handle larger datasets and more complex queries.
+
+**Acceptance Criteria:**
+1.  The service can connect to and use a PostgreSQL database.
+2.  All existing data (Epics, Stories, Artifacts, Dependencies) can be persisted and retrieved from PostgreSQL.
+3.  Database migrations for PostgreSQL are defined and executable.
+
+### Story 5.3: Document Database Integration (e.g., MongoDB)
+
+**As a** Developer Agent,
+**I want** the service to support a document-based database (e.g., MongoDB) as a backend,
+**so that** the service can store and retrieve unstructured or semi-structured data more flexibly.
+
+**Acceptance Criteria:**
+1.  The service can connect to and use a document database.
+2.  Epics and Stories can be stored and retrieved as documents.
+3.  A clear strategy for mapping relational concepts to document models is implemented.
+
+### Story 5.4: Graph Database Integration (e.g., Neo4j)
+
+**As a** Developer Agent,
+**I want** the service to support a graph database (e.g., Neo4j) as a backend,
+**so that** the service can efficiently manage and query complex relationships between entities like stories and artifacts.
+
+**Acceptance Criteria:**
+1.  The service can connect to and use a graph database.
+2.  Dependencies between stories and links to artifacts are represented as graph relationships.
+3.  Queries for `getNextReadyStory` and `listForStory` leverage graph traversal capabilities.
+
+---
+
+## Epic 6: Advanced Story Structure & BMAD Method Alignment
+
+This epic focuses on enriching the story data model to support more granular details like tasks, acceptance criteria, and comments, aligning with the BMAD method for more structured story management.
+
+### Story 6.1: Integrate Story Tasks
+
+**As a** Developer Agent,
+**I want** to define and manage individual tasks within a user story,
+**so that** I can break down the work into smaller, trackable units.
+
+**Acceptance Criteria:**
+1.  The Story data model is extended to include a list of tasks.
+2.  Tools are available to add, update, and mark tasks as complete within a story.
+3.  `backlog.getStory` returns the tasks associated with a story.
+
+### Story 6.2: Structured Acceptance Criteria
+
+**As a** Product Owner Agent,
+**I want** to define acceptance criteria as structured, individual items within a story,
+**so that** each criterion can be independently verified and tracked.
+
+**Acceptance Criteria:**
+1.  The Story data model is extended to include a structured list of acceptance criteria.
+2.  Tools are available to add, update, and mark acceptance criteria as met.
+3.  `backlog.getStory` returns the structured acceptance criteria.
+
+### Story 6.3: Add Story Comments
+
+**As an** AI Agent,
+**I want** to add comments to a user story,
+**so that** I can provide additional context, ask questions, or record discussions related to the story.
+
+**Acceptance Criteria:**
+1.  The Story data model is extended to include a list of comments.
+2.  Tools are available to add comments to a story.
+3.  `backlog.getStory` returns the comments associated with a story.
+
+### Story 6.4: Update Story Tools for New Structure
+
+**As a** Developer Agent,
+**I want** the existing story management tools to seamlessly interact with the new structured story data (tasks, acceptance criteria, comments),
+**so that** I can continue to manage stories effectively.
+
+**Acceptance Criteria:**
+1.  `backlog.createStory` and `backlog.updateStory` tools are updated to support the new structured fields.
+2.  `backlog.getStory` correctly retrieves and formats the new structured data.
+3.  All existing story-related functionalities (e.g., status updates, dependencies) continue to work with the new structure.
+
+---
+
+## Epic 7: Role-Based Access Control (RBAC)
+
+This epic focuses on implementing user roles and permissions to control access to tools and data within the Agile MCP Server, ensuring secure and appropriate interactions for different types of AI agents.
+
+### Story 7.1: User and Role Management
+
+**As an** Administrator Agent,
+**I want** to create and manage users and assign them specific roles (e.g., Scrum Master, Product Owner, Developer),
+**so that** I can define different levels of access within the system.
+
+**Acceptance Criteria:**
+1.  Tools are available to create, retrieve, update, and delete users.
+2.  Tools are available to define and assign roles to users.
+3.  Predefined roles (Scrum Master, Product Owner, Developer, QA, Architect, Analyst, Orchestrator) are available.
+
+### Story 7.2: Define and Enforce Permissions
+
+**As an** Administrator Agent,
+**I want** to define granular permissions for each role, specifying which tools and data they can access or modify,
+**so that** I can enforce security boundaries and ensure agents only perform authorized actions.
+
+**Acceptance Criteria:**
+1.  A permission model is implemented that maps roles to specific tool access and data modification rights.
+2.  The API layer enforces these permissions for every incoming MCP request.
+3.  Unauthorized access attempts result in appropriate JSON-RPC error responses.
+
+### Story 7.3: Integrate RBAC with Existing Tools
+
+**As a** Developer Agent,
+**I want** existing tools (e.g., `backlog.createStory`, `artifacts.linkToStory`) to respect the new RBAC system,
+**so that** only authorized agents can perform specific actions.
+
+**Acceptance Criteria:**
+1.  All existing MCP tools are integrated with the RBAC system.
+2.  A Product Owner Agent can only use tools designated for POs (e.g., `backlog.addDependency`).
+3.  A Developer Agent can only use tools designated for Developers (e.g., `backlog.getNextReadyStory`).
+
+---
+
+## Epic 8: Project Documentation Enhancements
+
+This epic focuses on integrating the newly created documentation files (configuration, coding guidelines, technical debt) into the project's main documentation, making them easily discoverable and accessible.
+
+### Story 8.1: Link New Documentation in README
+
+**As a** Developer,
+**I want** the new documentation files (`configuration.md`, `coding_guidelines.md`, `technical_debt.md`) to be linked from the `README.md`,
+**so that** they are easily discoverable from the project's entry point.
+
+**Acceptance Criteria:**
+1.  The `README.md` file is updated to include a new section or update an existing section with links to:
+    *   `docs/configuration.md`
+    *   `docs/coding_guidelines.md`
+    *   `docs/technical_debt.md`
+2.  The links are functional and point to the correct files.
+
+### Story 8.2: Integrate New Documentation into Architecture Overview
+
+**As a** Developer,
+**I want** the new documentation files to be referenced and integrated into the `docs/architecture.md` where appropriate,
+**so that** the architecture overview provides a comprehensive view of the project's structure and practices.
+
+**Acceptance Criteria:**
+1.  `docs/architecture.md` is reviewed and updated to include relevant references or summaries of:
+    *   Configuration management principles.
+    *   Key coding guidelines and their impact on architecture.
+    *   The approach to managing technical debt.
+2.  The integration is seamless and enhances the overall clarity of the architecture document.

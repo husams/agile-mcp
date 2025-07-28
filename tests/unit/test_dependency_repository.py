@@ -4,12 +4,11 @@ Unit tests for Dependency repository layer.
 
 import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import sessionmaker
 
-from src.agile_mcp.models.epic import Base
+from src.agile_mcp.models.epic import Base, Epic
 from src.agile_mcp.models.story import Story
-from src.agile_mcp.models.epic import Epic
 from src.agile_mcp.repositories.dependency_repository import DependencyRepository
 
 
@@ -17,16 +16,16 @@ from src.agile_mcp.repositories.dependency_repository import DependencyRepositor
 def test_engine():
     """Create in-memory SQLite engine for testing."""
     from sqlalchemy import event
-    
+
     engine = create_engine("sqlite:///:memory:", echo=False)
-    
+
     # Enable foreign key constraints for SQLite
     @event.listens_for(engine, "connect")
     def enable_foreign_keys(dbapi_connection, connection_record):
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
-    
+
     Base.metadata.create_all(engine)
     return engine
 
@@ -54,10 +53,10 @@ def test_stories(test_session):
         id="test-epic-1",
         title="Test Epic",
         description="Epic for testing",
-        status="Ready"
+        status="Ready",
     )
     test_session.add(epic)
-    
+
     # Create test stories
     stories = [
         Story(
@@ -65,27 +64,27 @@ def test_stories(test_session):
             title="Story 1",
             description="First test story",
             acceptance_criteria=["AC1"],
-            epic_id="test-epic-1"
+            epic_id="test-epic-1",
         ),
         Story(
-            id="story-2", 
+            id="story-2",
             title="Story 2",
             description="Second test story",
             acceptance_criteria=["AC2"],
-            epic_id="test-epic-1"
+            epic_id="test-epic-1",
         ),
         Story(
             id="story-3",
-            title="Story 3", 
+            title="Story 3",
             description="Third test story",
             acceptance_criteria=["AC3"],
-            epic_id="test-epic-1"
-        )
+            epic_id="test-epic-1",
+        ),
     ]
-    
+
     for story in stories:
         test_session.add(story)
-    
+
     test_session.commit()
     return stories
 
@@ -95,7 +94,7 @@ def test_add_dependency_success(dependency_repository, test_stories):
     # Test dependency addition
     result = dependency_repository.add_dependency("story-1", "story-2")
     assert result is True
-    
+
     # Verify dependency exists
     dependencies = dependency_repository.get_story_dependencies("story-1")
     assert len(dependencies) == 1
@@ -107,11 +106,11 @@ def test_add_dependency_duplicate(dependency_repository, test_stories):
     # Add dependency first time
     result1 = dependency_repository.add_dependency("story-1", "story-2")
     assert result1 is True
-    
+
     # Try to add same dependency again
     result2 = dependency_repository.add_dependency("story-1", "story-2")
     assert result2 is False
-    
+
     # Verify only one dependency exists
     dependencies = dependency_repository.get_story_dependencies("story-1")
     assert len(dependencies) == 1
@@ -123,7 +122,9 @@ def test_add_dependency_invalid_story_id(dependency_repository, test_stories):
         dependency_repository.add_dependency("nonexistent-story", "story-1")
 
 
-def test_add_dependency_invalid_depends_on_story_id(dependency_repository, test_stories):
+def test_add_dependency_invalid_depends_on_story_id(
+    dependency_repository, test_stories
+):
     """Test foreign key constraint with invalid dependency story ID."""
     with pytest.raises(IntegrityError):
         dependency_repository.add_dependency("story-1", "nonexistent-story")
@@ -134,10 +135,10 @@ def test_get_story_dependencies_success(dependency_repository, test_stories):
     # Add multiple dependencies
     dependency_repository.add_dependency("story-1", "story-2")
     dependency_repository.add_dependency("story-1", "story-3")
-    
+
     # Get dependencies
     dependencies = dependency_repository.get_story_dependencies("story-1")
-    
+
     # Verify results
     assert len(dependencies) == 2
     dependency_ids = [dep.id for dep in dependencies]
@@ -156,10 +157,10 @@ def test_get_story_dependents_success(dependency_repository, test_stories):
     # Add dependencies where story-2 is depended on by multiple stories
     dependency_repository.add_dependency("story-1", "story-2")
     dependency_repository.add_dependency("story-3", "story-2")
-    
+
     # Get dependents of story-2
     dependents = dependency_repository.get_story_dependents("story-2")
-    
+
     # Verify results
     assert len(dependents) == 2
     dependent_ids = [dep.id for dep in dependents]
@@ -190,7 +191,7 @@ def test_has_circular_dependency_false(dependency_repository, test_stories):
     # Add linear dependency chain: story-1 -> story-2 -> story-3
     dependency_repository.add_dependency("story-1", "story-2")
     dependency_repository.add_dependency("story-2", "story-3")
-    
+
     # Test that adding story-1 -> story-3 doesn't create cycle (it's just redundant)
     assert dependency_repository.has_circular_dependency("story-1", "story-3") is False
 
@@ -199,7 +200,7 @@ def test_has_circular_dependency_simple_cycle(dependency_repository, test_storie
     """Test circular dependency detection with simple A->B->A cycle."""
     # Add story-1 -> story-2
     dependency_repository.add_dependency("story-1", "story-2")
-    
+
     # Test that adding story-2 -> story-1 would create cycle
     assert dependency_repository.has_circular_dependency("story-2", "story-1") is True
 
@@ -209,7 +210,7 @@ def test_has_circular_dependency_complex_cycle(dependency_repository, test_stori
     # Add story-1 -> story-2 -> story-3
     dependency_repository.add_dependency("story-1", "story-2")
     dependency_repository.add_dependency("story-2", "story-3")
-    
+
     # Test that adding story-3 -> story-1 would create cycle
     assert dependency_repository.has_circular_dependency("story-3", "story-1") is True
 
@@ -225,15 +226,15 @@ def test_remove_dependency_success(dependency_repository, test_stories):
     """Test successful dependency removal."""
     # Add dependency
     dependency_repository.add_dependency("story-1", "story-2")
-    
+
     # Verify it exists
     dependencies = dependency_repository.get_story_dependencies("story-1")
     assert len(dependencies) == 1
-    
+
     # Remove dependency
     result = dependency_repository.remove_dependency("story-1", "story-2")
     assert result is True
-    
+
     # Verify it's gone
     dependencies = dependency_repository.get_story_dependencies("story-1")
     assert len(dependencies) == 0
@@ -247,26 +248,27 @@ def test_remove_dependency_not_exists(dependency_repository, test_stories):
 
 def test_multiple_dependencies_complex_scenario(dependency_repository, test_stories):
     """Test complex scenario with multiple dependencies and circular detection."""
-    # Create dependency chain: story-1 -> story-2, story-1 -> story-3, story-2 -> story-3
+    # Create dependency chain: story-1 -> story-2, story-1 -> story-3,
+    # story-2 -> story-3
     dependency_repository.add_dependency("story-1", "story-2")
-    dependency_repository.add_dependency("story-1", "story-3")  
+    dependency_repository.add_dependency("story-1", "story-3")
     dependency_repository.add_dependency("story-2", "story-3")
-    
+
     # Verify dependencies
     story_1_deps = dependency_repository.get_story_dependencies("story-1")
     assert len(story_1_deps) == 2
-    
+
     story_2_deps = dependency_repository.get_story_dependencies("story-2")
     assert len(story_2_deps) == 1
     assert story_2_deps[0].id == "story-3"
-    
+
     # Verify dependents
     story_3_dependents = dependency_repository.get_story_dependents("story-3")
     assert len(story_3_dependents) == 2
     dependent_ids = [dep.id for dep in story_3_dependents]
     assert "story-1" in dependent_ids
     assert "story-2" in dependent_ids
-    
+
     # Test circular dependency detection
     assert dependency_repository.has_circular_dependency("story-3", "story-1") is True
     assert dependency_repository.has_circular_dependency("story-3", "story-2") is True
@@ -276,18 +278,24 @@ def test_database_constraint_self_dependency(dependency_repository, test_stories
     """Test that database constraint prevents self-dependency."""
     with pytest.raises(IntegrityError) as exc_info:
         dependency_repository.add_dependency("story-1", "story-1")
-    
+
     # Verify it's the check constraint that prevented it
-    assert "CHECK constraint failed" in str(exc_info.value) or "ck_no_self_dependency" in str(exc_info.value)
+    assert "CHECK constraint failed" in str(
+        exc_info.value
+    ) or "ck_no_self_dependency" in str(exc_info.value)
 
 
-def test_has_incomplete_dependencies_false_no_dependencies(dependency_repository, test_stories):
+def test_has_incomplete_dependencies_false_no_dependencies(
+    dependency_repository, test_stories
+):
     """Test has_incomplete_dependencies returns False when story has no dependencies."""
     result = dependency_repository.has_incomplete_dependencies("story-1")
     assert result is False
 
 
-def test_has_incomplete_dependencies_false_all_done(dependency_repository, test_stories, test_session):
+def test_has_incomplete_dependencies_false_all_done(
+    dependency_repository, test_stories, test_session
+):
     """Test has_incomplete_dependencies returns False when all dependencies are Done."""
     # Set dependent stories to Done status
     story_2 = test_session.query(Story).filter(Story.id == "story-2").first()
@@ -295,44 +303,52 @@ def test_has_incomplete_dependencies_false_all_done(dependency_repository, test_
     story_2.status = "Done"
     story_3.status = "Done"
     test_session.commit()
-    
+
     # Add dependencies
     dependency_repository.add_dependency("story-1", "story-2")
     dependency_repository.add_dependency("story-1", "story-3")
-    
+
     # Test - should return False since all dependencies are Done
     result = dependency_repository.has_incomplete_dependencies("story-1")
     assert result is False
 
 
-def test_has_incomplete_dependencies_true_some_incomplete(dependency_repository, test_stories, test_session):
-    """Test has_incomplete_dependencies returns True when some dependencies are incomplete."""
+def test_has_incomplete_dependencies_true_some_incomplete(
+    dependency_repository, test_stories, test_session
+):
+    """Test has_incomplete_dependencies returns True when some dependencies are
+    incomplete."""
     # Set one dependency to Done, leave others as ToDo
     story_2 = test_session.query(Story).filter(Story.id == "story-2").first()
     story_2.status = "Done"
     test_session.commit()
-    
+
     # Add dependencies (story-3 remains ToDo status)
     dependency_repository.add_dependency("story-1", "story-2")
     dependency_repository.add_dependency("story-1", "story-3")
-    
+
     # Test - should return True since story-3 is ToDo (not Done)
     result = dependency_repository.has_incomplete_dependencies("story-1")
     assert result is True
 
 
-def test_has_incomplete_dependencies_true_all_incomplete(dependency_repository, test_stories):
-    """Test has_incomplete_dependencies returns True when all dependencies are incomplete."""
+def test_has_incomplete_dependencies_true_all_incomplete(
+    dependency_repository, test_stories
+):
+    """Test has_incomplete_dependencies returns True when all dependencies are
+    incomplete."""
     # Add dependencies (all stories have default ToDo status)
     dependency_repository.add_dependency("story-1", "story-2")
     dependency_repository.add_dependency("story-1", "story-3")
-    
+
     # Test - should return True since dependencies are ToDo (not Done)
     result = dependency_repository.has_incomplete_dependencies("story-1")
     assert result is True
 
 
-def test_has_incomplete_dependencies_various_statuses(dependency_repository, test_stories, test_session):
+def test_has_incomplete_dependencies_various_statuses(
+    dependency_repository, test_stories, test_session
+):
     """Test has_incomplete_dependencies with various non-Done statuses."""
     # Create additional test stories with different statuses
     story_4 = Story(
@@ -341,25 +357,25 @@ def test_has_incomplete_dependencies_various_statuses(dependency_repository, tes
         description="Fourth test story",
         acceptance_criteria=["AC4"],
         epic_id="test-epic-1",
-        status="InProgress"
+        status="InProgress",
     )
     story_5 = Story(
-        id="story-5", 
+        id="story-5",
         title="Story 5",
         description="Fifth test story",
         acceptance_criteria=["AC5"],
         epic_id="test-epic-1",
-        status="Review"
+        status="Review",
     )
     test_session.add(story_4)
     test_session.add(story_5)
     test_session.commit()
-    
+
     # Add dependencies with various statuses (InProgress, Review, ToDo)
     dependency_repository.add_dependency("story-1", "story-2")  # ToDo
-    dependency_repository.add_dependency("story-1", "story-4")  # InProgress  
+    dependency_repository.add_dependency("story-1", "story-4")  # InProgress
     dependency_repository.add_dependency("story-1", "story-5")  # Review
-    
+
     # Test - should return True since none are Done
     result = dependency_repository.has_incomplete_dependencies("story-1")
     assert result is True

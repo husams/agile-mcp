@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-Entry point script for running the Agile Management MCP Server.
-"""
+"""Entry point script for running the Agile Management MCP Server."""
 
 import sys
 from pathlib import Path
@@ -11,7 +9,7 @@ src_path = Path(__file__).parent / "src"
 sys.path.insert(0, str(src_path))
 
 # Import and run the server
-from agile_mcp.main import main
+from agile_mcp.main import main  # noqa: E402
 
 if __name__ == "__main__":
     main()

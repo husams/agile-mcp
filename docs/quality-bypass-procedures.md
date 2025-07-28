@@ -6,7 +6,7 @@
 
 Use **ONLY** for:
 - Critical production outages
-- Security vulnerability fixes  
+- Security vulnerability fixes
 - Data loss prevention
 - Customer-impacting issues requiring immediate deployment
 
@@ -96,7 +96,7 @@ Track emergency bypasses:
 git commit --no-verify -m "emergency: fix null pointer in story creation API"
 ```
 
-#### ❌ Invalid Emergency Bypass  
+#### ❌ Invalid Emergency Bypass
 ```bash
 # Minor formatting issue - NOT an emergency
 git commit --no-verify -m "fix: update variable name formatting"
@@ -119,7 +119,7 @@ git commit -m "fix: proper resolution with quality checks"
 
 For emergency bypass questions:
 - **Tech Lead**: [Contact info]
-- **DevOps**: [Contact info] 
+- **DevOps**: [Contact info]
 - **Emergency escalation**: [Contact info]
 
 ---

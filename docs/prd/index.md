@@ -31,3 +31,7 @@
   - [Epic 4: DevOps & Observability](./epic-4-devops-observability.md)
     - [Story 4.1: Setup CI/CD Pipeline](./epic-4-devops-observability.md#story-41-setup-cicd-pipeline)
     - [Story 4.2: Implement Structured Logging](./epic-4-devops-observability.md#story-42-implement-structured-logging)
+  - [Epic 5: Enhanced Database Abstraction](./epic-5-enhanced-database-abstraction.md)
+  - [Epic 6: Advanced Story Structure & BMAD Method Alignment](./epic-6-advanced-story-structure-bmad-method-alignment.md)
+  - [Epic 7: Role-Based Access Control (RBAC)](./epic-7-role-based-access-control-rbac.md)
+  - [Epic 8: Project Documentation Enhancements](./epic-8-project-documentation-enhancements.md)

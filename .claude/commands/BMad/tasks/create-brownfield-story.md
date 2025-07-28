@@ -132,7 +132,7 @@ Critical: For brownfield, ALWAYS include criteria about maintaining existing fun
 Standard structure:
 
 1. New functionality works as specified
-2. Existing {{affected feature}} continues to work unchanged  
+2. Existing {{affected feature}} continues to work unchanged
 3. Integration with {{existing system}} maintains current behavior
 4. No regression in {{related area}}
 5. Performance remains within acceptable bounds
@@ -276,7 +276,7 @@ Key Integration Points Identified:
 Risks Noted:
 - {{primary risk}}
 
-{{If missing info}}: 
+{{If missing info}}:
 Note: Some technical details were unclear. The story includes exploration tasks to gather needed information during implementation.
 
 Next Steps:
