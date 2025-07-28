@@ -1,6 +1,7 @@
+"""Unit tests for MCPResponse utility class."""
+
 import json
 from datetime import datetime
-
 
 from src.agile_mcp.utils.mcp_response import MCPResponse
 

@@ -1,6 +1,4 @@
-"""
-FastMCP tools for backlog management operations.
-"""
+"""FastMCP tools for backlog management operations."""
 
 import uuid
 from typing import Any, Dict
@@ -10,11 +8,7 @@ from fastmcp.exceptions import McpError
 from mcp.types import ErrorData
 
 from ..database import create_tables, get_db
-from ..models.response import (
-    DependencyAddResponse,
-    StoryResponse,
-    StorySectionResponse,
-)
+from ..models.response import DependencyAddResponse, StoryResponse, StorySectionResponse
 from ..repositories.dependency_repository import DependencyRepository
 from ..repositories.story_repository import StoryRepository
 from ..services.dependency_service import DependencyService
@@ -37,7 +31,6 @@ from ..utils.logging_config import (
 
 def register_backlog_tools(mcp: FastMCP) -> None:
     """Register backlog management tools with the FastMCP server."""
-
     logger = get_logger(__name__)
 
     # Ensure database tables exist
@@ -314,8 +307,8 @@ def register_backlog_tools(mcp: FastMCP) -> None:
 
     @mcp.tool("backlog.getNextReadyStory")
     def get_next_ready_story() -> Dict[str, Any]:
-        """
-        Gets the next story that is ready for implementation.
+        """Get the next story that is ready for implementation.
+
         Returns the highest-priority ToDo story with no incomplete dependencies.
         Automatically updates the story status to InProgress.
 

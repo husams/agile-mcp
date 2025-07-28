@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Agile Management MCP Server - Main Entry Point
+"""Agile Management MCP Server - Main Entry Point.
 
 This module serves as the primary entry point for the Agile Management MCP Server.
 It initializes the FastMCP server instance and handles MCP protocol communications.
@@ -82,8 +81,7 @@ def create_server() -> FastMCP:
 
 
 def main() -> None:
-    """
-    Main entry point for the Agile Management MCP Server.
+    """Run the Agile Management MCP Server.
 
     Sets up the server and runs it with stdio transport for MCP communication.
     """

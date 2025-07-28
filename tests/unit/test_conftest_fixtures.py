@@ -1,9 +1,6 @@
-"""
-Unit tests for root conftest.py fixtures to validate comprehensive database isolation.
-"""
+"""Unit tests for root conftest.py fixtures to validate database isolation."""
 
 import os
-
 
 from src.agile_mcp.models.epic import Epic
 

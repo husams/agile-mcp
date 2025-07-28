@@ -1,11 +1,8 @@
-"""
-Unit tests for TestDatabaseManager to validate database isolation system.
-"""
+"""Unit tests for TestDatabaseManager to validate database isolation system."""
 
 import os
 import threading
 import time
-
 
 from src.agile_mcp.models.epic import Epic
 from tests.utils.test_database_manager import DatabaseManager
@@ -132,7 +129,7 @@ def test_thread_safety():
                     session.query(Epic).filter_by(id=f"thread_epic_{thread_id}").first()
                 )
                 results.append(found is not None)
-        except Exception as e:
+        except Exception:
             results.append(False)
 
     # Create multiple threads
@@ -201,7 +198,7 @@ def test_performance_targets_validation():
     # These might fail in slow environments, but should generally pass
     unit_meets_target = manager.validate_performance_targets("unit")
     integration_meets_target = manager.validate_performance_targets("integration")
-    e2e_meets_target = manager.validate_performance_targets("e2e")
+    manager.validate_performance_targets("e2e")
 
     # At least one should meet targets (unit tests are usually fastest)
     assert (

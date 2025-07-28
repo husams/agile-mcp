@@ -1,9 +1,6 @@
-"""
-Unit tests for DatabaseIsolationValidator to validate isolation verification.
-"""
+"""Unit tests for DatabaseIsolationValidator to validate isolation verification."""
 
 import os
-
 
 from src.agile_mcp.models.epic import Epic
 from tests.utils.database_isolation_validator import DatabaseIsolationValidator
@@ -157,7 +154,6 @@ def test_validator_error_handling():
 def test_validator_with_closed_engine():
     """Test validator behavior with problematic database connections."""
     validator = DatabaseIsolationValidator()
-    manager = DatabaseManager.get_instance()
 
     # Create an engine with invalid database URL to simulate connection issues
     from sqlalchemy import create_engine
