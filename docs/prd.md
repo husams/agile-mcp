@@ -54,9 +54,9 @@ This service will act as a specialized **MCP Server**, designed from the ground 
 
 ### Story Lifecycle
 * **ToDo**: The story is approved and waiting in the backlog.
-* **InProgress**: The story is actively being worked on by a developer agent.
-* **Review**: The work is complete and pending a QA review.
-* **Done**: The story has been implemented, reviewed, and is considered complete.
+* **InProgress**: The story is actively being worked on by a developer agent in a feature branch.
+* **In Review**: The work is complete, and a pull request has been created and is pending review.
+* **Done**: The pull request has been approved, passed all CI checks (linting, mypy, and all tests), and merged into the main branch.
 
 ---
 
@@ -246,9 +246,8 @@ Here is the proposed high-level list of epics to build the service. Please revie
 *   **Epic 3: Advanced Story Workflow**: Introduce story dependencies and the intelligent "next ready story" tool for developer agents.
 *   **Epic 4: DevOps & Observability**: Establish a CI/CD pipeline for automated testing and implement structured logging for service monitoring.
 *   **Epic 5: Enhanced Database Abstraction**: Decouple the application from SQLite, allowing for different database backends (e.g., PostgreSQL, Document, Graph).
-*   **Epic 6: Advanced Story Structure & BMAD Method Alignment**: Enrich the story data model to support more granular details like tasks, acceptance criteria, and comments, aligning with the BMAD method.
+*   **Epic 6: Agent Workflow & Model Enhancements**: Implement the project-centric data model, structured document ingestion, and the self-sufficient story model to dramatically improve agent autonomy and efficiency.
 *   **Epic 7: Role-Based Access Control (RBAC)**: Implement user roles (Scrum Master, Product Owner, etc.) and permissions to control access to tools and data.
-*   **Epic 8: Project Documentation Enhancements**: Integrate newly created documentation files (configuration, coding guidelines, technical debt) into the project's main documentation.
 
 ---
 
@@ -302,53 +301,75 @@ This epic focuses on decoupling the application from SQLite, allowing for suppor
 
 ---
 
-## Epic 6: Advanced Story Structure & BMAD Method Alignment
+## Epic 6: Agent Workflow & Model Enhancements
 
-This epic focuses on enriching the story data model to support more granular details like tasks, acceptance criteria, and comments, aligning with the BMAD method for more structured story management.
+This epic focuses on implementing the project-centric data model, structured document ingestion, and the self-sufficient story model to dramatically improve agent autonomy and efficiency.
 
-### Story 6.1: Integrate Story Tasks
+### Story 6.1: Implement Project Entity
+**As a** System,
+**I want** to introduce a top-level `Project` entity that contains all associated Epics, Stories, and Documents,
+**so that** all project artifacts are organized under a single, queryable root.
 
+**Acceptance Criteria:**
+1.  A `Project` data model is created with attributes for `id`, `name`, and `description`.
+2.  Existing `Epic` models are updated to include a foreign key relationship to a `Project`.
+3.  A `projects.create` tool is created to initialize a new project.
+4.  A `projects.find` tool is created to list all existing projects.
+
+### Story 6.2: Implement Structured Document Storage
+**As an** Analyst Agent,
+**I want** to ingest documents into a structured database model, broken down by sections,
+**so that** other agents can query for specific, granular context without loading entire files.
+
+**Acceptance Criteria:**
+1.  A `Document` data model is created, linked to a `Project`.
+2.  A `DocumentSection` data model is created, linked to a `Document`, containing `title` (from Markdown heading) and `content`.
+3.  An `documents.ingest` tool is created that accepts a file's content, parses it into sections based on Markdown headings, and saves it to the database.
+4.  A `documents.getSection` tool is created to retrieve the content of a specific section by its title or ID.
+
+### Story 6.3: Redesign Story Data Model
 **As a** Developer Agent,
-**I want** to define and manage individual tasks within a user story,
-**so that** I can break down the work into smaller, trackable units.
+**I want** the `Story` object I receive to be a rich, self-sufficient model,
+**so that** I have all the necessary context to begin implementation without further queries.
 
 **Acceptance Criteria:**
-1.  The Story data model is extended to include a list of tasks.
-2.  Tools are available to add, update, and mark tasks as complete within a story.
-3.  `backlog.getStory` returns the tasks associated with a story.
+1.  The `Story` data model is extended to include:
+    *   `dev_notes`: A structured text field (e.g., JSON or Markdown) to hold pre-compiled architectural and technical context.
+    *   `tasks`: A list of structured task objects (e.g., `{"description": "...", "completed": false}`).
+    *   `comments`: A list of structured comment objects.
+2.  The database schema is updated to reflect these changes.
+3.  Existing story creation logic is updated to handle these new, optional fields.
 
-### Story 6.2: Structured Acceptance Criteria
-
-**As a** Product Owner Agent,
-**I want** to define acceptance criteria as structured, individual items within a story,
-**so that** each criterion can be independently verified and tracked.
-
-**Acceptance Criteria:**
-1.  The Story data model is extended to include a structured list of acceptance criteria.
-2.  Tools are available to add, update, and mark acceptance criteria as met.
-3.  `backlog.getStory` returns the structured acceptance criteria.
-
-### Story 6.3: Add Story Comments
-
-**As an** AI Agent,
-**I want** to add comments to a user story,
-**so that** I can provide additional context, ask questions, or record discussions related to the story.
+### Story 6.4: Implement Unified Commenting System
+**As a** QA Agent,
+**I want** to add a structured comment to a story, with my role and a timestamp,
+**so that** I can provide clear, auditable feedback to the Developer Agent.
 
 **Acceptance Criteria:**
-1.  The Story data model is extended to include a list of comments.
-2.  Tools are available to add comments to a story.
-3.  `backlog.getStory` returns the comments associated with a story.
+1.  A `Comment` data model is created with `author_role`, `content`, `timestamp`, and an optional `reply_to_id`.
+2.  The `author_role` field MUST be an enumeration of predefined roles (e.g., `Developer Agent`, `QA Agent`, `Scrum Master`, `Product Owner`, `Human Reviewer`).
+3.  A `story.addComment` tool is created that accepts a `story_id` and a `Comment` object, validating the `author_role` against the predefined list.
+4.  The `backlog.getStory` tool is updated to include the full list of comments, ordered chronologically.
 
-### Story 6.4: Update Story Tools for New Structure
+### Story 6.5: Update Story Creation Workflow
+**As a** Scrum Master Agent,
+**I want** to use the `documents.getSection` tool to gather context and compile it into the `dev_notes` of a new story,
+**so that** I can create a self-sufficient, ready-to-code story for the Developer Agent.
 
+**Acceptance Criteria:**
+1.  The `backlog.createStory` tool is updated to accept the new `dev_notes`, `tasks`, and other fields.
+2.  The tool correctly persists this new structured data when creating a story.
+3.  The workflow for the Scrum Master agent is documented, detailing the process of fetching sections and creating the story.
+
+### Story 6.6: Update `getNextReadyStory` Workflow
 **As a** Developer Agent,
-**I want** the existing story management tools to seamlessly interact with the new structured story data (tasks, acceptance criteria, comments),
-**so that** I can continue to manage stories effectively.
+**I want** the `backlog.getNextReadyStory` tool to return the full, self-sufficient story object,
+**so that** I can immediately begin work with all necessary context.
 
 **Acceptance Criteria:**
-1.  `backlog.createStory` and `backlog.updateStory` tools are updated to support the new structured fields.
-2.  `backlog.getStory` correctly retrieves and formats the new structured data.
-3.  All existing story-related functionalities (e.g., status updates, dependencies) continue to work with the new structure.
+1.  The `backlog.getNextReadyStory` tool's return payload is updated to the new, rich `Story` model.
+2.  The tool's logic remains the same (respecting dependencies and status), but the data it returns is now comprehensive.
+3.  The performance of the tool is not significantly degraded by the larger payload.
 
 ---
 
@@ -390,33 +411,3 @@ This epic focuses on implementing user roles and permissions to control access t
 3.  A Developer Agent can only use tools designated for Developers (e.g., `backlog.getNextReadyStory`).
 
 ---
-
-## Epic 8: Project Documentation Enhancements
-
-This epic focuses on integrating the newly created documentation files (configuration, coding guidelines, technical debt) into the project's main documentation, making them easily discoverable and accessible.
-
-### Story 8.1: Link New Documentation in README
-
-**As a** Developer,
-**I want** the new documentation files (`configuration.md`, `coding_guidelines.md`, `technical_debt.md`) to be linked from the `README.md`,
-**so that** they are easily discoverable from the project's entry point.
-
-**Acceptance Criteria:**
-1.  The `README.md` file is updated to include a new section or update an existing section with links to:
-    *   `docs/configuration.md`
-    *   `docs/coding_guidelines.md`
-    *   `docs/technical_debt.md`
-2.  The links are functional and point to the correct files.
-
-### Story 8.2: Integrate New Documentation into Architecture Overview
-
-**As a** Developer,
-**I want** the new documentation files to be referenced and integrated into the `docs/architecture.md` where appropriate,
-**so that** the architecture overview provides a comprehensive view of the project's structure and practices.
-
-**Acceptance Criteria:**
-1.  `docs/architecture.md` is reviewed and updated to include relevant references or summaries of:
-    *   Configuration management principles.
-    *   Key coding guidelines and their impact on architecture.
-    *   The approach to managing technical debt.
-2.  The integration is seamless and enhances the overall clarity of the architecture document.
