@@ -219,3 +219,19 @@ agile_mcp.db
 test_*.db
 *test*.sqlite
 *test*.sqlite3
+
+# In-memory and temporary files
+**/tmp/*
+**/temp/*
+**/.tmp/*
+**/.temp/*
+tmp_*
+temp_*
+*.tmp
+*.temp
+.temporary_*
+temporary_*
+in_memory_*
+memory_*
+*.inmemory
+.inmemory_*
