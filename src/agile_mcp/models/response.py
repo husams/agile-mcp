@@ -12,6 +12,7 @@ class StoryResponse(BaseModel):
     title: str
     description: str
     acceptance_criteria: List[str]
+    tasks: List[Dict[str, Any]]
     status: str
     priority: int
     created_at: Optional[str]

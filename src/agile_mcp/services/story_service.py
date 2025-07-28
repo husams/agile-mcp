@@ -3,6 +3,7 @@ Service layer for Story business logic operations.
 """
 
 import os
+import uuid
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -379,4 +380,346 @@ class StoryService:
                 raise
             raise DatabaseError(
                 f"Unexpected error while finding next ready story: {str(e)}"
+            )
+
+    def add_task_to_story(
+        self, story_id: str, description: str, order: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Add a new task to a story.
+
+        Args:
+            story_id: The unique identifier of the story
+            description: Description of the task
+            order: Optional order for the task (auto-incremented if not provided)
+
+        Returns:
+            Dict: Updated story with the new task
+
+        Raises:
+            StoryNotFoundError: If story is not found
+            StoryValidationError: If validation fails
+            DatabaseError: If database operation fails
+        """
+        # Validate input parameters
+        if not story_id or not story_id.strip():
+            raise StoryValidationError("Story ID cannot be empty")
+
+        if not description or not description.strip():
+            raise StoryValidationError("Task description cannot be empty")
+
+        try:
+            self.logger.info(
+                "Adding task to story",
+                **create_entity_context(story_id=story_id.strip()),
+                task_description=description[:50] if description else None,
+                operation="add_task_to_story",
+            )
+
+            # Get the story
+            story = self.story_repository.find_story_by_id(story_id.strip())
+            if not story:
+                raise StoryNotFoundError(f"Story with ID '{story_id}' not found")
+
+            # Generate task ID and determine order
+            task_id = str(uuid.uuid4())
+            if order is None:
+                existing_orders = [task.get("order", 0) for task in story.tasks]
+                order = max(existing_orders, default=0) + 1
+
+            # Create new task
+            new_task = {
+                "id": task_id,
+                "description": description.strip(),
+                "completed": False,
+                "order": order,
+            }
+
+            # Add task to story
+            updated_tasks = story.tasks + [new_task]
+            story.tasks = updated_tasks
+
+            # Force SQLAlchemy to recognize the change
+            from sqlalchemy.orm.attributes import flag_modified
+
+            flag_modified(story, "tasks")
+
+            # Save changes
+            self.story_repository.db_session.commit()
+            self.story_repository.db_session.refresh(story)
+
+            self.logger.info(
+                "Task added to story successfully",
+                **create_entity_context(story_id=story_id.strip()),
+                task_id=task_id,
+                operation="add_task_to_story",
+            )
+
+            return story.to_dict()
+
+        except ValueError as e:
+            # Handle model validation errors
+            raise StoryValidationError(str(e))
+        except SQLAlchemyError as e:
+            self.story_repository.db_session.rollback()
+            raise DatabaseError(
+                f"Database operation failed while adding task to story: {str(e)}"
+            )
+
+    def update_task_status(
+        self, story_id: str, task_id: str, completed: bool
+    ) -> Dict[str, Any]:
+        """
+        Update the completion status of a task within a story.
+
+        Args:
+            story_id: The unique identifier of the story
+            task_id: The unique identifier of the task
+            completed: New completion status
+
+        Returns:
+            Dict: Updated story with modified task
+
+        Raises:
+            StoryNotFoundError: If story is not found
+            StoryValidationError: If task not found or validation fails
+            DatabaseError: If database operation fails
+        """
+        # Validate input parameters
+        if not story_id or not story_id.strip():
+            raise StoryValidationError("Story ID cannot be empty")
+
+        if not task_id or not task_id.strip():
+            raise StoryValidationError("Task ID cannot be empty")
+
+        try:
+            self.logger.info(
+                "Updating task status",
+                **create_entity_context(story_id=story_id.strip()),
+                task_id=task_id.strip(),
+                new_completed=completed,
+                operation="update_task_status",
+            )
+
+            # Get the story
+            story = self.story_repository.find_story_by_id(story_id.strip())
+            if not story:
+                raise StoryNotFoundError(f"Story with ID '{story_id}' not found")
+
+            # Find and update the task
+            task_found = False
+            updated_tasks = []
+            for task in story.tasks:
+                if task["id"] == task_id.strip():
+                    task["completed"] = completed
+                    task_found = True
+                updated_tasks.append(task)
+
+            if not task_found:
+                raise StoryValidationError(
+                    f"Task with ID '{task_id}' not found in story"
+                )
+
+            # Set the updated tasks list to trigger SQLAlchemy change detection
+            story.tasks = updated_tasks
+
+            # Force SQLAlchemy to recognize the change
+            from sqlalchemy.orm.attributes import flag_modified
+
+            flag_modified(story, "tasks")
+
+            # Save changes
+            self.story_repository.db_session.commit()
+            self.story_repository.db_session.refresh(story)
+
+            self.logger.info(
+                "Task status updated successfully",
+                **create_entity_context(story_id=story_id.strip()),
+                task_id=task_id.strip(),
+                new_completed=completed,
+                operation="update_task_status",
+            )
+
+            return story.to_dict()
+
+        except ValueError as e:
+            # Handle model validation errors
+            raise StoryValidationError(str(e))
+        except SQLAlchemyError as e:
+            self.story_repository.db_session.rollback()
+            raise DatabaseError(
+                f"Database operation failed while updating task status: {str(e)}"
+            )
+
+    def update_task_description(
+        self, story_id: str, task_id: str, description: str
+    ) -> Dict[str, Any]:
+        """
+        Update the description of a task within a story.
+
+        Args:
+            story_id: The unique identifier of the story
+            task_id: The unique identifier of the task
+            description: New task description
+
+        Returns:
+            Dict: Updated story with modified task
+
+        Raises:
+            StoryNotFoundError: If story is not found
+            StoryValidationError: If task not found or validation fails
+            DatabaseError: If database operation fails
+        """
+        # Validate input parameters
+        if not story_id or not story_id.strip():
+            raise StoryValidationError("Story ID cannot be empty")
+
+        if not task_id or not task_id.strip():
+            raise StoryValidationError("Task ID cannot be empty")
+
+        if not description or not description.strip():
+            raise StoryValidationError("Task description cannot be empty")
+
+        try:
+            self.logger.info(
+                "Updating task description",
+                **create_entity_context(story_id=story_id.strip()),
+                task_id=task_id.strip(),
+                new_description=description[:50] if description else None,
+                operation="update_task_description",
+            )
+
+            # Get the story
+            story = self.story_repository.find_story_by_id(story_id.strip())
+            if not story:
+                raise StoryNotFoundError(f"Story with ID '{story_id}' not found")
+
+            # Find and update the task
+            task_found = False
+            updated_tasks = []
+            for task in story.tasks:
+                if task["id"] == task_id.strip():
+                    task["description"] = description.strip()
+                    task_found = True
+                updated_tasks.append(task)
+
+            if not task_found:
+                raise StoryValidationError(
+                    f"Task with ID '{task_id}' not found in story"
+                )
+
+            # Set the updated tasks list to trigger SQLAlchemy change detection
+            story.tasks = updated_tasks
+
+            # Force SQLAlchemy to recognize the change
+            from sqlalchemy.orm.attributes import flag_modified
+
+            flag_modified(story, "tasks")
+
+            # Save changes
+            self.story_repository.db_session.commit()
+            self.story_repository.db_session.refresh(story)
+
+            self.logger.info(
+                "Task description updated successfully",
+                **create_entity_context(story_id=story_id.strip()),
+                task_id=task_id.strip(),
+                operation="update_task_description",
+            )
+
+            return story.to_dict()
+
+        except ValueError as e:
+            # Handle model validation errors
+            raise StoryValidationError(str(e))
+        except SQLAlchemyError as e:
+            self.story_repository.db_session.rollback()
+            raise DatabaseError(
+                f"Database operation failed while updating task description: {str(e)}"
+            )
+
+    def reorder_tasks(
+        self, story_id: str, task_orders: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        Reorder tasks within a story.
+
+        Args:
+            story_id: The unique identifier of the story
+            task_orders: List of dicts with task_id and new order
+                Format: [{'task_id': 'id1', 'order': 1}, {'task_id': 'id2', 'order': 2}]
+
+        Returns:
+            Dict: Updated story with reordered tasks
+
+        Raises:
+            StoryNotFoundError: If story is not found
+            StoryValidationError: If validation fails
+            DatabaseError: If database operation fails
+        """
+        # Validate input parameters
+        if not story_id or not story_id.strip():
+            raise StoryValidationError("Story ID cannot be empty")
+
+        if not isinstance(task_orders, list):
+            raise StoryValidationError("Task orders must be a list")
+
+        try:
+            self.logger.info(
+                "Reordering tasks in story",
+                **create_entity_context(story_id=story_id.strip()),
+                task_count=len(task_orders),
+                operation="reorder_tasks",
+            )
+
+            # Get the story
+            story = self.story_repository.find_story_by_id(story_id.strip())
+            if not story:
+                raise StoryNotFoundError(f"Story with ID '{story_id}' not found")
+
+            # Create mapping of task_id to new order
+            order_mapping = {}
+            for item in task_orders:
+                if (
+                    not isinstance(item, dict)
+                    or "task_id" not in item
+                    or "order" not in item
+                ):
+                    raise StoryValidationError(
+                        "Each task order item must have 'task_id' and 'order' fields"
+                    )
+                order_mapping[item["task_id"]] = item["order"]
+
+            # Update task orders
+            for task in story.tasks:
+                if task["id"] in order_mapping:
+                    task["order"] = order_mapping[task["id"]]
+
+            # Set tasks to trigger validation and change detection
+            story.tasks = story.tasks
+
+            # Force SQLAlchemy to recognize the change
+            from sqlalchemy.orm.attributes import flag_modified
+
+            flag_modified(story, "tasks")
+
+            # Save changes
+            self.story_repository.db_session.commit()
+            self.story_repository.db_session.refresh(story)
+
+            self.logger.info(
+                "Tasks reordered successfully",
+                **create_entity_context(story_id=story_id.strip()),
+                operation="reorder_tasks",
+            )
+
+            return story.to_dict()
+
+        except ValueError as e:
+            # Handle model validation errors
+            raise StoryValidationError(str(e))
+        except SQLAlchemyError as e:
+            self.story_repository.db_session.rollback()
+            raise DatabaseError(
+                f"Database operation failed while reordering tasks: {str(e)}"
             )
