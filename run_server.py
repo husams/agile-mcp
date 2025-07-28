@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-Entry point script for running the Agile Management MCP Server.
-"""
+"""Entry point script for running the Agile Management MCP Server."""
 
 import sys
 from pathlib import Path

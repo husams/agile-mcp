@@ -1,6 +1,4 @@
-"""
-FastMCP tools for Artifact management operations.
-"""
+"""FastMCP tools for Artifact management operations."""
 
 import uuid
 from typing import Any, Dict, List
@@ -28,7 +26,6 @@ from ..utils.logging_config import (
 
 def register_artifact_tools(mcp: FastMCP) -> None:
     """Register artifact management tools with the FastMCP server."""
-
     logger = get_logger(__name__)
 
     # Ensure database tables exist
@@ -209,7 +206,7 @@ def register_artifact_tools(mcp: FastMCP) -> None:
     @mcp.tool("artifacts.listForStory")
     def list_artifacts_for_story(story_id: str) -> List[Dict[str, Any]]:
         """
-        Retrieves all artifacts linked to a specific story.
+        Retrieve all artifacts linked to a specific story.
 
         Args:
             story_id: The unique identifier of the story

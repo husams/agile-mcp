@@ -1,6 +1,4 @@
-"""
-FastMCP tools for Epic management operations.
-"""
+"""FastMCP tools for Epic management operations."""
 
 import uuid
 from typing import Any, Dict, List
@@ -28,7 +26,6 @@ from ..utils.logging_config import (
 
 def register_epic_tools(mcp: FastMCP) -> None:
     """Register epic management tools with the FastMCP server."""
-
     logger = get_logger(__name__)
 
     # Ensure database tables exist
