@@ -1,9 +1,13 @@
+"""Response models for the Agile Management MCP Server."""
+
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
 
 class StoryResponse(BaseModel):
+    """Response model for story data."""
+
     id: str
     title: str
     description: str
@@ -15,6 +19,8 @@ class StoryResponse(BaseModel):
 
 
 class EpicResponse(BaseModel):
+    """Response model for epic data."""
+
     id: str
     title: str
     description: str
@@ -22,6 +28,8 @@ class EpicResponse(BaseModel):
 
 
 class ArtifactResponse(BaseModel):
+    """Response model for artifact data."""
+
     id: str
     story_id: str
     uri: str
@@ -29,17 +37,23 @@ class ArtifactResponse(BaseModel):
 
 
 class DependencyResponse(BaseModel):
+    """Response model for dependency data."""
+
     story_id: str
     depends_on_story_id: str
 
 
 class StorySectionResponse(BaseModel):
+    """Response model for story section data."""
+
     story_id: str
     section_name: str
     content: str
 
 
 class DependencyAddResponse(BaseModel):
+    """Response model for dependency addition operations."""
+
     status: str
     story_id: str
     depends_on_story_id: str
@@ -47,6 +61,8 @@ class DependencyAddResponse(BaseModel):
 
 
 class DoDChecklistResponse(BaseModel):
+    """Response model for Definition of Done checklist evaluation."""
+
     story_id: str
     story_title: str
     story_status: str

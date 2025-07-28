@@ -1,6 +1,4 @@
-"""
-Epic data model for the Agile Management MCP Server.
-"""
+"""Epic data model for the Agile Management MCP Server."""
 
 from typing import Any, Dict
 
@@ -15,6 +13,8 @@ from sqlalchemy.orm import (
 
 
 class Base(DeclarativeBase):
+    """Base class for all database models."""
+
     pass
 
 
@@ -94,4 +94,5 @@ class Epic(Base):
         return status
 
     def __repr__(self) -> str:
+        """Return string representation of Epic."""
         return f"<Epic(id='{self.id}', title='{self.title}', status='{self.status}')>"

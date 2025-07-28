@@ -1,6 +1,4 @@
-"""
-Artifact data model for the Agile Management MCP Server.
-"""
+"""Artifact data model for the Agile Management MCP Server."""
 
 from typing import Any, Dict
 
@@ -70,6 +68,7 @@ class Artifact(Base):
         return RelationValidator.validate_relation_or_raise(relation)
 
     def __repr__(self) -> str:
+        """Return string representation of Artifact."""
         return (
             f"<Artifact(id='{self.id}', uri='{self.uri}', "
             f"relation='{self.relation}', story_id='{self.story_id}')>"

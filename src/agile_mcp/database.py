@@ -1,6 +1,4 @@
-"""
-Database configuration and setup for the Agile Management MCP Server.
-"""
+"""Database configuration and setup for the Agile Management MCP Server."""
 
 import os
 

@@ -1,6 +1,4 @@
-"""
-Data models for the Agile Management MCP Server.
-"""
+"""Data models for the Agile Management MCP Server."""
 
 from .artifact import Artifact
 from .epic import Epic

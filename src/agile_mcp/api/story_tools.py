@@ -1,6 +1,4 @@
-"""
-FastMCP tools for Story management operations.
-"""
+"""FastMCP tools for Story management operations."""
 
 import uuid
 from typing import Any, Dict, List
@@ -29,7 +27,6 @@ from ..utils.logging_config import (
 
 def register_story_tools(mcp: FastMCP) -> None:
     """Register story management tools with the FastMCP server."""
-
     logger = get_logger(__name__)
 
     # Ensure database tables exist
