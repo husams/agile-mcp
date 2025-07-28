@@ -1,7 +1,8 @@
 """
 Enhanced E2E Test Validation Utilities
 
-Comprehensive JSON response validation with schema validation and MCP protocol compliance
+Comprehensive JSON response validation with schema validation and MCP protocol
+compliance
 for production server testing with real data.
 """
 
@@ -39,7 +40,8 @@ def validate_json_response(response: str) -> dict:
         parsed = json.loads(response)
         if not isinstance(parsed, dict):
             pytest.fail(
-                f"Response must be dict, got {type(parsed).__name__}: {response[:200]}..."
+                f"Response must be dict, got {type(parsed).__name__}: "
+                f"{response[:200]}..."
             )
         return parsed
     except json.JSONDecodeError as e:
@@ -142,7 +144,8 @@ def validate_tool_response_format(response_json: dict) -> dict:
         success = response_json["success"]
         if not isinstance(success, bool):
             pytest.fail(
-                f"Field 'success' must be boolean, got {type(success).__name__}: {success}\n"
+                f"Field 'success' must be boolean, got "
+                f"{type(success).__name__}: {success}\n"
                 f"Response: {response_json}"
             )
 
@@ -311,7 +314,8 @@ def validate_epic_response(response_data: dict) -> EpicResponse:
 
 
 def validate_artifact_response(response_data: dict) -> ArtifactResponse:
-    """Validate response data matches ArtifactResponse schema for production artifact data."""
+    """Validate response data matches ArtifactResponse schema for production
+    artifact data."""
     return cast(
         ArtifactResponse,
         validate_pydantic_model(response_data, ArtifactResponse, "artifact response"),
@@ -319,7 +323,8 @@ def validate_artifact_response(response_data: dict) -> ArtifactResponse:
 
 
 def validate_dependency_response(response_data: dict) -> DependencyResponse:
-    """Validate response data matches DependencyResponse schema for production dependency data."""
+    """Validate response data matches DependencyResponse schema for production
+    dependency data."""
     return cast(
         DependencyResponse,
         validate_pydantic_model(
@@ -349,7 +354,8 @@ def validate_dependency_add_response(response_data: dict) -> DependencyAddRespon
 
 
 def validate_dod_checklist_response(response_data: dict) -> DoDChecklistResponse:
-    """Validate response data matches DoDChecklistResponse schema for DoD checklist responses."""
+    """Validate response data matches DoDChecklistResponse schema for DoD
+    checklist responses."""
     return cast(
         DoDChecklistResponse,
         validate_pydantic_model(
@@ -482,7 +488,8 @@ def validate_jsonrpc_request_format(request_data: dict) -> dict:
     request_id = request_data["id"]
     if not isinstance(request_id, (str, int, float, type(None))):
         pytest.fail(
-            f"JSON-RPC id must be string, number, or null, got: {type(request_id).__name__}\n"
+            f"JSON-RPC id must be string, number, or null, got: "
+            f"{type(request_id).__name__}\n"
             f"Request: {request_data}"
         )
 
@@ -554,13 +561,15 @@ def validate_jsonrpc_response_format(response_data: dict) -> dict:
 
         if not isinstance(error["code"], int):
             pytest.fail(
-                f"JSON-RPC error code must be integer, got: {type(error['code']).__name__}\n"
+                f"JSON-RPC error code must be integer, got: "
+                f"{type(error['code']).__name__}\n"
                 f"Response: {response_data}"
             )
 
         if not isinstance(error["message"], str):
             pytest.fail(
-                f"JSON-RPC error message must be string, got: {type(error['message']).__name__}\n"
+                f"JSON-RPC error message must be string, got: "
+                f"{type(error['message']).__name__}\n"
                 f"Response: {response_data}"
             )
 
@@ -634,7 +643,8 @@ def validate_mcp_protocol_compliance(request_data: dict, response_data: dict) ->
         params = validated_request["params"]
         if not isinstance(params, (dict, list)):
             pytest.fail(
-                f"MCP method parameters must be object or array, got: {type(params).__name__}\n"
+                f"MCP method parameters must be object or array, got: "
+                f"{type(params).__name__}\n"
                 f"Request: {validated_request}"
             )
 
@@ -685,7 +695,8 @@ def validate_mcp_tool_response_complete(
             return data
         else:
             pytest.fail(
-                f"JSON-RPC result must be string or object, got: {type(tool_response).__name__}\n"
+                f"JSON-RPC result must be string or object, got: "
+                f"{type(tool_response).__name__}\n"
                 f"Response: {response_json}"
             )
             return {}  # Never reached due to pytest.fail(), but needed for mypy

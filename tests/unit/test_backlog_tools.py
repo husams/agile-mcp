@@ -94,7 +94,8 @@ class TestAddDependencyTool:
         assert add_dependency_call is not None
         # The function should be passed as a positional argument to the decorator
         assert len(add_dependency_call[0]) >= 1  # At least the tool name
-        # Or as part of the decorator call structure - this tests that registration happened
+        # Or as part of the decorator call structure - this tests that
+        # registration happened
 
 
 class TestGetNextReadyStoryTool:
@@ -135,11 +136,9 @@ class TestGetNextReadyStoryTool:
             "epic_id": "epic-1",
         }
 
-        with patch(
-            "src.agile_mcp.api.backlog_tools.StoryRepository"
-        ) as mock_story_repo_class, patch(
+        with patch("src.agile_mcp.api.backlog_tools.StoryRepository"), patch(
             "src.agile_mcp.api.backlog_tools.DependencyRepository"
-        ) as mock_dep_repo_class, patch(
+        ), patch(
             "src.agile_mcp.api.backlog_tools.StoryService"
         ) as mock_story_service_class:
 

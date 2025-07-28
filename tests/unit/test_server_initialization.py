@@ -129,6 +129,7 @@ class TestJSONRPCCompliance:
         assert server is not None
 
     def test_error_logging_to_stderr(self):
-        """Test that errors are logged to stderr to avoid contaminating stdout JSON-RPC."""
+        """Test that errors are logged to stderr to avoid contaminating stdout
+        JSON-RPC."""
         # This is tested in the error handling tests above
         # Verifying that error output goes to stderr, not stdout

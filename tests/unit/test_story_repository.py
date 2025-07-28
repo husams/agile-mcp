@@ -342,7 +342,8 @@ def test_find_stories_by_status_ordered_empty(story_repository):
 
 
 def test_find_stories_by_status_ordered_single_priority(story_repository, in_memory_db):
-    """Test find_stories_by_status_ordered with stories of same priority, ordered by created_at."""
+    """Test find_stories_by_status_ordered with stories of same priority,
+    ordered by created_at."""
     from datetime import datetime, timedelta
 
     # Create stories with same priority but different creation times
@@ -387,7 +388,8 @@ def test_find_stories_by_status_ordered_single_priority(story_repository, in_mem
     in_memory_db.add(story2)
     in_memory_db.commit()
 
-    # Get stories - should be ordered by created_at (earliest first) since priority is same
+    # Get stories - should be ordered by created_at (earliest first) since
+    # priority is same
     stories = story_repository.find_stories_by_status_ordered("ToDo")
 
     assert len(stories) == 3

@@ -248,7 +248,8 @@ def test_remove_dependency_not_exists(dependency_repository, test_stories):
 
 def test_multiple_dependencies_complex_scenario(dependency_repository, test_stories):
     """Test complex scenario with multiple dependencies and circular detection."""
-    # Create dependency chain: story-1 -> story-2, story-1 -> story-3, story-2 -> story-3
+    # Create dependency chain: story-1 -> story-2, story-1 -> story-3,
+    # story-2 -> story-3
     dependency_repository.add_dependency("story-1", "story-2")
     dependency_repository.add_dependency("story-1", "story-3")
     dependency_repository.add_dependency("story-2", "story-3")
@@ -315,7 +316,8 @@ def test_has_incomplete_dependencies_false_all_done(
 def test_has_incomplete_dependencies_true_some_incomplete(
     dependency_repository, test_stories, test_session
 ):
-    """Test has_incomplete_dependencies returns True when some dependencies are incomplete."""
+    """Test has_incomplete_dependencies returns True when some dependencies are
+    incomplete."""
     # Set one dependency to Done, leave others as ToDo
     story_2 = test_session.query(Story).filter(Story.id == "story-2").first()
     story_2.status = "Done"
@@ -333,7 +335,8 @@ def test_has_incomplete_dependencies_true_some_incomplete(
 def test_has_incomplete_dependencies_true_all_incomplete(
     dependency_repository, test_stories
 ):
-    """Test has_incomplete_dependencies returns True when all dependencies are incomplete."""
+    """Test has_incomplete_dependencies returns True when all dependencies are
+    incomplete."""
     # Add dependencies (all stories have default ToDo status)
     dependency_repository.add_dependency("story-1", "story-2")
     dependency_repository.add_dependency("story-1", "story-3")

@@ -68,7 +68,8 @@ class TestToolResponseValidation:
     def test_validate_tool_response_format_missing_success(self):
         """Test tool response without success field (direct data format is valid)."""
         response = {"data": {"id": "test"}}
-        # Should not raise an exception - direct data responses don't require success field
+        # Should not raise an exception - direct data responses don't require
+        # success field
         result = validate_tool_response_format(response)
         assert result == response
 

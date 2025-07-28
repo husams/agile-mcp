@@ -205,7 +205,8 @@ class TestDependencyToolsE2E:
             },
         )
 
-        # Try to create circular dependency: C -> A (would create A -> B -> C -> A cycle)
+        # Try to create circular dependency: C -> A (would create A -> B -> C ->
+        # A cycle)
         response = send_jsonrpc_request(
             mcp_server_process,
             "tools/call",
@@ -443,7 +444,8 @@ class TestDependencyToolsE2E:
                 "error" not in response
             ), f"Failed to add dependency {story_id} -> {depends_on_id}"
 
-        # Test circular dependency prevention: try Story 5 -> Story 1 (would create cycle)
+        # Test circular dependency prevention: try Story 5 -> Story 1 (would
+        # create cycle)
         response = send_jsonrpc_request(
             mcp_server_process,
             "tools/call",

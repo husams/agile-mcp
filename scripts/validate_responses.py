@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
-"""Pre-commit hook to validate MCP tool response formats"""
+"""Validate MCP tool response formats for compliance."""
 
 import ast
 import json
-import re
 import sys
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import List
 
 
 def has_tool_decorator(node: ast.FunctionDef) -> bool:
-    """Check if function has @mcp.tool decorator"""
+    """Check if function has @mcp.tool decorator."""
     for decorator in node.decorator_list:
         if isinstance(decorator, ast.Name) and decorator.id == "tool":
             return True
@@ -20,7 +19,7 @@ def has_tool_decorator(node: ast.FunctionDef) -> bool:
 
 
 def extract_return_statements(node: ast.FunctionDef) -> List[ast.Return]:
-    """Extract all return statements from a function"""
+    """Extract all return statements from a function."""
     returns = []
     for child in ast.walk(node):
         if isinstance(child, ast.Return) and child.value is not None:
@@ -29,7 +28,7 @@ def extract_return_statements(node: ast.FunctionDef) -> List[ast.Return]:
 
 
 def validates_json_return(node: ast.FunctionDef) -> bool:
-    """Check if function returns valid JSON string"""
+    """Check if function returns valid JSON string."""
     returns = extract_return_statements(node)
 
     if not returns:
@@ -74,7 +73,7 @@ def validates_json_return(node: ast.FunctionDef) -> bool:
 
 
 def check_pydantic_model_usage(node: ast.FunctionDef) -> List[str]:
-    """Check if function properly uses Pydantic models for serialization"""
+    """Check if function properly uses Pydantic models for serialization."""
     errors = []
 
     # Look for model.model_dump_json() usage
@@ -102,14 +101,15 @@ def check_pydantic_model_usage(node: ast.FunctionDef) -> List[str]:
 
     if has_complex_data and not has_pydantic_serialization:
         errors.append(
-            f"Function '{node.name}' has complex data structures but no Pydantic serialization"
+            f"Function '{node.name}' has complex data structures but no "
+            f"Pydantic serialization"
         )
 
     return errors
 
 
 def validate_tool_functions(file_path: Path) -> List[str]:
-    """Validate all tool functions return JSON strings"""
+    """Validate all tool functions return JSON strings."""
     errors = []
 
     if not file_path.exists():
@@ -140,7 +140,7 @@ def validate_tool_functions(file_path: Path) -> List[str]:
 
 
 def main():
-    """Main entry point for pre-commit hook"""
+    """Run response format validation on specified files."""
     if len(sys.argv) < 2:
         print("Usage: validate_responses.py <file1> [file2] ...")
         sys.exit(1)

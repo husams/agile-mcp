@@ -575,7 +575,8 @@ class TestArtifactToolsE2E:
         # Create test epic and story
         epic_id, story_id = create_test_epic_and_story(process)
 
-        # Test invalid URI formats (reduced to prevent server hang after 4+ sequential invalid requests)
+        # Test invalid URI formats (reduced to prevent server hang after 4+
+        # sequential invalid requests)
         invalid_uris = [
             "not-a-uri",
             "://missing-scheme",
@@ -601,7 +602,8 @@ class TestArtifactToolsE2E:
                 },
             )
 
-            # Verify error response (FastMCP returns successful response with error content)
+            # Verify error response (FastMCP returns successful response with
+            # error content)
             assert "result" in response
             assert "content" in response["result"]
             assert response["result"]["isError"] is True

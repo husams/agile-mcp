@@ -820,7 +820,8 @@ def test_update_story_status_integration_with_get_story(mcp_server_process):
 
 
 def test_create_update_get_complete_workflow(mcp_server_process):
-    """Test complete workflow: create story, update status multiple times, then retrieve."""
+    """Test complete workflow: create story, update status multiple times, then
+    retrieve."""
     initialize_server(mcp_server_process)
     epic_id = create_test_epic(mcp_server_process)
 

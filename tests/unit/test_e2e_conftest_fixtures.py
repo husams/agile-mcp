@@ -1,5 +1,6 @@
 """
-Unit tests for E2E conftest.py fixtures to validate subprocess isolation and JSON-RPC helpers.
+Unit tests for E2E conftest.py fixtures to validate subprocess isolation and
+JSON-RPC helpers.
 """
 
 from unittest.mock import Mock, patch
@@ -13,7 +14,7 @@ def test_isolated_e2e_database_fixture():
     from tests.e2e.conftest import isolated_e2e_database
 
     # Create a mock pytest fixture context
-    fixture_func = isolated_e2e_database.__wrapped__  # Get unwrapped function
+    _ = isolated_e2e_database.__wrapped__  # Get unwrapped function
 
     # This would be a more complex test in real implementation
     # For now, just validate the fixture is properly defined

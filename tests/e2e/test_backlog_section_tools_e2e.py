@@ -15,12 +15,15 @@ Done
 
 ## Story
 **As an** AI Agent,
-**I want** to retrieve just a specific section of a story, like its Acceptance Criteria,
-**so that** I can focus on the most relevant information for my current task without processing the entire story object.
+**I want** to retrieve just a specific section of a story, like its
+Acceptance Criteria,
+**so that** I can focus on the most relevant information for my current task
+without processing the entire story object.
 
 ## Acceptance Criteria
 1. A `backlog.getStorySection` tool is available.
-2. The tool accepts a story ID and a section name (e.g., "Acceptance Criteria", "Description").
+2. The tool accepts a story ID and a section name (e.g., "Acceptance Criteria",
+   "Description").
 3. The tool returns the content of the requested section.
 4. The tool returns an appropriate error if the section does not exist.
 
@@ -49,13 +52,16 @@ class TestBacklogSectionToolsE2E:
         assert process is not None
 
         # The server should exit cleanly after showing startup banner
-        # This indicates successful initialization with all tools including backlog tools
+        # This indicates successful initialization with all tools including
+        # backlog tools
 
         # This test verifies that the server can be created without errors
-        # when backlog tools are registered, which indicates successful integration
+        # when backlog tools are registered, which indicates successful
+        # integration
 
     def test_backlog_tools_registration_during_server_creation(self):
-        """Test that backlog tools are registered during server creation without errors."""
+        """Test that backlog tools are registered during server creation without
+        errors."""
         # Create a new server instance to test registration process
         from src.agile_mcp.main import create_server
 

@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""Pre-commit hook to validate MCP protocol compliance"""
+"""Validate MCP protocol compliance for tool functions."""
 
 import ast
-import json
 import re
 import sys
 from pathlib import Path
@@ -10,7 +9,7 @@ from typing import Any, Dict, List, Optional
 
 
 def extract_tool_metadata(node: ast.FunctionDef) -> Optional[Dict[str, Any]]:
-    """Extract tool metadata from @mcp.tool decorator"""
+    """Extract tool metadata from @mcp.tool decorator."""
     for decorator in node.decorator_list:
         if isinstance(decorator, ast.Call):
             # @mcp.tool(name="...", description="...")
@@ -36,7 +35,7 @@ def extract_tool_metadata(node: ast.FunctionDef) -> Optional[Dict[str, Any]]:
 
 
 def validate_tool_name(name: str) -> List[str]:
-    """Validate tool name follows MCP conventions"""
+    """Validate tool name follows MCP conventions."""
     errors = []
 
     if not name:
@@ -46,7 +45,8 @@ def validate_tool_name(name: str) -> List[str]:
     # Check name format (alphanumeric, underscores, hyphens)
     if not re.match(r"^[a-zA-Z][a-zA-Z0-9_-]*$", name):
         errors.append(
-            f"Tool name '{name}' must start with letter and contain only alphanumeric, underscore, or hyphen characters"
+            f"Tool name '{name}' must start with letter and contain only "
+            f"alphanumeric, underscore, or hyphen characters"
         )
 
     # Check length
@@ -66,7 +66,7 @@ def validate_tool_name(name: str) -> List[str]:
 
 
 def validate_tool_description(description: str) -> List[str]:
-    """Validate tool description follows MCP conventions"""
+    """Validate tool description follows MCP conventions."""
     errors = []
 
     if not description:
@@ -95,7 +95,7 @@ def validate_tool_description(description: str) -> List[str]:
 
 
 def validate_function_parameters(node: ast.FunctionDef) -> List[str]:
-    """Validate function parameters are properly typed"""
+    """Validate function parameters are properly typed."""
     errors = []
 
     for arg in node.args.args:
@@ -110,7 +110,7 @@ def validate_function_parameters(node: ast.FunctionDef) -> List[str]:
 
 
 def check_return_type_annotation(node: ast.FunctionDef) -> List[str]:
-    """Check if function has proper return type annotation"""
+    """Check if function has proper return type annotation."""
     errors = []
 
     if not node.returns:
@@ -126,7 +126,7 @@ def check_return_type_annotation(node: ast.FunctionDef) -> List[str]:
 
 
 def validate_docstring(node: ast.FunctionDef) -> List[str]:
-    """Validate function has proper docstring"""
+    """Validate function has proper docstring."""
     errors = []
 
     docstring = ast.get_docstring(node)
@@ -142,14 +142,15 @@ def validate_docstring(node: ast.FunctionDef) -> List[str]:
     for param in params:
         if param not in docstring and param != "self":
             errors.append(
-                f"Function '{node.name}' docstring missing parameter '{param}' documentation"
+                f"Function '{node.name}' docstring missing parameter "
+                f"'{param}' documentation"
             )
 
     return errors
 
 
 def validate_mcp_compliance(file_path: Path) -> List[str]:
-    """Validate MCP protocol compliance for tool functions"""
+    """Validate MCP protocol compliance for tool functions."""
     errors = []
 
     if not file_path.exists():
@@ -209,7 +210,7 @@ def validate_mcp_compliance(file_path: Path) -> List[str]:
 
 
 def main():
-    """Main entry point for MCP protocol validation"""
+    """Run MCP protocol validation on specified files."""
     if len(sys.argv) < 2:
         print("Usage: validate_mcp_protocol.py <file1> [file2] ...")
         sys.exit(1)

@@ -19,7 +19,8 @@ from src.agile_mcp.models.story import Story
 class DataFactory:
     """Factory class for creating consistent test data across all test types.
 
-    This factory provides methods to create test data for epics, stories, and artifacts.
+    This factory provides methods to create test data for epics, stories,
+    and artifacts.
     """
 
     def __init__(self, session: Session):
@@ -30,7 +31,8 @@ class DataFactory:
             session: SQLAlchemy session for database operations
         """
         self.session = session
-        self._created_objects: list[Any] = []  # Track created objects for cleanup
+        # Track created objects for cleanup
+        self._created_objects: list[Any] = []
 
     def create_epic(
         self,
@@ -116,7 +118,7 @@ class DataFactory:
 
         if acceptance_criteria is None:
             acceptance_criteria = [
-                f"Story {story_id} should work correctly and meet test " "requirements"
+                f"Story {story_id} should work correctly and meet test requirements"
             ]
 
         story = Story(
@@ -184,9 +186,10 @@ class DataFactory:
         stories_per_epic: int = 2,
         artifacts_per_story: int = 1,
     ) -> Dict[str, List[Any]]:
-        """Create a complete test data hierarchy with epics, stories, and artifacts.
+        """Create a complete test data hierarchy.
 
-        Create nested test data structure with configurable numbers of each entity type.
+        Create nested test data structure with configurable numbers of each
+        entity type.
 
         Args:
             epic_count: Number of epics to create

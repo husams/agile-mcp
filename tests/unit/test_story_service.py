@@ -530,7 +530,8 @@ def story_service_with_dependencies(mock_repository, mock_dependency_repository)
 
 
 def test_get_next_ready_story_no_dependency_repository(story_service):
-    """Test get_next_ready_story raises error when dependency repository is not provided."""
+    """Test get_next_ready_story raises error when dependency repository is not
+    provided."""
     with pytest.raises(StoryValidationError, match="Dependency repository required"):
         story_service.get_next_ready_story()
 
@@ -551,7 +552,8 @@ def test_get_next_ready_story_no_stories(
 def test_get_next_ready_story_all_have_dependencies(
     story_service_with_dependencies, mock_repository, mock_dependency_repository
 ):
-    """Test get_next_ready_story returns None when all stories have incomplete dependencies."""
+    """Test get_next_ready_story returns None when all stories have incomplete
+    dependencies."""
     from datetime import datetime
 
     # Setup mock stories - all have incomplete dependencies

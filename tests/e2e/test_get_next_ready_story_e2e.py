@@ -317,7 +317,8 @@ class TestGetNextReadyStoryE2E:
         assert initial_story["status"] == "ToDo"
         assert initial_story["id"] == story_id
 
-        # Call getNextReadyStory multiple times until we get our story or verify behavior
+        # Call getNextReadyStory multiple times until we get our story or verify
+        # behavior
         # In production environment, there might be higher priority stories
         max_attempts = 10
         our_story_found = False
@@ -356,7 +357,8 @@ class TestGetNextReadyStoryE2E:
             persisted_story = extract_tool_response(verify_response)
             assert persisted_story["status"] == "InProgress"
 
-            # Verify that calling again doesn't return the same story (it's now InProgress)
+            # Verify that calling again doesn't return the same story (it's now
+            # InProgress)
             response2 = send_jsonrpc_request(
                 mcp_server_process,
                 "tools/call",
@@ -364,7 +366,8 @@ class TestGetNextReadyStoryE2E:
             )
 
             result2 = extract_tool_response(response2)
-            # Either returns empty or a different story (not the one we just set to InProgress)
+            # Either returns empty or a different story (not the one we just set
+            # to InProgress)
             if result2 != {}:
                 assert result2["id"] != story_id
                 assert result2["status"] == "InProgress"
@@ -444,7 +447,8 @@ class TestGetNextReadyStoryE2E:
 
                 result2 = extract_tool_response(response2)
                 if result2 != {} and result2["id"] == story_2_id:
-                    # Perfect! Story 2 is now available after its dependency was completed
+                    # Perfect! Story 2 is now available after its dependency was
+                    # completed
                     assert result2["status"] == "InProgress"
                 break
             else:

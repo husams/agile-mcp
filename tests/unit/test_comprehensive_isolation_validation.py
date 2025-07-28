@@ -97,9 +97,10 @@ class TestSystemPerformanceValidation:
         test_time = (time.time() - start_time) * 1000  # Convert to ms
 
         # Target is ≤100ms, allow some buffer
-        assert (
-            test_time < 500
-        ), f"Integration test took {test_time:.1f}ms, should be under 500ms (target ≤100ms)"
+        assert test_time < 500, (
+            f"Integration test took {test_time:.1f}ms, should be under 500ms "
+            f"(target ≤100ms)"
+        )
 
     def test_e2e_test_performance_target(self):
         """Test that E2E test performance meets ≤1s per test target."""
@@ -184,8 +185,10 @@ class TestIsolationSystemValidation:
             e2e_result["is_thread_safe"] is True
         ), f"E2E thread safety failed: {e2e_result['issues']}"
 
-        # Integration tests may fail thread safety due to shared database - this is expected behavior
-        # Integration databases are designed for sequential test execution within a suite
+        # Integration tests may fail thread safety due to shared database -
+        # this is expected behavior
+        # Integration databases are designed for sequential test execution
+        # within a suite
         # We just verify that the validator handles this correctly
         assert "is_thread_safe" in integration_result
         if not integration_result["is_thread_safe"]:
@@ -437,7 +440,7 @@ class TestSystemStressValidation:
                     with results_lock:
                         results.append(True)
 
-                except Exception as e:
+                except Exception:
                     with results_lock:
                         results.append(False)
 
