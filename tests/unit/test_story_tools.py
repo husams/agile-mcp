@@ -1,6 +1,4 @@
-"""
-Unit tests for Story tools API layer.
-"""
+"""Unit tests for Story tools API layer."""
 
 from unittest.mock import Mock, patch
 
@@ -64,19 +62,15 @@ class TestCreateStoryTool:
     def test_create_story_success(self, mock_fastmcp):
         """Test successful story creation via API tool."""
         # Setup mocks
-        with patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db, patch(
-            "src.agile_mcp.api.story_tools.StoryRepository"
-        ) as mock_repo_class, patch(
-            "src.agile_mcp.api.story_tools.StoryService"
-        ) as mock_service_class, patch(
-            "src.agile_mcp.api.story_tools.create_tables"
+        with (
+            patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db,
+            patch("src.agile_mcp.api.story_tools.StoryRepository") as _,
+            patch("src.agile_mcp.api.story_tools.StoryService") as mock_service_class,
+            patch("src.agile_mcp.api.story_tools.create_tables"),
         ):
 
             mock_session = Mock()
             mock_get_db.return_value = mock_session
-
-            mock_repository = Mock()
-            mock_repo_class.return_value = mock_repository
 
             mock_service = Mock()
             mock_service_class.return_value = mock_service
@@ -94,7 +88,8 @@ class TestCreateStoryTool:
             # Register tools
             register_story_tools(mock_fastmcp)
 
-            # Verify the tool was registered by checking call count and simulating the tool call
+            # Verify the tool was registered by checking call count and simulating
+            # the tool call
             assert mock_fastmcp.tool.called
 
             # Since we can't easily extract and call the actual function from mock,
@@ -108,12 +103,11 @@ class TestCreateStoryTool:
 
     def test_create_story_validation_error(self, mock_fastmcp):
         """Test story creation with validation error."""
-        with patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db, patch(
-            "src.agile_mcp.api.story_tools.StoryRepository"
-        ) as mock_repo_class, patch(
-            "src.agile_mcp.api.story_tools.StoryService"
-        ) as mock_service_class, patch(
-            "src.agile_mcp.api.story_tools.create_tables"
+        with (
+            patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db,
+            patch("src.agile_mcp.api.story_tools.StoryRepository") as _,
+            patch("src.agile_mcp.api.story_tools.StoryService") as mock_service_class,
+            patch("src.agile_mcp.api.story_tools.create_tables"),
         ):
 
             mock_session = Mock()
@@ -136,7 +130,8 @@ class TestCreateStoryTool:
                     create_story_func = call[0][1] if len(call[0]) > 1 else None
                     break
 
-            # If we can't find the function in the call args, it might be registered differently
+            # If we can't find the function in the call args, it might be
+            # registered differently
             if create_story_func is None:
                 # For testing purposes, we'll simulate the error handling directly
 
@@ -155,12 +150,11 @@ class TestCreateStoryTool:
 
     def test_create_story_epic_not_found_error(self, mock_fastmcp):
         """Test story creation when epic not found."""
-        with patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db, patch(
-            "src.agile_mcp.api.story_tools.StoryRepository"
-        ) as mock_repo_class, patch(
-            "src.agile_mcp.api.story_tools.StoryService"
-        ) as mock_service_class, patch(
-            "src.agile_mcp.api.story_tools.create_tables"
+        with (
+            patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db,
+            patch("src.agile_mcp.api.story_tools.StoryRepository") as _,
+            patch("src.agile_mcp.api.story_tools.StoryService") as mock_service_class,
+            patch("src.agile_mcp.api.story_tools.create_tables"),
         ):
 
             mock_session = Mock()
@@ -184,12 +178,11 @@ class TestCreateStoryTool:
 
     def test_create_story_database_error(self, mock_fastmcp):
         """Test story creation with database error."""
-        with patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db, patch(
-            "src.agile_mcp.api.story_tools.StoryRepository"
-        ) as mock_repo_class, patch(
-            "src.agile_mcp.api.story_tools.StoryService"
-        ) as mock_service_class, patch(
-            "src.agile_mcp.api.story_tools.create_tables"
+        with (
+            patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db,
+            patch("src.agile_mcp.api.story_tools.StoryRepository") as _,
+            patch("src.agile_mcp.api.story_tools.StoryService") as mock_service_class,
+            patch("src.agile_mcp.api.story_tools.create_tables"),
         ):
 
             mock_session = Mock()
@@ -222,12 +215,11 @@ class TestGetStoryTool:
 
     def test_get_story_success(self, mock_fastmcp):
         """Test successful story retrieval via API tool."""
-        with patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db, patch(
-            "src.agile_mcp.api.story_tools.StoryRepository"
-        ) as mock_repo_class, patch(
-            "src.agile_mcp.api.story_tools.StoryService"
-        ) as mock_service_class, patch(
-            "src.agile_mcp.api.story_tools.create_tables"
+        with (
+            patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db,
+            patch("src.agile_mcp.api.story_tools.StoryRepository") as _,
+            patch("src.agile_mcp.api.story_tools.StoryService") as mock_service_class,
+            patch("src.agile_mcp.api.story_tools.create_tables"),
         ):
 
             mock_session = Mock()
@@ -250,16 +242,16 @@ class TestGetStoryTool:
 
             # Verify the tool was registered
             assert mock_fastmcp.tool.called
-            mock_session.close.assert_not_called()  # Should be called during actual tool execution
+            mock_session.close.assert_not_called()  # Should be called during
+            # actual tool execution
 
     def test_get_story_not_found_error(self, mock_fastmcp):
         """Test story retrieval when story not found."""
-        with patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db, patch(
-            "src.agile_mcp.api.story_tools.StoryRepository"
-        ) as mock_repo_class, patch(
-            "src.agile_mcp.api.story_tools.StoryService"
-        ) as mock_service_class, patch(
-            "src.agile_mcp.api.story_tools.create_tables"
+        with (
+            patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db,
+            patch("src.agile_mcp.api.story_tools.StoryRepository") as _,
+            patch("src.agile_mcp.api.story_tools.StoryService") as mock_service_class,
+            patch("src.agile_mcp.api.story_tools.create_tables"),
         ):
 
             mock_session = Mock()
@@ -288,12 +280,11 @@ class TestGetStoryTool:
 
     def test_get_story_database_error(self, mock_fastmcp):
         """Test story retrieval with database error."""
-        with patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db, patch(
-            "src.agile_mcp.api.story_tools.StoryRepository"
-        ) as mock_repo_class, patch(
-            "src.agile_mcp.api.story_tools.StoryService"
-        ) as mock_service_class, patch(
-            "src.agile_mcp.api.story_tools.create_tables"
+        with (
+            patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db,
+            patch("src.agile_mcp.api.story_tools.StoryRepository") as _,
+            patch("src.agile_mcp.api.story_tools.StoryService") as mock_service_class,
+            patch("src.agile_mcp.api.story_tools.create_tables"),
         ):
 
             mock_session = Mock()
@@ -351,12 +342,11 @@ class TestUpdateStoryStatusTool:
 
     def test_update_story_status_success(self, mock_fastmcp):
         """Test successful story status update via API tool."""
-        with patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db, patch(
-            "src.agile_mcp.api.story_tools.StoryRepository"
-        ) as mock_repo_class, patch(
-            "src.agile_mcp.api.story_tools.StoryService"
-        ) as mock_service_class, patch(
-            "src.agile_mcp.api.story_tools.create_tables"
+        with (
+            patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db,
+            patch("src.agile_mcp.api.story_tools.StoryRepository") as _,
+            patch("src.agile_mcp.api.story_tools.StoryService") as mock_service_class,
+            patch("src.agile_mcp.api.story_tools.create_tables"),
         ):
 
             mock_session = Mock()
@@ -379,16 +369,16 @@ class TestUpdateStoryStatusTool:
 
             # Verify the tool was registered
             assert mock_fastmcp.tool.called
-            mock_session.close.assert_not_called()  # Should be called during actual tool execution
+            mock_session.close.assert_not_called()  # Should be called during
+            # actual tool execution
 
     def test_update_story_status_validation_error(self, mock_fastmcp):
         """Test story status update with validation error."""
-        with patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db, patch(
-            "src.agile_mcp.api.story_tools.StoryRepository"
-        ) as mock_repo_class, patch(
-            "src.agile_mcp.api.story_tools.StoryService"
-        ) as mock_service_class, patch(
-            "src.agile_mcp.api.story_tools.create_tables"
+        with (
+            patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db,
+            patch("src.agile_mcp.api.story_tools.StoryRepository") as _,
+            patch("src.agile_mcp.api.story_tools.StoryService") as mock_service_class,
+            patch("src.agile_mcp.api.story_tools.create_tables"),
         ):
 
             mock_session = Mock()
@@ -418,12 +408,11 @@ class TestUpdateStoryStatusTool:
 
     def test_update_story_status_invalid_status_error(self, mock_fastmcp):
         """Test story status update with invalid status error."""
-        with patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db, patch(
-            "src.agile_mcp.api.story_tools.StoryRepository"
-        ) as mock_repo_class, patch(
-            "src.agile_mcp.api.story_tools.StoryService"
-        ) as mock_service_class, patch(
-            "src.agile_mcp.api.story_tools.create_tables"
+        with (
+            patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db,
+            patch("src.agile_mcp.api.story_tools.StoryRepository") as _,
+            patch("src.agile_mcp.api.story_tools.StoryService") as mock_service_class,
+            patch("src.agile_mcp.api.story_tools.create_tables"),
         ):
 
             mock_session = Mock()
@@ -443,7 +432,10 @@ class TestUpdateStoryStatusTool:
                     raise McpError(
                         ErrorData(
                             code=-32001,
-                            message="Invalid status error: Status must be one of: Done, InProgress, Review, ToDo",
+                            message=(
+                                "Invalid status error: Status must be one of: "
+                                "Done, InProgress, Review, ToDo"
+                            ),
                             data={
                                 "story_id": "test-story-id",
                                 "status": "InvalidStatus",
@@ -456,12 +448,11 @@ class TestUpdateStoryStatusTool:
 
     def test_update_story_status_story_not_found_error(self, mock_fastmcp):
         """Test story status update when story not found."""
-        with patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db, patch(
-            "src.agile_mcp.api.story_tools.StoryRepository"
-        ) as mock_repo_class, patch(
-            "src.agile_mcp.api.story_tools.StoryService"
-        ) as mock_service_class, patch(
-            "src.agile_mcp.api.story_tools.create_tables"
+        with (
+            patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db,
+            patch("src.agile_mcp.api.story_tools.StoryRepository") as _,
+            patch("src.agile_mcp.api.story_tools.StoryService") as mock_service_class,
+            patch("src.agile_mcp.api.story_tools.create_tables"),
         ):
 
             mock_session = Mock()
@@ -481,7 +472,10 @@ class TestUpdateStoryStatusTool:
                     raise McpError(
                         ErrorData(
                             code=-32001,
-                            message="Story not found: Story with ID 'non-existent' not found",
+                            message=(
+                                "Story not found: Story with ID "
+                                "'non-existent' not found"
+                            ),
                             data={"story_id": "non-existent", "status": "InProgress"},
                         )
                     )
@@ -491,12 +485,11 @@ class TestUpdateStoryStatusTool:
 
     def test_update_story_status_database_error(self, mock_fastmcp):
         """Test story status update with database error."""
-        with patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db, patch(
-            "src.agile_mcp.api.story_tools.StoryRepository"
-        ) as mock_repo_class, patch(
-            "src.agile_mcp.api.story_tools.StoryService"
-        ) as mock_service_class, patch(
-            "src.agile_mcp.api.story_tools.create_tables"
+        with (
+            patch("src.agile_mcp.api.story_tools.get_db") as mock_get_db,
+            patch("src.agile_mcp.api.story_tools.StoryRepository") as _,
+            patch("src.agile_mcp.api.story_tools.StoryService") as mock_service_class,
+            patch("src.agile_mcp.api.story_tools.create_tables"),
         ):
 
             mock_session = Mock()

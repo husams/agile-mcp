@@ -1,6 +1,4 @@
-"""
-Unit tests for TestDataFactory to validate consistent test data creation.
-"""
+"""Unit tests for TestDataFactory to validate consistent test data creation."""
 
 import pytest
 
@@ -49,7 +47,7 @@ def test_create_story(test_session):
     assert story1.epic_id is not None
 
     # Test with existing epic
-    epic = factory.create_epic(epic_id="existing-epic")
+    factory.create_epic(epic_id="existing-epic")
     test_session.commit()
 
     story2 = factory.create_story(
@@ -76,7 +74,7 @@ def test_create_artifact(test_session):
     assert artifact1.story_id is not None
 
     # Test with existing story
-    story = factory.create_story(story_id="existing-story")
+    factory.create_story(story_id="existing-story")
     test_session.commit()
 
     artifact2 = factory.create_artifact(
@@ -150,9 +148,9 @@ def test_factory_tracking(test_session):
     assert initial_count == 0
 
     # Create objects
-    epic = factory.create_epic()
-    story = factory.create_story()
-    artifact = factory.create_artifact()
+    factory.create_epic()
+    factory.create_story()
+    factory.create_artifact()
 
     # Check tracking - should have multiple objects due to auto-creation chains
     created_objects = factory.get_created_objects()
@@ -170,8 +168,8 @@ def test_factory_cleanup(test_session):
     factory = DataFactory(test_session)
 
     # Create test data
-    epic = factory.create_epic(epic_id="cleanup-test-epic")
-    story = factory.create_story(story_id="cleanup-test-story")
+    factory.create_epic(epic_id="cleanup-test-epic")
+    factory.create_story(story_id="cleanup-test-story")
     test_session.commit()
 
     # Verify data exists

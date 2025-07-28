@@ -56,6 +56,17 @@ This MCP server provides tools and resources for:
 - Tracking development artifacts and their relationships
 - Implementing structured agile workflows
 
+#### Running the Server
+
+To start the MCP server locally, execute the `run_server.py` script:
+
+```bash
+python run_server.py
+```
+
+The server will start on `http://127.0.0.1:8000` by default. You can configure the host and port by modifying `src/agile_mcp/config.py` or by setting environment variables (e.g., `MCP_SERVER_HOST`, `MCP_SERVER_PORT`).
+
+
 ## Project Structure
 
 ```

@@ -671,11 +671,11 @@ sections:
         type: code
         language: text
         template: |
-                    E2E Tests
-                   /         \
-              Integration Tests
-                 /         \
-            Frontend Unit  Backend Unit
+          E2E Tests
+            /         \
+          Integration Tests
+            /         \
+          Frontend Unit  Backend Unit
       - id: test-organization
         title: Test Organization
         sections:

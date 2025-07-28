@@ -296,7 +296,7 @@ class DatabaseIsolationValidator:
         thread_results = []
 
         def thread_test_function(thread_id: int):
-            """Function to run in each thread for testing."""
+            """Run function in each thread for testing."""
             thread_result: Dict[str, Any] = {
                 "thread_id": thread_id,
                 "success": False,

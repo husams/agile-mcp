@@ -48,8 +48,8 @@ class DatabaseManager:
     def create_memory_database(
         self, test_id: Optional[str] = None
     ) -> Tuple[Engine, sessionmaker]:
-        """
-        Create an in-memory SQLite database for unit tests.
+        """Create an in-memory SQLite database for unit tests.
+
         Target performance: ≤10ms per test.
 
         Args:
@@ -85,8 +85,8 @@ class DatabaseManager:
     def create_shared_memory_database(
         self, test_suite_id: str = "integration"
     ) -> Tuple[Engine, sessionmaker]:
-        """
-        Create a shared in-memory SQLite database for integration tests.
+        """Create a shared in-memory SQLite database for integration tests.
+
         Target performance: ≤100ms per test.
 
         Args:
@@ -130,8 +130,8 @@ class DatabaseManager:
     def create_file_database(
         self, test_id: Optional[str] = None
     ) -> Tuple[Engine, sessionmaker, str]:
-        """
-        Create an isolated file database for E2E tests.
+        """Create an isolated file database for E2E tests.
+
         Target performance: ≤1s per test.
 
         Args:
