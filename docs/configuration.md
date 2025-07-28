@@ -1,54 +1,334 @@
-# Configuration Management
+# Agile MCP Server - Configuration Management
 
-This document outlines the approach to managing configuration within the Agile MCP Server.
+## Overview
 
-## Principles
+The Agile Management MCP Server uses environment-based configuration to support different deployment scenarios while maintaining security and flexibility. Configuration is managed through environment variables with sensible defaults for immediate usability.
 
-*   **Centralized Configuration**: All application-wide settings should be managed from a central location.
-*   **Environment-Specific Overrides**: Support for different configurations based on the deployment environment (e.g., development, testing, production).
-*   **Security**: Sensitive information (e.g., API keys, database credentials) must be handled securely and not hardcoded.
+## Configuration Architecture
 
-## Implementation
-
-Configuration is managed primarily through `src/agile_mcp/config.py`. This module loads settings from environment variables, providing flexibility for different deployment scenarios.
-
-### `src/agile_mcp/config.py`
-
-This file defines the default configuration values and provides mechanisms to override them using environment variables.
+### Current Implementation
+Configuration is handled directly in `src/agile_mcp/database.py` and other modules using environment variables:
 
 ```python
-# Example (conceptual)
-import os
-
-class Settings:
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./agile_mcp.db")
-    MCP_SERVER_HOST: str = os.getenv("MCP_SERVER_HOST", "127.0.0.1")
-    MCP_SERVER_PORT: int = int(os.getenv("MCP_SERVER_PORT", 8000))
-    # Add other configuration parameters here
-
-settings = Settings()
+# src/agile_mcp/database.py
+DATABASE_URL = os.getenv("TEST_DATABASE_URL", "sqlite:///agile_mcp.db")
 ```
 
-### Environment Variables
+### Design Principles
+- **Environment-First**: All configuration through environment variables
+- **Secure Defaults**: Safe default values for immediate use
+- **Environment Isolation**: Clear separation between development, testing, and production
+- **No Secrets in Code**: Sensitive information only via environment variables
 
-The following environment variables can be used to customize the server's behavior:
+## Environment Variables Reference
 
-*   `DATABASE_URL`: Specifies the database connection string (e.g., `sqlite:///./test.db` for testing).
-*   `MCP_SERVER_HOST`: Sets the host address for the server (default: `127.0.0.1`).
-*   `MCP_SERVER_PORT`: Sets the port for the server (default: `8000`).
+### Core Database Configuration
 
-### Local Development
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `DATABASE_URL` | Primary database connection string | `sqlite:///agile_mcp.db` | `sqlite:///prod_agile_mcp.db` |
+| `TEST_DATABASE_URL` | Test database connection (testing only) | Used when set | `sqlite:///:memory:` |
 
-For local development, you can set environment variables directly in your shell before running the server:
+### Logging Configuration
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `SQL_DEBUG` | Enable SQL query logging | `false` | `true` |
+| `LOG_LEVEL` | Application log level | `INFO` | `DEBUG`, `WARNING`, `ERROR` |
+
+### Testing Configuration
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `MCP_TEST_MODE` | Enable test mode for E2E tests | `false` | `true` |
+| `PYTEST_PARALLEL` | Enable parallel test execution | `false` | `true` |
+
+## Environment-Specific Configurations
+
+### Development Environment
+
+**Purpose**: Local development with debugging enabled
 
 ```bash
-export DATABASE_URL="sqlite:///./dev_agile_mcp.db"
-export MCP_SERVER_PORT=8001
+# Development configuration
+export DATABASE_URL="sqlite:///dev_agile_mcp.db"
+export SQL_DEBUG="true"
+export LOG_LEVEL="DEBUG"
+
+# Start development server
 python run_server.py
 ```
 
-Alternatively, you can use a `.env` file and a library like `python-dotenv` to load environment variables automatically (though `python-dotenv` is not a core dependency and would need to be added if desired).
+**Characteristics**:
+- Detailed SQL query logging
+- Debug-level application logs
+- Separate development database
+- Fast restart capability
 
-## Sensitive Information
+### Testing Environment
 
-Sensitive configuration (e.g., API keys for external services, if any were to be integrated) should **never** be committed directly into the repository. Instead, they should be provided via environment variables or a secure secrets management solution in production environments.
+**Purpose**: Automated testing with isolation
+
+```bash
+# Testing configuration
+export TEST_DATABASE_URL="sqlite:///:memory:"
+export MCP_TEST_MODE="true"
+export SQL_DEBUG="false"
+
+# Run test suite
+pytest
+```
+
+**Characteristics**:
+- In-memory database for speed
+- Test-specific environment detection
+- Minimal logging for clean test output
+- Complete database isolation
+
+### Production Environment
+
+**Purpose**: Stable production deployment
+
+```bash
+# Production configuration
+export DATABASE_URL="sqlite:///prod_agile_mcp.db"
+export SQL_DEBUG="false"
+export LOG_LEVEL="INFO"
+
+# Start production server
+python run_server.py
+```
+
+**Characteristics**:
+- Persistent database storage
+- Structured JSON logging
+- Error-level logging only
+- Performance-optimized settings
+
+## Database Configuration Options
+
+### SQLite Configuration (Default)
+
+**Basic SQLite**:
+```bash
+export DATABASE_URL="sqlite:///agile_mcp.db"
+```
+
+**SQLite with Performance Optimization**:
+```bash
+export DATABASE_URL="sqlite:///agile_mcp.db?cache=shared&journal_mode=WAL"
+```
+
+**SQLite In-Memory (Testing)**:
+```bash
+export DATABASE_URL="sqlite:///:memory:"
+```
+
+### Future Database Support
+
+The system is designed to support multiple database backends:
+
+**PostgreSQL (Future)**:
+```bash
+export DATABASE_URL="postgresql://user:password@localhost:5432/agile_mcp"
+```
+
+**MongoDB (Future)**:
+```bash
+export DATABASE_URL="mongodb://localhost:27017/agile_mcp"
+```
+
+## Configuration Management Patterns
+
+### Environment File Usage
+
+**Development .env file** (not committed to repository):
+```bash
+# .env.development
+DATABASE_URL=sqlite:///dev_agile_mcp.db
+SQL_DEBUG=true
+LOG_LEVEL=DEBUG
+```
+
+**Production .env file**:
+```bash
+# .env.production
+DATABASE_URL=sqlite:///prod_agile_mcp.db
+SQL_DEBUG=false
+LOG_LEVEL=INFO
+```
+
+### Shell Script Configuration
+
+**Development startup script**:
+```bash
+#!/bin/bash
+# dev-start.sh
+export DATABASE_URL="sqlite:///dev_agile_mcp.db"
+export SQL_DEBUG="true"
+export LOG_LEVEL="DEBUG"
+python run_server.py
+```
+
+**Production startup script**:
+```bash
+#!/bin/bash
+# prod-start.sh
+export DATABASE_URL="sqlite:///prod_agile_mcp.db"
+export SQL_DEBUG="false"
+export LOG_LEVEL="INFO"
+python run_server.py
+```
+
+## Security Configuration
+
+### Sensitive Information Handling
+
+**Principles**:
+- Never commit sensitive values to repository
+- Use environment variables for all credentials
+- Implement secure defaults
+- Log configuration without exposing secrets
+
+**Database Security**:
+```bash
+# Secure database file permissions
+chmod 600 agile_mcp.db
+
+# Environment variable for sensitive database URL
+export DATABASE_URL="sqlite:///secure/path/agile_mcp.db"
+```
+
+**Logging Security**:
+```python
+# Logging configuration automatically sanitizes sensitive data
+# Database URLs and credentials are not logged in full
+```
+
+### Environment Validation
+
+The system validates configuration on startup:
+
+```python
+# Configuration validation (conceptual)
+def validate_config():
+    database_url = os.getenv("DATABASE_URL", "sqlite:///agile_mcp.db")
+    if not database_url:
+        raise ValueError("DATABASE_URL must be configured")
+
+    # Additional validation as needed
+    return True
+```
+
+## Configuration Troubleshooting
+
+### Common Configuration Issues
+
+**Database Connection Problems**:
+```bash
+# Check current configuration
+echo $DATABASE_URL
+
+# Test database accessibility
+python -c "
+import os
+from sqlalchemy import create_engine
+engine = create_engine(os.getenv('DATABASE_URL', 'sqlite:///agile_mcp.db'))
+print('Database connection successful')
+"
+```
+
+**Environment Variable Issues**:
+```bash
+# List all environment variables
+env | grep -E "(DATABASE|SQL|LOG|MCP)"
+
+# Clear conflicting variables
+unset TEST_DATABASE_URL
+unset MCP_TEST_MODE
+```
+
+**Permission Issues**:
+```bash
+# Check database file permissions
+ls -la agile_mcp.db
+
+# Fix permissions if needed
+chmod 644 agile_mcp.db
+```
+
+### Debug Configuration
+
+**Verbose configuration debugging**:
+```bash
+# Enable all debugging
+export SQL_DEBUG="true"
+export LOG_LEVEL="DEBUG"
+export MCP_TEST_MODE="true"
+
+# Show configuration on startup
+python -c "
+import os
+print('DATABASE_URL:', os.getenv('DATABASE_URL'))
+print('SQL_DEBUG:', os.getenv('SQL_DEBUG'))
+print('LOG_LEVEL:', os.getenv('LOG_LEVEL'))
+"
+```
+
+## Configuration Best Practices
+
+### Development Workflow
+1. Use separate databases for development and testing
+2. Enable debug logging during development
+3. Test configuration changes in isolation
+4. Document environment-specific requirements
+
+### Production Deployment
+1. Use production-specific database paths
+2. Disable debug logging
+3. Implement configuration validation
+4. Monitor configuration drift
+
+### Security Guidelines
+1. Never commit sensitive configuration to repository
+2. Use environment variables for all secrets
+3. Implement proper file permissions
+4. Regular security configuration reviews
+
+### Performance Optimization
+1. Use appropriate database configuration for environment
+2. Optimize logging levels for performance
+3. Configure database pooling appropriately
+4. Monitor configuration impact on performance
+
+## Configuration Examples
+
+### CI/CD Pipeline Configuration
+
+**GitHub Actions configuration**:
+```yaml
+# .github/workflows/ci.yml
+env:
+  DATABASE_URL: "sqlite:///:memory:"
+  TEST_DATABASE_URL: "sqlite:///:memory:"
+  MCP_TEST_MODE: "true"
+  SQL_DEBUG: "false"
+```
+
+### Docker Configuration
+
+**Development Docker**:
+```dockerfile
+ENV DATABASE_URL="sqlite:///data/dev_agile_mcp.db"
+ENV SQL_DEBUG="true"
+ENV LOG_LEVEL="DEBUG"
+```
+
+**Production Docker**:
+```dockerfile
+ENV DATABASE_URL="sqlite:///data/prod_agile_mcp.db"
+ENV SQL_DEBUG="false"
+ENV LOG_LEVEL="INFO"
+```
+
+This configuration management system provides flexibility, security, and maintainability for the Agile MCP Server across all deployment scenarios.
