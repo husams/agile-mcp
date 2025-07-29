@@ -1,7 +1,7 @@
 """FastMCP tools for Story management operations."""
 
 import uuid
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from fastmcp import FastMCP
 from fastmcp.exceptions import McpError
@@ -693,7 +693,7 @@ def register_story_tools(mcp: FastMCP) -> None:
 
     @mcp.tool("tasks.addToStory")
     def add_task_to_story(
-        story_id: str, description: str, order: int = None
+        story_id: str, description: str, order: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Add a new task to a story.
@@ -1113,6 +1113,455 @@ def register_story_tools(mcp: FastMCP) -> None:
                 "Unexpected error in reorder tasks",
                 **create_request_context(
                     request_id=request_id, tool_name="tasks.reorderTasks"
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type=type(e).__name__,
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(
+                ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
+            )
+
+    @mcp.tool("acceptanceCriteria.addToStory")
+    def add_acceptance_criterion_to_story(
+        story_id: str, description: str, order: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Add a new acceptance criterion to a story.
+
+        Args:
+            story_id: The unique identifier of the story
+            description: Description of the acceptance criterion
+            order: Optional order for the criterion (auto-incremented if not provided)
+
+        Returns:
+            Dict containing the updated story with the new acceptance criterion
+
+        Raises:
+            McpError: If validation fails, story not found, or database operation fails
+        """
+        request_id = str(uuid.uuid4())
+        try:
+            logger.info(
+                "Processing add acceptance criterion to story request",
+                **create_request_context(
+                    request_id=request_id, tool_name="acceptanceCriteria.addToStory"
+                ),
+                **create_entity_context(story_id=story_id),
+                criterion_description=description[:50] if description else None,
+            )
+
+            db_session = get_db()
+            try:
+                story_repository = StoryRepository(db_session)
+                story_service = StoryService(story_repository)
+
+                story_dict = story_service.add_acceptance_criterion_to_story(
+                    story_id, description, order
+                )
+                story_response = StoryResponse(**story_dict)
+
+                logger.info(
+                    "Add acceptance criterion to story request completed successfully",
+                    **create_request_context(
+                        request_id=request_id, tool_name="acceptanceCriteria.addToStory"
+                    ),
+                    **create_entity_context(story_id=story_id),
+                )
+
+                return story_response.model_dump()
+
+            finally:
+                db_session.close()
+
+        except StoryValidationError as e:
+            logger.error(
+                "Story validation error in add acceptance criterion to story",
+                **create_request_context(
+                    request_id=request_id, tool_name="acceptanceCriteria.addToStory"
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type="StoryValidationError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(
+                ErrorData(code=-32001, message=f"Validation error: {str(e)}")
+            )
+        except StoryNotFoundError as e:
+            logger.error(
+                "Story not found error in add acceptance criterion to story",
+                **create_request_context(
+                    request_id=request_id, tool_name="acceptanceCriteria.addToStory"
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type="StoryNotFoundError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(ErrorData(code=-32001, message=f"Story not found: {str(e)}"))
+        except DatabaseError as e:
+            logger.error(
+                "Database error in add acceptance criterion to story",
+                **create_request_context(
+                    request_id=request_id, tool_name="acceptanceCriteria.addToStory"
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type="DatabaseError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(ErrorData(code=-32001, message=f"Database error: {str(e)}"))
+        except Exception as e:
+            logger.error(
+                "Unexpected error in add acceptance criterion to story",
+                **create_request_context(
+                    request_id=request_id, tool_name="acceptanceCriteria.addToStory"
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type=type(e).__name__,
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(
+                ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
+            )
+
+    @mcp.tool("acceptanceCriteria.updateStatus")
+    def update_acceptance_criterion_status(
+        story_id: str, criterion_id: str, met: bool
+    ) -> Dict[str, Any]:
+        """
+        Update the met status of an acceptance criterion within a story.
+
+        Args:
+            story_id: The unique identifier of the story
+            criterion_id: The unique identifier of the acceptance criterion
+            met: New met status
+
+        Returns:
+            Dict containing the updated story with modified acceptance criterion
+
+        Raises:
+            McpError: If validation fails, story or criterion not found, or database
+                operation fails
+        """
+        request_id = str(uuid.uuid4())
+        try:
+            logger.info(
+                "Processing update acceptance criterion status request",
+                **create_request_context(
+                    request_id=request_id, tool_name="acceptanceCriteria.updateStatus"
+                ),
+                **create_entity_context(story_id=story_id),
+                criterion_id=criterion_id,
+                new_met=met,
+            )
+
+            db_session = get_db()
+            try:
+                story_repository = StoryRepository(db_session)
+                story_service = StoryService(story_repository)
+
+                story_dict = story_service.update_acceptance_criterion_status(
+                    story_id, criterion_id, met
+                )
+                story_response = StoryResponse(**story_dict)
+
+                logger.info(
+                    "Update acceptance criterion status request completed successfully",
+                    **create_request_context(
+                        request_id=request_id,
+                        tool_name="acceptanceCriteria.updateStatus",
+                    ),
+                    **create_entity_context(story_id=story_id),
+                    criterion_id=criterion_id,
+                )
+
+                return story_response.model_dump()
+
+            finally:
+                db_session.close()
+
+        except StoryValidationError as e:
+            logger.error(
+                "Story validation error in update acceptance criterion status",
+                **create_request_context(
+                    request_id=request_id, tool_name="acceptanceCriteria.updateStatus"
+                ),
+                **create_entity_context(story_id=story_id),
+                criterion_id=criterion_id,
+                error_type="StoryValidationError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(
+                ErrorData(code=-32001, message=f"Validation error: {str(e)}")
+            )
+        except StoryNotFoundError as e:
+            logger.error(
+                "Story not found error in update acceptance criterion status",
+                **create_request_context(
+                    request_id=request_id, tool_name="acceptanceCriteria.updateStatus"
+                ),
+                **create_entity_context(story_id=story_id),
+                criterion_id=criterion_id,
+                error_type="StoryNotFoundError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(ErrorData(code=-32001, message=f"Story not found: {str(e)}"))
+        except DatabaseError as e:
+            logger.error(
+                "Database error in update acceptance criterion status",
+                **create_request_context(
+                    request_id=request_id, tool_name="acceptanceCriteria.updateStatus"
+                ),
+                **create_entity_context(story_id=story_id),
+                criterion_id=criterion_id,
+                error_type="DatabaseError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(ErrorData(code=-32001, message=f"Database error: {str(e)}"))
+        except Exception as e:
+            logger.error(
+                "Unexpected error in update acceptance criterion status",
+                **create_request_context(
+                    request_id=request_id, tool_name="acceptanceCriteria.updateStatus"
+                ),
+                **create_entity_context(story_id=story_id),
+                criterion_id=criterion_id,
+                error_type=type(e).__name__,
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(
+                ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
+            )
+
+    @mcp.tool("acceptanceCriteria.updateDescription")
+    def update_acceptance_criterion_description(
+        story_id: str, criterion_id: str, description: str
+    ) -> Dict[str, Any]:
+        """
+        Update the description of an acceptance criterion within a story.
+
+        Args:
+            story_id: The unique identifier of the story
+            criterion_id: The unique identifier of the acceptance criterion
+            description: New criterion description
+
+        Returns:
+            Dict containing the updated story with modified acceptance criterion
+
+        Raises:
+            McpError: If validation fails, story or criterion not found, or database
+                operation fails
+        """
+        request_id = str(uuid.uuid4())
+        try:
+            logger.info(
+                "Processing update acceptance criterion description request",
+                **create_request_context(
+                    request_id=request_id,
+                    tool_name="acceptanceCriteria.updateDescription",
+                ),
+                **create_entity_context(story_id=story_id),
+                criterion_id=criterion_id,
+                new_description=description[:50] if description else None,
+            )
+
+            db_session = get_db()
+            try:
+                story_repository = StoryRepository(db_session)
+                story_service = StoryService(story_repository)
+
+                story_dict = story_service.update_acceptance_criterion_description(
+                    story_id, criterion_id, description
+                )
+                story_response = StoryResponse(**story_dict)
+
+                logger.info(
+                    "Update acceptance criterion description request completed "
+                    "successfully",
+                    **create_request_context(
+                        request_id=request_id,
+                        tool_name="acceptanceCriteria.updateDescription",
+                    ),
+                    **create_entity_context(story_id=story_id),
+                    criterion_id=criterion_id,
+                )
+
+                return story_response.model_dump()
+
+            finally:
+                db_session.close()
+
+        except StoryValidationError as e:
+            logger.error(
+                "Story validation error in update acceptance criterion description",
+                **create_request_context(
+                    request_id=request_id,
+                    tool_name="acceptanceCriteria.updateDescription",
+                ),
+                **create_entity_context(story_id=story_id),
+                criterion_id=criterion_id,
+                error_type="StoryValidationError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(
+                ErrorData(code=-32001, message=f"Validation error: {str(e)}")
+            )
+        except StoryNotFoundError as e:
+            logger.error(
+                "Story not found error in update acceptance criterion description",
+                **create_request_context(
+                    request_id=request_id,
+                    tool_name="acceptanceCriteria.updateDescription",
+                ),
+                **create_entity_context(story_id=story_id),
+                criterion_id=criterion_id,
+                error_type="StoryNotFoundError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(ErrorData(code=-32001, message=f"Story not found: {str(e)}"))
+        except DatabaseError as e:
+            logger.error(
+                "Database error in update acceptance criterion description",
+                **create_request_context(
+                    request_id=request_id,
+                    tool_name="acceptanceCriteria.updateDescription",
+                ),
+                **create_entity_context(story_id=story_id),
+                criterion_id=criterion_id,
+                error_type="DatabaseError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(ErrorData(code=-32001, message=f"Database error: {str(e)}"))
+        except Exception as e:
+            logger.error(
+                "Unexpected error in update acceptance criterion description",
+                **create_request_context(
+                    request_id=request_id,
+                    tool_name="acceptanceCriteria.updateDescription",
+                ),
+                **create_entity_context(story_id=story_id),
+                criterion_id=criterion_id,
+                error_type=type(e).__name__,
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(
+                ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
+            )
+
+    @mcp.tool("acceptanceCriteria.reorderCriteria")
+    def reorder_acceptance_criteria(
+        story_id: str, criterion_orders: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        Reorder acceptance criteria within a story.
+
+        Args:
+            story_id: The unique identifier of the story
+            criterion_orders: List of dicts with criterion_id and new order
+                Format: [{'criterion_id': 'id1', 'order': 1},
+                {'criterion_id': 'id2', 'order': 2}]
+
+        Returns:
+            Dict containing the updated story with reordered acceptance criteria
+
+        Raises:
+            McpError: If validation fails, story not found, or database operation fails
+        """
+        request_id = str(uuid.uuid4())
+        try:
+            logger.info(
+                "Processing reorder acceptance criteria request",
+                **create_request_context(
+                    request_id=request_id,
+                    tool_name="acceptanceCriteria.reorderCriteria",
+                ),
+                **create_entity_context(story_id=story_id),
+                criterion_count=len(criterion_orders) if criterion_orders else 0,
+            )
+
+            db_session = get_db()
+            try:
+                story_repository = StoryRepository(db_session)
+                story_service = StoryService(story_repository)
+
+                story_dict = story_service.reorder_acceptance_criteria(
+                    story_id, criterion_orders
+                )
+                story_response = StoryResponse(**story_dict)
+
+                logger.info(
+                    "Reorder acceptance criteria request completed successfully",
+                    **create_request_context(
+                        request_id=request_id,
+                        tool_name="acceptanceCriteria.reorderCriteria",
+                    ),
+                    **create_entity_context(story_id=story_id),
+                )
+
+                return story_response.model_dump()
+
+            finally:
+                db_session.close()
+
+        except StoryValidationError as e:
+            logger.error(
+                "Story validation error in reorder acceptance criteria",
+                **create_request_context(
+                    request_id=request_id,
+                    tool_name="acceptanceCriteria.reorderCriteria",
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type="StoryValidationError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(
+                ErrorData(code=-32001, message=f"Validation error: {str(e)}")
+            )
+        except StoryNotFoundError as e:
+            logger.error(
+                "Story not found error in reorder acceptance criteria",
+                **create_request_context(
+                    request_id=request_id,
+                    tool_name="acceptanceCriteria.reorderCriteria",
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type="StoryNotFoundError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(ErrorData(code=-32001, message=f"Story not found: {str(e)}"))
+        except DatabaseError as e:
+            logger.error(
+                "Database error in reorder acceptance criteria",
+                **create_request_context(
+                    request_id=request_id,
+                    tool_name="acceptanceCriteria.reorderCriteria",
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type="DatabaseError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(ErrorData(code=-32001, message=f"Database error: {str(e)}"))
+        except Exception as e:
+            logger.error(
+                "Unexpected error in reorder acceptance criteria",
+                **create_request_context(
+                    request_id=request_id,
+                    tool_name="acceptanceCriteria.reorderCriteria",
                 ),
                 **create_entity_context(story_id=story_id),
                 error_type=type(e).__name__,

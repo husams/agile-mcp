@@ -783,3 +783,261 @@ def test_get_next_ready_story_dependency_check_error(
 
     with pytest.raises(DatabaseError, match="Database operation failed"):
         story_service_with_dependencies.get_next_ready_story()
+
+
+def test_add_acceptance_criterion_to_story_success(story_service, mock_repository):
+    """Test successful addition of acceptance criterion to story."""
+
+    # Setup mock story with existing structured criteria
+    mock_story = Story(
+        id="test-story-id",
+        title="Test Story",
+        description="Test description",
+        acceptance_criteria=["Traditional criterion"],
+        structured_acceptance_criteria=[
+            {
+                "id": "existing-ac-1",
+                "description": "Existing criterion",
+                "met": False,
+                "order": 1,
+            }
+        ],
+        epic_id="test-epic-id",
+        status="ToDo",
+    )
+    mock_repository.find_story_by_id.return_value = mock_story
+    mock_repository.db_session.commit.return_value = None
+    mock_repository.db_session.refresh.return_value = None
+
+    # Call service method
+    result = story_service.add_acceptance_criterion_to_story(
+        "test-story-id", "New acceptance criterion"
+    )
+
+    # Assertions
+    assert result is not None
+    assert len(mock_story.structured_acceptance_criteria) == 2
+    assert (
+        mock_story.structured_acceptance_criteria[1]["description"]
+        == "New acceptance criterion"
+    )
+    assert mock_story.structured_acceptance_criteria[1]["met"] is False
+    assert mock_story.structured_acceptance_criteria[1]["order"] == 2
+    mock_repository.find_story_by_id.assert_called_once_with("test-story-id")
+
+
+def test_add_acceptance_criterion_to_story_not_found(story_service, mock_repository):
+    """Test add acceptance criterion with story not found."""
+    mock_repository.find_story_by_id.return_value = None
+
+    with pytest.raises(
+        StoryNotFoundError, match="Story with ID 'test-story-id' not found"
+    ):
+        story_service.add_acceptance_criterion_to_story(
+            "test-story-id", "New acceptance criterion"
+        )
+
+
+def test_add_acceptance_criterion_to_story_empty_description(
+    story_service, mock_repository
+):
+    """Test add acceptance criterion with empty description."""
+    with pytest.raises(
+        StoryValidationError, match="Acceptance criterion description cannot be empty"
+    ):
+        story_service.add_acceptance_criterion_to_story("test-story-id", "")
+
+
+def test_update_acceptance_criterion_status_success(story_service, mock_repository):
+    """Test successful update of acceptance criterion status."""
+    # Setup mock story with existing structured criteria
+    mock_story = Story(
+        id="test-story-id",
+        title="Test Story",
+        description="Test description",
+        acceptance_criteria=["Traditional criterion"],
+        structured_acceptance_criteria=[
+            {
+                "id": "ac-1",
+                "description": "Test criterion",
+                "met": False,
+                "order": 1,
+            }
+        ],
+        epic_id="test-epic-id",
+        status="ToDo",
+    )
+    mock_repository.find_story_by_id.return_value = mock_story
+    mock_repository.db_session.commit.return_value = None
+    mock_repository.db_session.refresh.return_value = None
+
+    # Call service method
+    result = story_service.update_acceptance_criterion_status(
+        "test-story-id", "ac-1", True
+    )
+
+    # Assertions
+    assert result is not None
+    assert mock_story.structured_acceptance_criteria[0]["met"] is True
+    mock_repository.find_story_by_id.assert_called_once_with("test-story-id")
+
+
+def test_update_acceptance_criterion_status_not_found(story_service, mock_repository):
+    """Test update acceptance criterion status with criterion not found."""
+    # Setup mock story without the target criterion
+    mock_story = Story(
+        id="test-story-id",
+        title="Test Story",
+        description="Test description",
+        acceptance_criteria=["Traditional criterion"],
+        structured_acceptance_criteria=[
+            {
+                "id": "different-ac",
+                "description": "Different criterion",
+                "met": False,
+                "order": 1,
+            }
+        ],
+        epic_id="test-epic-id",
+        status="ToDo",
+    )
+    mock_repository.find_story_by_id.return_value = mock_story
+
+    with pytest.raises(
+        StoryValidationError,
+        match="Acceptance criterion with ID 'ac-1' not found in story",
+    ):
+        story_service.update_acceptance_criterion_status("test-story-id", "ac-1", True)
+
+
+def test_update_acceptance_criterion_description_success(
+    story_service, mock_repository
+):
+    """Test successful update of acceptance criterion description."""
+    # Setup mock story with existing structured criteria
+    mock_story = Story(
+        id="test-story-id",
+        title="Test Story",
+        description="Test description",
+        acceptance_criteria=["Traditional criterion"],
+        structured_acceptance_criteria=[
+            {
+                "id": "ac-1",
+                "description": "Old description",
+                "met": False,
+                "order": 1,
+            }
+        ],
+        epic_id="test-epic-id",
+        status="ToDo",
+    )
+    mock_repository.find_story_by_id.return_value = mock_story
+    mock_repository.db_session.commit.return_value = None
+    mock_repository.db_session.refresh.return_value = None
+
+    # Call service method
+    result = story_service.update_acceptance_criterion_description(
+        "test-story-id", "ac-1", "New description"
+    )
+
+    # Assertions
+    assert result is not None
+    assert (
+        mock_story.structured_acceptance_criteria[0]["description"] == "New description"
+    )
+    mock_repository.find_story_by_id.assert_called_once_with("test-story-id")
+
+
+def test_update_acceptance_criterion_description_empty(story_service, mock_repository):
+    """Test update acceptance criterion description with empty description."""
+    with pytest.raises(
+        StoryValidationError, match="Acceptance criterion description cannot be empty"
+    ):
+        story_service.update_acceptance_criterion_description(
+            "test-story-id", "ac-1", ""
+        )
+
+
+def test_reorder_acceptance_criteria_success(story_service, mock_repository):
+    """Test successful reordering of acceptance criteria."""
+    # Setup mock story with existing structured criteria
+    mock_story = Story(
+        id="test-story-id",
+        title="Test Story",
+        description="Test description",
+        acceptance_criteria=["Traditional criterion"],
+        structured_acceptance_criteria=[
+            {
+                "id": "ac-1",
+                "description": "First criterion",
+                "met": False,
+                "order": 1,
+            },
+            {
+                "id": "ac-2",
+                "description": "Second criterion",
+                "met": False,
+                "order": 2,
+            },
+        ],
+        epic_id="test-epic-id",
+        status="ToDo",
+    )
+    mock_repository.find_story_by_id.return_value = mock_story
+    mock_repository.db_session.commit.return_value = None
+    mock_repository.db_session.refresh.return_value = None
+
+    # Call service method
+    criterion_orders = [
+        {"criterion_id": "ac-1", "order": 2},
+        {"criterion_id": "ac-2", "order": 1},
+    ]
+    result = story_service.reorder_acceptance_criteria(
+        "test-story-id", criterion_orders
+    )
+
+    # Assertions
+    assert result is not None
+    # Check that orders were updated
+    ac1 = next(
+        ac for ac in mock_story.structured_acceptance_criteria if ac["id"] == "ac-1"
+    )
+    ac2 = next(
+        ac for ac in mock_story.structured_acceptance_criteria if ac["id"] == "ac-2"
+    )
+    assert ac1["order"] == 2
+    assert ac2["order"] == 1
+    mock_repository.find_story_by_id.assert_called_once_with("test-story-id")
+
+
+def test_reorder_acceptance_criteria_invalid_format(story_service, mock_repository):
+    """Test reorder acceptance criteria with invalid format."""
+    with pytest.raises(
+        StoryValidationError, match="Each criterion order item must have"
+    ):
+        story_service.reorder_acceptance_criteria(
+            "test-story-id", [{"invalid": "format"}]
+        )
+
+
+def test_acceptance_criteria_database_error(story_service, mock_repository):
+    """Test acceptance criteria operations handle database errors."""
+    mock_repository.find_story_by_id.side_effect = SQLAlchemyError("Database error")
+
+    with pytest.raises(DatabaseError, match="Database operation failed"):
+        story_service.add_acceptance_criterion_to_story(
+            "test-story-id", "Test criterion"
+        )
+
+    with pytest.raises(DatabaseError, match="Database operation failed"):
+        story_service.update_acceptance_criterion_status("test-story-id", "ac-1", True)
+
+    with pytest.raises(DatabaseError, match="Database operation failed"):
+        story_service.update_acceptance_criterion_description(
+            "test-story-id", "ac-1", "New desc"
+        )
+
+    with pytest.raises(DatabaseError, match="Database operation failed"):
+        story_service.reorder_acceptance_criteria(
+            "test-story-id", [{"criterion_id": "ac-1", "order": 1}]
+        )

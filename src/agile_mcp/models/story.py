@@ -30,6 +30,9 @@ class Story(Base):
         description: The full user story text
         acceptance_criteria: A list of conditions that must be met for the
             story to be considered complete
+        structured_acceptance_criteria: A list of structured acceptance criteria
+            for independent tracking. Each criterion has: {'id': str,
+            'description': str, 'met': bool, 'order': int}
         tasks: A list of individual tasks that break down the story work.
             Each task has: {'id': str, 'description': str, 'completed': bool,
             'order': int}
@@ -46,6 +49,9 @@ class Story(Base):
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     acceptance_criteria: Mapped[List[str]] = mapped_column(JSON, nullable=False)
+    structured_acceptance_criteria: Mapped[List[Dict[str, Any]]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
     tasks: Mapped[List[Dict[str, Any]]] = mapped_column(
         JSON, nullable=False, default=list
     )
@@ -98,6 +104,7 @@ class Story(Base):
         acceptance_criteria: List[str],
         epic_id: str,
         tasks: Optional[List[Dict[str, Any]]] = None,
+        structured_acceptance_criteria: Optional[List[Dict[str, Any]]] = None,
         status: str = "ToDo",
         priority: int = 0,
         created_at: Optional[datetime] = None,
@@ -109,6 +116,7 @@ class Story(Base):
         self.title = title
         self.description = description
         self.acceptance_criteria = acceptance_criteria
+        self.structured_acceptance_criteria = structured_acceptance_criteria or []
         self.tasks = tasks or []
         self.epic_id = epic_id
         self.status = status
@@ -122,6 +130,7 @@ class Story(Base):
             "title": self.title,
             "description": self.description,
             "acceptance_criteria": self.acceptance_criteria,
+            "structured_acceptance_criteria": self.structured_acceptance_criteria,
             "tasks": self.tasks,
             "status": self.status,
             "priority": self.priority,
@@ -208,6 +217,72 @@ class Story(Base):
             used_orders.add(task["order"])
 
         return tasks
+
+    @validates("structured_acceptance_criteria")
+    def validate_structured_acceptance_criteria(
+        self, key, structured_acceptance_criteria
+    ):
+        """Validate story structured acceptance criteria."""
+        if not isinstance(structured_acceptance_criteria, list):
+            raise ValueError("Structured acceptance criteria must be a list")
+
+        required_fields = {"id", "description", "met", "order"}
+        used_ids = set()
+        used_orders = set()
+
+        for i, criterion in enumerate(structured_acceptance_criteria):
+            if not isinstance(criterion, dict):
+                raise ValueError(
+                    f"Acceptance criterion at index {i} must be a dictionary"
+                )
+
+            # Check required fields
+            if not required_fields.issubset(criterion.keys()):
+                missing = required_fields - criterion.keys()
+                raise ValueError(
+                    f"Acceptance criterion at index {i} missing required "
+                    f"fields: {missing}"
+                )
+
+            # Validate id
+            if not isinstance(criterion["id"], str) or not criterion["id"].strip():
+                raise ValueError(
+                    f"Acceptance criterion at index {i} must have a non-empty string id"
+                )
+            if criterion["id"] in used_ids:
+                raise ValueError(
+                    f"Acceptance criterion id '{criterion['id']}' is not unique"
+                )
+            used_ids.add(criterion["id"])
+
+            # Validate description
+            if (
+                not isinstance(criterion["description"], str)
+                or not criterion["description"].strip()
+            ):
+                raise ValueError(
+                    f"Acceptance criterion at index {i} must have a "
+                    f"non-empty string description"
+                )
+
+            # Validate met
+            if not isinstance(criterion["met"], bool):
+                raise ValueError(
+                    f"Acceptance criterion at index {i} met field must be a boolean"
+                )
+
+            # Validate order
+            if not isinstance(criterion["order"], int):
+                raise ValueError(
+                    f"Acceptance criterion at index {i} order field must be an integer"
+                )
+            if criterion["order"] in used_orders:
+                raise ValueError(
+                    f"Acceptance criterion order {criterion['order']} is not unique"
+                )
+            used_orders.add(criterion["order"])
+
+        return structured_acceptance_criteria
 
     @validates("status")
     def validate_status(self, key, status):
