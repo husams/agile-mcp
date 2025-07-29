@@ -11,8 +11,12 @@ from .models import Story  # Import to register with metadata  # noqa: F401
 from .models import story_dependency  # Import to register with metadata  # noqa: F401
 from .models.epic import Base
 
-# Database file path - use TEST_DATABASE_URL for E2E test isolation
-DATABASE_URL = os.getenv("TEST_DATABASE_URL", "sqlite:///agile_mcp.db")
+# Database file path - use DATABASE_URL for production, TEST_DATABASE_URL for E2E test
+DATABASE_URL = (
+    os.getenv("TEST_DATABASE_URL")
+    or os.getenv("DATABASE_URL")
+    or "sqlite:///agile_mcp.db"
+)
 
 # Create engine with proper SQLite configuration
 engine = create_engine(

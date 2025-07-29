@@ -26,7 +26,7 @@ This server implements the Model Context Protocol (MCP) specification, providing
 
 ### Prerequisites
 - Python 3.8+
-- Virtual environment (recommended)
+- [uv](https://docs.astral.sh/uv/) package manager
 
 ### Installation
 
@@ -36,18 +36,32 @@ This server implements the Model Context Protocol (MCP) specification, providing
    cd agile-mcp
    ```
 
-2. **Set up virtual environment:**
+2. **Install dependencies:**
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   uv pip install -r requirements.txt
    ```
 
-3. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
+3. **Configure MCP Client:**
+
+   This MCP server uses **stdio transport** and must be configured in an MCP client (like Claude Desktop). It cannot run as a standalone process.
+
+   **For Claude Desktop**, add to your `claude_desktop_config.json`:
+   ```json
+   {
+     "mcpServers": {
+       "agile-mcp": {
+         "command": "uv",
+         "args": ["run", "run_server.py"],
+         "cwd": "/path/to/agile-mcp"
+       }
+     }
+   }
    ```
 
-4. **Configure MCP client:** Add this server to your MCP client configuration
+   **For other MCP clients:**
+   - **Transport**: stdio
+   - **Command**: `uv run run_server.py`
+   - **Working Directory**: Project root path
 
 ### Usage
 
@@ -56,15 +70,9 @@ This MCP server provides tools and resources for:
 - Tracking development artifacts and their relationships
 - Implementing structured agile workflows
 
-#### Running the Server
+#### Server Operation
 
-To start the MCP server locally, execute the `run_server.py` script:
-
-```bash
-python run_server.py
-```
-
-The server will start on `http://127.0.0.1:8000` by default. You can configure the host and port by modifying `src/agile_mcp/config.py` or by setting environment variables (e.g., `MCP_SERVER_HOST`, `MCP_SERVER_PORT`).
+Once configured in your MCP client, the server will automatically start when the client initializes. The server communicates via JSON-RPC over stdin/stdout as specified by the MCP protocol standard.
 
 
 ## Project Structure
@@ -92,6 +100,9 @@ agile-mcp/
 
 - [Product Requirements Document](docs/prd.md)
 - [Architecture Overview](docs/architecture.md)
+- [Configuration Management](docs/configuration.md)
+- [Coding Guidelines and Conventions](docs/coding_guidelines.md)
+- [Technical Debt Management](docs/technical_debt.md)
 - [User Stories](docs/stories/)
 - [MCP Protocol Documentation](docs/mcp/)
 

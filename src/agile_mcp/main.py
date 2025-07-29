@@ -8,6 +8,7 @@ It initializes the FastMCP server instance and handles MCP protocol communicatio
 import sys
 from typing import Optional
 
+from dotenv import load_dotenv
 from fastmcp import FastMCP
 
 try:
@@ -23,8 +24,8 @@ except ImportError:
     import os
 
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from api import (  # type: ignore
-        register_artifact_tools,
+    from api import (
+        register_artifact_tools,  # type: ignore
         register_backlog_tools,
         register_epic_tools,
         register_story_tools,
@@ -85,6 +86,8 @@ def main() -> None:
 
     Sets up the server and runs it with stdio transport for MCP communication.
     """
+    # Load environment variables from .env file
+    load_dotenv()
     server: Optional[FastMCP] = None
 
     try:

@@ -44,7 +44,15 @@ class StoryService:
         self.logger = get_logger(__name__)
 
     def create_story(
-        self, title: str, description: str, acceptance_criteria: List[str], epic_id: str
+        self,
+        title: str,
+        description: str,
+        acceptance_criteria: List[str],
+        epic_id: str,
+        tasks: Optional[List[Dict[str, Any]]] = None,
+        structured_acceptance_criteria: Optional[List[Dict[str, Any]]] = None,
+        comments: Optional[List[Dict[str, Any]]] = None,
+        priority: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Create a new story with validation.
@@ -55,6 +63,12 @@ class StoryService:
             acceptance_criteria: A list of conditions that must be met for the
                 story to be considered complete
             epic_id: Foreign key reference to the parent Epic
+            tasks: Optional list of task dictionaries with id, description,
+                completed, order
+            structured_acceptance_criteria: Optional list of structured AC
+                dictionaries
+            comments: Optional list of comment dictionaries
+            priority: Optional story priority (integer)
 
         Returns:
             Dict[str, Any]: Dictionary representation of the created story
@@ -97,6 +111,16 @@ class StoryService:
         if not epic_id or not epic_id.strip():
             raise StoryValidationError("Epic ID cannot be empty")
 
+        # Validate structured fields if provided
+        if tasks is not None:
+            self._validate_tasks(tasks)
+        if structured_acceptance_criteria is not None:
+            self._validate_structured_acceptance_criteria(
+                structured_acceptance_criteria
+            )
+        if comments is not None:
+            self._validate_comments(comments)
+
         try:
             self.logger.info(
                 "Creating story",
@@ -110,6 +134,10 @@ class StoryService:
                 description.strip(),
                 [criterion.strip() for criterion in acceptance_criteria],
                 epic_id.strip(),
+                tasks=tasks or [],
+                structured_acceptance_criteria=structured_acceptance_criteria or [],
+                comments=comments or [],
+                priority=priority,
             )
 
             self.logger.info(
@@ -241,6 +269,139 @@ class StoryService:
         except SQLAlchemyError as e:
             raise DatabaseError(
                 f"Database operation failed while updating story status: " f"{str(e)}"
+            )
+
+    def update_story(
+        self,
+        story_id: str,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        acceptance_criteria: Optional[List[str]] = None,
+        tasks: Optional[List[Dict[str, Any]]] = None,
+        structured_acceptance_criteria: Optional[List[Dict[str, Any]]] = None,
+        comments: Optional[List[Dict[str, Any]]] = None,
+        status: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Update story with partial field updates.
+
+        Args:
+            story_id: The unique identifier of the story
+            title: Optional new title
+            description: Optional new description
+            acceptance_criteria: Optional new acceptance criteria list
+            tasks: Optional new tasks list
+            structured_acceptance_criteria: Optional new structured AC list
+            comments: Optional new comments list
+            status: Optional new status
+
+        Returns:
+            Dict[str, Any]: Dictionary representation of the updated story
+
+        Raises:
+            StoryValidationError: If validation fails
+            StoryNotFoundError: If story is not found
+            DatabaseError: If database operation fails
+        """
+        # Validate story_id
+        if not story_id or not story_id.strip():
+            raise StoryValidationError("Story ID cannot be empty")
+
+        # Validate structured fields if provided
+        if tasks is not None:
+            self._validate_tasks(tasks)
+        if structured_acceptance_criteria is not None:
+            self._validate_structured_acceptance_criteria(
+                structured_acceptance_criteria
+            )
+        if comments is not None:
+            self._validate_comments(comments)
+
+        # Validate basic fields if provided
+        if title is not None:
+            if not title or not title.strip():
+                raise StoryValidationError("Story title cannot be empty")
+            if len(title.strip()) > self.MAX_TITLE_LENGTH:
+                raise StoryValidationError(
+                    f"Story title cannot exceed {self.MAX_TITLE_LENGTH} characters"
+                )
+
+        if description is not None:
+            if not description or not description.strip():
+                raise StoryValidationError("Story description cannot be empty")
+            if len(description.strip()) > self.MAX_DESCRIPTION_LENGTH:
+                raise StoryValidationError(
+                    f"Story description cannot exceed "
+                    f"{self.MAX_DESCRIPTION_LENGTH} characters"
+                )
+
+        if acceptance_criteria is not None:
+            if not isinstance(acceptance_criteria, list):
+                raise StoryValidationError("Acceptance criteria must be a list")
+            if not acceptance_criteria or len(acceptance_criteria) == 0:
+                raise StoryValidationError(
+                    "At least one acceptance criterion is required"
+                )
+            for criterion in acceptance_criteria:
+                if not isinstance(criterion, str) or not criterion.strip():
+                    raise StoryValidationError(
+                        "Each acceptance criterion must be a non-empty string"
+                    )
+
+        if status is not None:
+            if not status or not isinstance(status, str):
+                raise StoryValidationError("Status must be a non-empty string")
+            if status not in self.VALID_STATUSES:
+                raise StoryValidationError(
+                    f"Status must be one of: {', '.join(sorted(self.VALID_STATUSES))}"
+                )
+
+        try:
+            self.logger.info(
+                "Updating story",
+                **create_entity_context(story_id=story_id.strip()),
+                operation="update_story",
+            )
+
+            # Prepare updates dictionary
+            updates: Dict[str, Any] = {}
+            if title is not None:
+                updates["title"] = title.strip()
+            if description is not None:
+                updates["description"] = description.strip()
+            if acceptance_criteria is not None:
+                updates["acceptance_criteria"] = [
+                    criterion.strip() for criterion in acceptance_criteria
+                ]
+            if tasks is not None:
+                updates["tasks"] = tasks
+            if structured_acceptance_criteria is not None:
+                updates["structured_acceptance_criteria"] = (
+                    structured_acceptance_criteria
+                )
+            if comments is not None:
+                updates["comments"] = comments
+            if status is not None:
+                updates["status"] = status
+
+            story = self.story_repository.update_story(story_id.strip(), updates)
+            if not story:
+                raise StoryNotFoundError(f"Story with ID '{story_id}' not found")
+
+            self.logger.info(
+                "Story updated successfully",
+                **create_entity_context(story_id=story_id.strip()),
+                operation="update_story",
+            )
+
+            return story.to_dict()
+
+        except ValueError as e:
+            # Handle SQLAlchemy model validation errors
+            raise StoryValidationError(str(e))
+        except SQLAlchemyError as e:
+            raise DatabaseError(
+                f"Database operation failed while updating story: {str(e)}"
             )
 
     def get_story_section(self, story_id: str, section_name: str) -> str:
@@ -1183,3 +1344,158 @@ class StoryService:
             raise DatabaseError(
                 f"Database operation failed while adding comment: {str(e)}"
             )
+
+    def _validate_tasks(self, tasks: List[Dict[str, Any]]) -> None:
+        """Validate task structure and content."""
+        if not isinstance(tasks, list):
+            raise StoryValidationError("Tasks must be a list")
+
+        seen_ids = set()
+        seen_orders = set()
+
+        for i, task in enumerate(tasks):
+            if not isinstance(task, dict):
+                raise StoryValidationError(f"Task {i} must be a dictionary")
+
+            # Check required fields
+            required_fields = ["id", "description", "completed", "order"]
+            for field in required_fields:
+                if field not in task:
+                    raise StoryValidationError(
+                        f"Task {i} missing required field '{field}'"
+                    )
+
+            # Validate field types and values
+            task_id = task["id"]
+            if not isinstance(task_id, str) or not task_id.strip():
+                raise StoryValidationError(f"Task {i} id must be a non-empty string")
+
+            if task_id in seen_ids:
+                raise StoryValidationError(f"Duplicate task id '{task_id}'")
+            seen_ids.add(task_id)
+
+            if (
+                not isinstance(task["description"], str)
+                or not task["description"].strip()
+            ):
+                raise StoryValidationError(
+                    f"Task {i} description must be a non-empty string"
+                )
+
+            if not isinstance(task["completed"], bool):
+                raise StoryValidationError(f"Task {i} completed must be a boolean")
+
+            if not isinstance(task["order"], int) or task["order"] < 1:
+                raise StoryValidationError(f"Task {i} order must be a positive integer")
+
+            if task["order"] in seen_orders:
+                raise StoryValidationError(f"Duplicate task order {task['order']}")
+            seen_orders.add(task["order"])
+
+    def _validate_structured_acceptance_criteria(
+        self, criteria: List[Dict[str, Any]]
+    ) -> None:
+        """Validate structured acceptance criteria structure and content."""
+        if not isinstance(criteria, list):
+            raise StoryValidationError("Structured acceptance criteria must be a list")
+
+        seen_ids = set()
+        seen_orders = set()
+
+        for i, criterion in enumerate(criteria):
+            if not isinstance(criterion, dict):
+                raise StoryValidationError(
+                    f"Acceptance criterion {i} must be a dictionary"
+                )
+
+            # Check required fields
+            required_fields = ["id", "description", "met", "order"]
+            for field in required_fields:
+                if field not in criterion:
+                    raise StoryValidationError(
+                        f"Acceptance criterion {i} missing required field '{field}'"
+                    )
+
+            # Validate field types and values
+            criterion_id = criterion["id"]
+            if not isinstance(criterion_id, str) or not criterion_id.strip():
+                raise StoryValidationError(
+                    f"Acceptance criterion {i} id must be a non-empty string"
+                )
+
+            if criterion_id in seen_ids:
+                raise StoryValidationError(
+                    f"Duplicate acceptance criterion id '{criterion_id}'"
+                )
+            seen_ids.add(criterion_id)
+
+            if (
+                not isinstance(criterion["description"], str)
+                or not criterion["description"].strip()
+            ):
+                raise StoryValidationError(
+                    f"Acceptance criterion {i} description must be a non-empty string"
+                )
+
+            if not isinstance(criterion["met"], bool):
+                raise StoryValidationError(
+                    f"Acceptance criterion {i} met must be a boolean"
+                )
+
+            if not isinstance(criterion["order"], int) or criterion["order"] < 1:
+                raise StoryValidationError(
+                    f"Acceptance criterion {i} order must be a positive integer"
+                )
+
+            if criterion["order"] in seen_orders:
+                raise StoryValidationError(
+                    f"Duplicate acceptance criterion order {criterion['order']}"
+                )
+            seen_orders.add(criterion["order"])
+
+    def _validate_comments(self, comments: List[Dict[str, Any]]) -> None:
+        """Validate comment structure and content."""
+        if not isinstance(comments, list):
+            raise StoryValidationError("Comments must be a list")
+
+        seen_ids = set()
+
+        for i, comment in enumerate(comments):
+            if not isinstance(comment, dict):
+                raise StoryValidationError(f"Comment {i} must be a dictionary")
+
+            # Check required fields
+            required_fields = ["id", "author_role", "content", "timestamp"]
+            for field in required_fields:
+                if field not in comment:
+                    raise StoryValidationError(
+                        f"Comment {i} missing required field '{field}'"
+                    )
+
+            # Validate field types and values
+            comment_id = comment["id"]
+            if not isinstance(comment_id, str) or not comment_id.strip():
+                raise StoryValidationError(f"Comment {i} id must be a non-empty string")
+
+            if comment_id in seen_ids:
+                raise StoryValidationError(f"Duplicate comment id '{comment_id}'")
+            seen_ids.add(comment_id)
+
+            if (
+                not isinstance(comment["author_role"], str)
+                or not comment["author_role"].strip()
+            ):
+                raise StoryValidationError(
+                    f"Comment {i} author_role must be a non-empty string"
+                )
+
+            if (
+                not isinstance(comment["content"], str)
+                or not comment["content"].strip()
+            ):
+                raise StoryValidationError(
+                    f"Comment {i} content must be a non-empty string"
+                )
+
+            # timestamp validation is flexible - can be datetime or string
+            # reply_to_id is optional

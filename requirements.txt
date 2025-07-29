@@ -1,5 +1,6 @@
 fastmcp
 pydantic
+python-dotenv>=1.0.0
 pytest>=8.2.2
 pytest-asyncio
 sqlalchemy>=2.0

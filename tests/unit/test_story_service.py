@@ -65,6 +65,10 @@ def test_create_story_success(story_service, mock_repository):
         "As a user, I want to test",
         ["Should work", "Should pass tests"],
         "test-epic-id",
+        tasks=[],
+        structured_acceptance_criteria=[],
+        comments=[],
+        priority=None,
     )
 
 
@@ -366,7 +370,14 @@ def test_create_story_strips_whitespace(story_service, mock_repository):
     )
 
     mock_repository.create_story.assert_called_once_with(
-        "Test Story", "Test description", ["AC1", "AC2"], "test-epic-id"
+        "Test Story",
+        "Test description",
+        ["AC1", "AC2"],
+        "test-epic-id",
+        tasks=[],
+        structured_acceptance_criteria=[],
+        comments=[],
+        priority=None,
     )
 
 

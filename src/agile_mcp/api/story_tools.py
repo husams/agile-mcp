@@ -43,7 +43,14 @@ def register_story_tools(mcp: FastMCP) -> None:
 
     @mcp.tool("backlog.createStory")
     def create_story(
-        epic_id: str, title: str, description: str, acceptance_criteria: List[str]
+        epic_id: str,
+        title: str,
+        description: str,
+        acceptance_criteria: List[str],
+        tasks: Optional[List[Dict[str, Any]]] = None,
+        structured_acceptance_criteria: Optional[List[Dict[str, Any]]] = None,
+        comments: Optional[List[Dict[str, Any]]] = None,
+        priority: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Create a new user story within a specific epic.
@@ -54,10 +61,15 @@ def register_story_tools(mcp: FastMCP) -> None:
             description: The full user story text (max 2000 characters)
             acceptance_criteria: A list of conditions that must be met for the
                 story to be considered complete
+            tasks: Optional list of task dictionaries with id, description,
+                completed, order
+            structured_acceptance_criteria: Optional list of structured AC
+                dictionaries
+            comments: Optional list of comment dictionaries
+            priority: Optional story priority (integer)
 
         Returns:
-            Dict containing the created story's id, title, description,
-            acceptance_criteria, status, and epic_id
+            Dict containing the created story's details including all structured fields
 
         Raises:
             McpError: If validation fails, epic not found, or database operation fails
@@ -79,7 +91,14 @@ def register_story_tools(mcp: FastMCP) -> None:
                 story_service = StoryService(story_repository)
 
                 story_dict = story_service.create_story(
-                    title, description, acceptance_criteria, epic_id
+                    title=title,
+                    description=description,
+                    acceptance_criteria=acceptance_criteria,
+                    epic_id=epic_id,
+                    tasks=tasks,
+                    structured_acceptance_criteria=structured_acceptance_criteria,
+                    comments=comments,
+                    priority=priority,
                 )
                 story_response = StoryResponse(**story_dict)
 
@@ -244,6 +263,140 @@ def register_story_tools(mcp: FastMCP) -> None:
                 "Unexpected error in get story",
                 **create_request_context(
                     request_id=request_id, tool_name="backlog.getStory"
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type=type(e).__name__,
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(
+                ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
+            )
+
+    @mcp.tool("backlog.updateStory")
+    def update_story(
+        story_id: str,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        acceptance_criteria: Optional[List[str]] = None,
+        tasks: Optional[List[Dict[str, Any]]] = None,
+        structured_acceptance_criteria: Optional[List[Dict[str, Any]]] = None,
+        comments: Optional[List[Dict[str, Any]]] = None,
+        status: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Update a user story with partial field updates.
+
+        Args:
+            story_id: The unique identifier of the story
+            title: Optional new title (max 200 characters)
+            description: Optional new description (max 2000 characters)
+            acceptance_criteria: Optional new acceptance criteria list
+            tasks: Optional list of task dictionaries with id, description,
+                completed, order
+            structured_acceptance_criteria: Optional list of structured AC
+                dictionaries
+            comments: Optional list of comment dictionaries
+            status: Optional new status ("ToDo", "InProgress", "Review", "Done")
+
+        Returns:
+            Dict containing the updated story's details including all structured fields
+
+        Raises:
+            McpError: If validation fails, story not found, or database operation fails
+        """
+        request_id = str(uuid.uuid4())
+        try:
+            logger.info(
+                "Processing update story request",
+                **create_request_context(
+                    request_id=request_id, tool_name="backlog.updateStory"
+                ),
+                **create_entity_context(story_id=story_id),
+            )
+
+            db_session = get_db()
+            try:
+                story_repository = StoryRepository(db_session)
+                story_service = StoryService(story_repository)
+
+                result = story_service.update_story(
+                    story_id=story_id,
+                    title=title,
+                    description=description,
+                    acceptance_criteria=acceptance_criteria,
+                    tasks=tasks,
+                    structured_acceptance_criteria=structured_acceptance_criteria,
+                    comments=comments,
+                    status=status,
+                )
+
+                logger.info(
+                    "Story updated successfully",
+                    **create_request_context(
+                        request_id=request_id, tool_name="backlog.updateStory"
+                    ),
+                    **create_entity_context(story_id=story_id),
+                    result_status="success",
+                )
+
+                return result
+            finally:
+                db_session.close()
+
+        except StoryValidationError as e:
+            logger.error(
+                "Validation error in update story",
+                **create_request_context(
+                    request_id=request_id, tool_name="backlog.updateStory"
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type="StoryValidationError",
+                error_message=str(e),
+                mcp_error_code=-32602,
+            )
+            raise McpError(
+                ErrorData(
+                    code=-32602,
+                    message=f"Validation error: {str(e)}",
+                    data={"story_id": story_id},
+                )
+            )
+        except StoryNotFoundError as e:
+            logger.error(
+                "Story not found in update story",
+                **create_request_context(
+                    request_id=request_id, tool_name="backlog.updateStory"
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type="StoryNotFoundError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(
+                ErrorData(
+                    code=-32001,
+                    message=f"Story not found: {str(e)}",
+                    data={"story_id": story_id},
+                )
+            )
+        except DatabaseError as e:
+            logger.error(
+                "Database error in update story",
+                **create_request_context(
+                    request_id=request_id, tool_name="backlog.updateStory"
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type="DatabaseError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(ErrorData(code=-32001, message=f"Database error: {str(e)}"))
+        except Exception as e:
+            logger.error(
+                "Unexpected error in update story",
+                **create_request_context(
+                    request_id=request_id, tool_name="backlog.updateStory"
                 ),
                 **create_entity_context(story_id=story_id),
                 error_type=type(e).__name__,
