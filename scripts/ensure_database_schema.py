@@ -52,6 +52,29 @@ def ensure_structured_acceptance_criteria_column():
         return True
 
 
+def ensure_comments_column():
+    """Ensure the comments column exists in the stories table."""
+    if not check_column_exists("stories", "comments"):
+        print("Adding comments column to stories table...")
+        try:
+            with engine.connect() as conn:
+                conn.execute(
+                    text(
+                        "ALTER TABLE stories ADD COLUMN "
+                        "comments JSON NOT NULL DEFAULT '[]'"
+                    )
+                )
+                conn.commit()
+            print("✓ Added comments column successfully")
+            return True
+        except Exception as e:
+            print(f"✗ Failed to add comments column: {e}")
+            return False
+    else:
+        print("✓ comments column already exists")
+        return True
+
+
 def ensure_database_schema():
     """Ensure database schema is up to date."""
     print("Ensuring database schema is up to date...")
@@ -67,6 +90,7 @@ def ensure_database_schema():
     # Apply specific migrations
     migrations = [
         ensure_structured_acceptance_criteria_column,
+        ensure_comments_column,
     ]
 
     for migration in migrations:

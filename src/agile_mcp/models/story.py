@@ -36,6 +36,9 @@ class Story(Base):
         tasks: A list of individual tasks that break down the story work.
             Each task has: {'id': str, 'description': str, 'completed': bool,
             'order': int}
+        comments: A list of comments associated with the story.
+            Each comment has: {'id': str, 'author_role': str, 'content': str,
+            'timestamp': datetime, 'reply_to_id': str | None}
         status: Current state (ToDo, InProgress, Review, Done)
         priority: Priority level for ordering (higher number = higher priority),
             default 0
@@ -53,6 +56,9 @@ class Story(Base):
         JSON, nullable=False, default=list
     )
     tasks: Mapped[List[Dict[str, Any]]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
+    comments: Mapped[List[Dict[str, Any]]] = mapped_column(
         JSON, nullable=False, default=list
     )
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="ToDo")
@@ -105,6 +111,7 @@ class Story(Base):
         epic_id: str,
         tasks: Optional[List[Dict[str, Any]]] = None,
         structured_acceptance_criteria: Optional[List[Dict[str, Any]]] = None,
+        comments: Optional[List[Dict[str, Any]]] = None,
         status: str = "ToDo",
         priority: int = 0,
         created_at: Optional[datetime] = None,
@@ -118,6 +125,7 @@ class Story(Base):
         self.acceptance_criteria = acceptance_criteria
         self.structured_acceptance_criteria = structured_acceptance_criteria or []
         self.tasks = tasks or []
+        self.comments = comments or []
         self.epic_id = epic_id
         self.status = status
         self.priority = priority
@@ -125,6 +133,16 @@ class Story(Base):
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert Story instance to dictionary representation."""
+        # Convert comments to serializable format
+        serialized_comments = []
+        for comment in self.comments:
+            serialized_comment = comment.copy()
+            if isinstance(serialized_comment.get("timestamp"), datetime):
+                serialized_comment["timestamp"] = serialized_comment[
+                    "timestamp"
+                ].isoformat()
+            serialized_comments.append(serialized_comment)
+
         return {
             "id": self.id,
             "title": self.title,
@@ -132,6 +150,7 @@ class Story(Base):
             "acceptance_criteria": self.acceptance_criteria,
             "structured_acceptance_criteria": self.structured_acceptance_criteria,
             "tasks": self.tasks,
+            "comments": serialized_comments,
             "status": self.status,
             "priority": self.priority,
             "created_at": self.created_at.isoformat() if self.created_at else None,
@@ -283,6 +302,81 @@ class Story(Base):
             used_orders.add(criterion["order"])
 
         return structured_acceptance_criteria
+
+    @validates("comments")
+    def validate_comments(self, key, comments):
+        """Validate story comments."""
+        if not isinstance(comments, list):
+            raise ValueError("Comments must be a list")
+
+        required_fields = {"id", "author_role", "content", "timestamp"}
+        optional_fields = {"reply_to_id"}
+        valid_fields = required_fields.union(optional_fields)
+        used_ids = set()
+
+        for i, comment in enumerate(comments):
+            if not isinstance(comment, dict):
+                raise ValueError(f"Comment at index {i} must be a dictionary")
+
+            # Check required fields
+            if not required_fields.issubset(comment.keys()):
+                missing = required_fields - comment.keys()
+                raise ValueError(
+                    f"Comment at index {i} missing required fields: {missing}"
+                )
+
+            # Check for unexpected fields
+            unexpected = set(comment.keys()) - valid_fields
+            if unexpected:
+                raise ValueError(
+                    f"Comment at index {i} has unexpected fields: {unexpected}"
+                )
+
+            # Validate id
+            if not isinstance(comment["id"], str) or not comment["id"].strip():
+                raise ValueError(
+                    f"Comment at index {i} must have a non-empty string id"
+                )
+            if comment["id"] in used_ids:
+                raise ValueError(f"Comment id '{comment['id']}' is not unique")
+            used_ids.add(comment["id"])
+
+            # Validate author_role
+            if (
+                not isinstance(comment["author_role"], str)
+                or not comment["author_role"].strip()
+            ):
+                raise ValueError(
+                    f"Comment at index {i} must have a non-empty string author_role"
+                )
+
+            # Validate content
+            if (
+                not isinstance(comment["content"], str)
+                or not comment["content"].strip()
+            ):
+                raise ValueError(
+                    f"Comment at index {i} must have a non-empty string content"
+                )
+
+            # Validate timestamp
+            if not isinstance(comment["timestamp"], datetime):
+                raise ValueError(
+                    f"Comment at index {i} timestamp field must be a datetime object"
+                )
+
+            # Validate reply_to_id (optional)
+            if "reply_to_id" in comment:
+                reply_to_id = comment["reply_to_id"]
+                if reply_to_id is not None and (
+                    not isinstance(reply_to_id, str) or not reply_to_id.strip()
+                ):
+                    raise ValueError(
+                        f"Comment at index {i} reply_to_id must be None or a "
+                        f"non-empty string"
+                    )
+
+        return comments
 
     @validates("status")
     def validate_status(self, key, status):

@@ -915,3 +915,254 @@ def test_story_to_dict_includes_structured_acceptance_criteria():
     assert story_dict["structured_acceptance_criteria"] == criteria
     assert len(story_dict["structured_acceptance_criteria"]) == 1
     assert story_dict["structured_acceptance_criteria"][0]["id"] == "ac-1"
+
+
+def test_story_comments_validation_empty_list():
+    """Test Story model comments validation with empty list."""
+    story = Story(
+        id="test-story-comments-1",
+        title="Valid Empty Comments",
+        description="Story with valid empty comments",
+        acceptance_criteria=["Should accept empty comments"],
+        epic_id="test-epic-1",
+        comments=[],
+    )
+
+    assert story.comments == []
+
+
+def test_story_comments_validation_invalid_type():
+    """Test Story model comments validation with invalid type."""
+    with pytest.raises(ValueError, match="Comments must be a list"):
+        Story(
+            id="test-story-comments-2",
+            title="Invalid Comments Type",
+            description="Story with invalid comments type",
+            acceptance_criteria=["Should fail validation"],
+            epic_id="test-epic-1",
+            comments="not a list",
+        )
+
+
+def test_story_comments_validation_valid_comment():
+    """Test Story model comments validation with valid comment."""
+    valid_comment = {
+        "id": "comment-1",
+        "author_role": "Developer Agent",
+        "content": "This is a test comment",
+        "timestamp": datetime.now(timezone.utc),
+        "reply_to_id": None,
+    }
+
+    story = Story(
+        id="test-story-comments-3",
+        title="Valid Comments",
+        description="Story with valid comments",
+        acceptance_criteria=["Should accept valid comments"],
+        epic_id="test-epic-1",
+        comments=[valid_comment],
+    )
+
+    assert len(story.comments) == 1
+    assert story.comments[0]["id"] == "comment-1"
+    assert story.comments[0]["author_role"] == "Developer Agent"
+    assert story.comments[0]["content"] == "This is a test comment"
+
+
+def test_story_comments_validation_missing_required_fields():
+    """Test Story model comments validation with missing required fields."""
+    # Missing author_role
+    invalid_comment = {
+        "id": "comment-1",
+        "content": "This is a test comment",
+        "timestamp": datetime.now(timezone.utc),
+        "reply_to_id": None,
+    }
+
+    with pytest.raises(ValueError, match="Comment at index 0 missing required fields"):
+        Story(
+            id="test-story-comments-4",
+            title="Invalid Comments",
+            description="Story with invalid comments",
+            acceptance_criteria=["Should fail validation"],
+            epic_id="test-epic-1",
+            comments=[invalid_comment],
+        )
+
+
+def test_story_comments_validation_invalid_comment_structure():
+    """Test Story model comments validation with invalid comment structure."""
+    # Invalid comment structure - not a dict
+    with pytest.raises(ValueError, match="Comment at index 0 must be a dictionary"):
+        Story(
+            id="test-story-comments-5",
+            title="Invalid Comments Structure",
+            description="Story with invalid comments structure",
+            acceptance_criteria=["Should fail validation"],
+            epic_id="test-epic-1",
+            comments=["not a dict"],
+        )
+
+
+def test_story_comments_validation_duplicate_ids():
+    """Test Story model comments validation with duplicate comment IDs."""
+    duplicate_comments = [
+        {
+            "id": "comment-1",
+            "author_role": "Developer Agent",
+            "content": "First comment",
+            "timestamp": datetime.now(timezone.utc),
+            "reply_to_id": None,
+        },
+        {
+            "id": "comment-1",  # Duplicate ID
+            "author_role": "QA Agent",
+            "content": "Second comment",
+            "timestamp": datetime.now(timezone.utc),
+            "reply_to_id": None,
+        },
+    ]
+
+    with pytest.raises(ValueError, match="Comment id 'comment-1' is not unique"):
+        Story(
+            id="test-story-comments-6",
+            title="Duplicate Comment IDs",
+            description="Story with duplicate comment IDs",
+            acceptance_criteria=["Should fail validation"],
+            epic_id="test-epic-1",
+            comments=duplicate_comments,
+        )
+
+
+def test_story_comments_validation_invalid_timestamp():
+    """Test Story model comments validation with invalid timestamp."""
+    invalid_comment = {
+        "id": "comment-1",
+        "author_role": "Developer Agent",
+        "content": "This is a test comment",
+        "timestamp": "not a datetime",  # Invalid timestamp
+        "reply_to_id": None,
+    }
+
+    with pytest.raises(
+        ValueError, match="Comment at index 0 timestamp field must be a datetime object"
+    ):
+        Story(
+            id="test-story-comments-7",
+            title="Invalid Timestamp",
+            description="Story with invalid timestamp in comment",
+            acceptance_criteria=["Should fail validation"],
+            epic_id="test-epic-1",
+            comments=[invalid_comment],
+        )
+
+
+def test_story_comments_validation_invalid_reply_to_id():
+    """Test Story model comments validation with invalid reply_to_id."""
+    invalid_comment = {
+        "id": "comment-1",
+        "author_role": "Developer Agent",
+        "content": "This is a test comment",
+        "timestamp": datetime.now(timezone.utc),
+        "reply_to_id": "",  # Empty string instead of None or valid ID
+    }
+
+    with pytest.raises(
+        ValueError,
+        match="Comment at index 0 reply_to_id must be None or a non-empty string",
+    ):
+        Story(
+            id="test-story-comments-8",
+            title="Invalid Reply To ID",
+            description="Story with invalid reply_to_id in comment",
+            acceptance_criteria=["Should fail validation"],
+            epic_id="test-epic-1",
+            comments=[invalid_comment],
+        )
+
+
+def test_story_comments_validation_with_reply_to_id():
+    """Test Story model comments validation with valid reply_to_id."""
+    valid_comments = [
+        {
+            "id": "comment-1",
+            "author_role": "Developer Agent",
+            "content": "Original comment",
+            "timestamp": datetime.now(timezone.utc),
+            "reply_to_id": None,
+        },
+        {
+            "id": "comment-2",
+            "author_role": "QA Agent",
+            "content": "Reply to original comment",
+            "timestamp": datetime.now(timezone.utc),
+            "reply_to_id": "comment-1",
+        },
+    ]
+
+    story = Story(
+        id="test-story-comments-9",
+        title="Valid Reply Comments",
+        description="Story with valid reply comments",
+        acceptance_criteria=["Should accept valid reply comments"],
+        epic_id="test-epic-1",
+        comments=valid_comments,
+    )
+
+    assert len(story.comments) == 2
+    assert story.comments[0]["reply_to_id"] is None
+    assert story.comments[1]["reply_to_id"] == "comment-1"
+
+
+def test_story_comments_validation_unexpected_fields():
+    """Test Story model comments validation with unexpected fields."""
+    invalid_comment = {
+        "id": "comment-1",
+        "author_role": "Developer Agent",
+        "content": "This is a test comment",
+        "timestamp": datetime.now(timezone.utc),
+        "reply_to_id": None,
+        "unexpected_field": "unexpected_value",  # Unexpected field
+    }
+
+    with pytest.raises(ValueError, match="Comment at index 0 has unexpected fields"):
+        Story(
+            id="test-story-comments-10",
+            title="Unexpected Fields",
+            description="Story with unexpected fields in comment",
+            acceptance_criteria=["Should fail validation"],
+            epic_id="test-epic-1",
+            comments=[invalid_comment],
+        )
+
+
+def test_story_to_dict_includes_comments():
+    """Test Story model to_dict includes comments with proper serialization."""
+    test_timestamp = datetime.now(timezone.utc)
+    valid_comment = {
+        "id": "comment-1",
+        "author_role": "Developer Agent",
+        "content": "This is a test comment",
+        "timestamp": test_timestamp,
+        "reply_to_id": None,
+    }
+
+    story = Story(
+        id="test-story-comments-11",
+        title="Test to_dict Comments",
+        description="Story to test to_dict with comments",
+        acceptance_criteria=["Should include comments in to_dict"],
+        epic_id="test-epic-1",
+        comments=[valid_comment],
+    )
+
+    story_dict = story.to_dict()
+
+    assert "comments" in story_dict
+    assert len(story_dict["comments"]) == 1
+    assert story_dict["comments"][0]["id"] == "comment-1"
+    assert story_dict["comments"][0]["author_role"] == "Developer Agent"
+    assert story_dict["comments"][0]["content"] == "This is a test comment"
+    # Check timestamp is serialized as ISO format
+    assert story_dict["comments"][0]["timestamp"] == test_timestamp.isoformat()
+    assert story_dict["comments"][0]["reply_to_id"] is None
