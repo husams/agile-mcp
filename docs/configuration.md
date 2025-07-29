@@ -55,8 +55,8 @@ export DATABASE_URL="sqlite:///dev_agile_mcp.db"
 export SQL_DEBUG="true"
 export LOG_LEVEL="DEBUG"
 
-# Start development server
-python run_server.py
+# Configure in MCP client (e.g., Claude Desktop)
+# The server will be started by the MCP client via stdio transport
 ```
 
 **Characteristics**:
@@ -95,8 +95,8 @@ export DATABASE_URL="sqlite:///prod_agile_mcp.db"
 export SQL_DEBUG="false"
 export LOG_LEVEL="INFO"
 
-# Start production server
-python run_server.py
+# Configure in MCP client production deployment
+# The server runs via stdio transport managed by MCP client
 ```
 
 **Characteristics**:
@@ -160,25 +160,60 @@ LOG_LEVEL=INFO
 
 ### Shell Script Configuration
 
-**Development startup script**:
+**Development environment setup**:
 ```bash
 #!/bin/bash
-# dev-start.sh
+# dev-env.sh - Set development environment variables
 export DATABASE_URL="sqlite:///dev_agile_mcp.db"
 export SQL_DEBUG="true"
 export LOG_LEVEL="DEBUG"
-python run_server.py
+# Server will be started by MCP client using stdio transport
+echo "Development environment configured for MCP server"
 ```
 
-**Production startup script**:
+**Production environment setup**:
 ```bash
 #!/bin/bash
-# prod-start.sh
+# prod-env.sh - Set production environment variables
 export DATABASE_URL="sqlite:///prod_agile_mcp.db"
 export SQL_DEBUG="false"
 export LOG_LEVEL="INFO"
-python run_server.py
+# Server will be started by MCP client using stdio transport
+echo "Production environment configured for MCP server"
 ```
+
+## MCP Client Configuration
+
+This server uses **stdio transport** and must be configured in an MCP client. It cannot run standalone.
+
+### Claude Desktop Configuration
+
+Add to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "agile-mcp": {
+      "command": "uv",
+      "args": ["run", "run_server.py"],
+      "cwd": "/path/to/agile-mcp",
+      "env": {
+        "DATABASE_URL": "sqlite:///agile_mcp.db",
+        "LOG_LEVEL": "INFO",
+        "SQL_DEBUG": "false"
+      }
+    }
+  }
+}
+```
+
+### Generic MCP Client Configuration
+
+For other MCP clients, use these settings:
+- **Transport**: stdio
+- **Command**: `uv run run_server.py`
+- **Working Directory**: Project root path
+- **Environment Variables**: As defined in previous sections
 
 ## Security Configuration
 
