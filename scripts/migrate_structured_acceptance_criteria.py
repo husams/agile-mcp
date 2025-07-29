@@ -13,8 +13,9 @@ from pathlib import Path
 # Add the src directory to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from agile_mcp.database import create_tables, get_db
-from agile_mcp.models.story import Story
+# Import after path modification to avoid import errors
+from agile_mcp.database import create_tables, get_db  # noqa: E402
+from agile_mcp.models.story import Story  # noqa: E402
 
 
 def convert_acceptance_criteria_to_structured(acceptance_criteria_list):

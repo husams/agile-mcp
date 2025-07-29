@@ -240,7 +240,8 @@ class Story(Base):
             if not required_fields.issubset(criterion.keys()):
                 missing = required_fields - criterion.keys()
                 raise ValueError(
-                    f"Acceptance criterion at index {i} missing required fields: {missing}"
+                    f"Acceptance criterion at index {i} missing required "
+                    f"fields: {missing}"
                 )
 
             # Validate id
@@ -260,7 +261,8 @@ class Story(Base):
                 or not criterion["description"].strip()
             ):
                 raise ValueError(
-                    f"Acceptance criterion at index {i} must have a non-empty string description"
+                    f"Acceptance criterion at index {i} must have a "
+                    f"non-empty string description"
                 )
 
             # Validate met

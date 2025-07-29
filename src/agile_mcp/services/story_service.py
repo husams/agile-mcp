@@ -810,7 +810,8 @@ class StoryService:
         except SQLAlchemyError as e:
             self.story_repository.db_session.rollback()
             raise DatabaseError(
-                f"Database operation failed while adding acceptance criterion to story: {str(e)}"
+                f"Database operation failed while adding acceptance "
+                f"criterion to story: {str(e)}"
             )
 
     def update_acceptance_criterion_status(
@@ -895,7 +896,8 @@ class StoryService:
         except SQLAlchemyError as e:
             self.story_repository.db_session.rollback()
             raise DatabaseError(
-                f"Database operation failed while updating acceptance criterion status: {str(e)}"
+                f"Database operation failed while updating acceptance "
+                f"criterion status: {str(e)}"
             )
 
     def update_acceptance_criterion_description(
@@ -984,7 +986,8 @@ class StoryService:
         except SQLAlchemyError as e:
             self.story_repository.db_session.rollback()
             raise DatabaseError(
-                f"Database operation failed while updating acceptance criterion description: {str(e)}"
+                f"Database operation failed while updating acceptance "
+                f"criterion description: {str(e)}"
             )
 
     def reorder_acceptance_criteria(
@@ -996,7 +999,8 @@ class StoryService:
         Args:
             story_id: The unique identifier of the story
             criterion_orders: List of dicts with criterion_id and new order
-                Format: [{'criterion_id': 'id1', 'order': 1}, {'criterion_id': 'id2', 'order': 2}]
+                Format: [{'criterion_id': 'id1', 'order': 1},
+                {'criterion_id': 'id2', 'order': 2}]
 
         Returns:
             Dict: Updated story with reordered acceptance criteria
@@ -1035,7 +1039,8 @@ class StoryService:
                     or "order" not in item
                 ):
                     raise StoryValidationError(
-                        "Each criterion order item must have 'criterion_id' and 'order' fields"
+                        "Each criterion order item must have 'criterion_id' "
+                        "and 'order' fields"
                     )
                 order_mapping[item["criterion_id"]] = item["order"]
 
@@ -1070,5 +1075,6 @@ class StoryService:
         except SQLAlchemyError as e:
             self.story_repository.db_session.rollback()
             raise DatabaseError(
-                f"Database operation failed while reordering acceptance criteria: {str(e)}"
+                f"Database operation failed while reordering acceptance "
+                f"criteria: {str(e)}"
             )

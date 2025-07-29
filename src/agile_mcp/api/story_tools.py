@@ -1384,7 +1384,8 @@ def register_story_tools(mcp: FastMCP) -> None:
                 story_response = StoryResponse(**story_dict)
 
                 logger.info(
-                    "Update acceptance criterion description request completed successfully",
+                    "Update acceptance criterion description request completed "
+                    "successfully",
                     **create_request_context(
                         request_id=request_id,
                         tool_name="acceptanceCriteria.updateDescription",
@@ -1469,7 +1470,8 @@ def register_story_tools(mcp: FastMCP) -> None:
         Args:
             story_id: The unique identifier of the story
             criterion_orders: List of dicts with criterion_id and new order
-                Format: [{'criterion_id': 'id1', 'order': 1}, {'criterion_id': 'id2', 'order': 2}]
+                Format: [{'criterion_id': 'id1', 'order': 1},
+                {'criterion_id': 'id2', 'order': 2}]
 
         Returns:
             Dict containing the updated story with reordered acceptance criteria

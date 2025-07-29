@@ -691,7 +691,8 @@ def test_story_structured_acceptance_criteria_invalid_format():
 
 
 def test_story_structured_acceptance_criteria_missing_required_fields():
-    """Test Story model validation with missing required fields in acceptance criteria."""
+    """Test Story model validation with missing required fields in acceptance
+    criteria."""
     with pytest.raises(ValueError, match="missing required fields"):
         Story(
             id="test-story-103",
