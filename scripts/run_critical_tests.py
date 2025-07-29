@@ -66,7 +66,7 @@ def run_test_module(module_name: str, production_server: bool = True) -> bool:
         print(f"⚠️  Test file not found: {test_file}")
         return True  # Don't fail pre-commit for missing test files
 
-    cmd = ["python", "-m", "pytest", test_file, "-v"]
+    cmd = ["python3", "-m", "pytest", test_file, "-v"]
 
     if production_server:
         # Set environment to use production server
