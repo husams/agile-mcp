@@ -627,3 +627,288 @@ def test_story_tasks_database_persistence(in_memory_db):
     assert retrieved_story.tasks[0]["description"] == "Persistent task"
     assert retrieved_story.tasks[0]["completed"] is True
     assert retrieved_story.tasks[0]["order"] == 1
+
+
+def test_story_structured_acceptance_criteria_validation():
+    """Test Story model structured acceptance criteria validation."""
+    valid_criteria = [
+        {
+            "id": "ac-1",
+            "description": "First acceptance criterion",
+            "met": False,
+            "order": 1,
+        },
+        {
+            "id": "ac-2",
+            "description": "Second acceptance criterion",
+            "met": True,
+            "order": 2,
+        },
+    ]
+
+    story = Story(
+        id="test-story-100",
+        title="AC Test Story",
+        description="Story with structured acceptance criteria",
+        acceptance_criteria=["Traditional criterion"],
+        structured_acceptance_criteria=valid_criteria,
+        epic_id="test-epic-1",
+    )
+
+    assert story.structured_acceptance_criteria == valid_criteria
+    assert len(story.structured_acceptance_criteria) == 2
+    assert story.structured_acceptance_criteria[0]["id"] == "ac-1"
+    assert story.structured_acceptance_criteria[1]["met"] is True
+
+
+def test_story_structured_acceptance_criteria_empty_list():
+    """Test Story model with empty structured acceptance criteria list."""
+    story = Story(
+        id="test-story-101",
+        title="Empty AC Test Story",
+        description="Story with empty structured acceptance criteria",
+        acceptance_criteria=["Traditional criterion"],
+        structured_acceptance_criteria=[],
+        epic_id="test-epic-1",
+    )
+
+    assert story.structured_acceptance_criteria == []
+
+
+def test_story_structured_acceptance_criteria_invalid_format():
+    """Test Story model validation with invalid structured acceptance criteria."""
+    with pytest.raises(
+        ValueError, match="Acceptance criterion at index 0 must be a dictionary"
+    ):
+        Story(
+            id="test-story-102",
+            title="Invalid AC Format Story",
+            description="Story with invalid structured acceptance criteria",
+            acceptance_criteria=["Traditional criterion"],
+            structured_acceptance_criteria=["invalid-string"],
+            epic_id="test-epic-1",
+        )
+
+
+def test_story_structured_acceptance_criteria_missing_required_fields():
+    """Test Story model validation with missing required fields in acceptance criteria."""
+    with pytest.raises(ValueError, match="missing required fields"):
+        Story(
+            id="test-story-103",
+            title="Missing Fields AC Story",
+            description="Story with missing required fields in acceptance criteria",
+            acceptance_criteria=["Traditional criterion"],
+            structured_acceptance_criteria=[
+                {
+                    "id": "ac-1",
+                    "description": "Missing met and order fields",
+                }
+            ],
+            epic_id="test-epic-1",
+        )
+
+
+def test_story_structured_acceptance_criteria_invalid_id():
+    """Test Story model validation with invalid acceptance criterion ID."""
+    with pytest.raises(ValueError, match="must have a non-empty string id"):
+        Story(
+            id="test-story-104",
+            title="Invalid ID AC Story",
+            description="Story with invalid acceptance criterion ID",
+            acceptance_criteria=["Traditional criterion"],
+            structured_acceptance_criteria=[
+                {
+                    "id": "",
+                    "description": "Empty ID criterion",
+                    "met": False,
+                    "order": 1,
+                }
+            ],
+            epic_id="test-epic-1",
+        )
+
+
+def test_story_structured_acceptance_criteria_duplicate_id():
+    """Test Story model validation with duplicate acceptance criterion IDs."""
+    with pytest.raises(ValueError, match="is not unique"):
+        Story(
+            id="test-story-105",
+            title="Duplicate ID AC Story",
+            description="Story with duplicate acceptance criterion IDs",
+            acceptance_criteria=["Traditional criterion"],
+            structured_acceptance_criteria=[
+                {
+                    "id": "ac-1",
+                    "description": "First criterion",
+                    "met": False,
+                    "order": 1,
+                },
+                {
+                    "id": "ac-1",
+                    "description": "Duplicate ID criterion",
+                    "met": False,
+                    "order": 2,
+                },
+            ],
+            epic_id="test-epic-1",
+        )
+
+
+def test_story_structured_acceptance_criteria_invalid_description():
+    """Test Story model validation with invalid acceptance criterion description."""
+    with pytest.raises(ValueError, match="must have a non-empty string description"):
+        Story(
+            id="test-story-106",
+            title="Invalid Description AC Story",
+            description="Story with invalid acceptance criterion description",
+            acceptance_criteria=["Traditional criterion"],
+            structured_acceptance_criteria=[
+                {
+                    "id": "ac-1",
+                    "description": "",
+                    "met": False,
+                    "order": 1,
+                }
+            ],
+            epic_id="test-epic-1",
+        )
+
+
+def test_story_structured_acceptance_criteria_invalid_met_field():
+    """Test Story model validation with invalid met field."""
+    with pytest.raises(ValueError, match="met field must be a boolean"):
+        Story(
+            id="test-story-107",
+            title="Invalid Met Field AC Story",
+            description="Story with invalid met field in acceptance criteria",
+            acceptance_criteria=["Traditional criterion"],
+            structured_acceptance_criteria=[
+                {
+                    "id": "ac-1",
+                    "description": "Invalid met field criterion",
+                    "met": "invalid",
+                    "order": 1,
+                }
+            ],
+            epic_id="test-epic-1",
+        )
+
+
+def test_story_structured_acceptance_criteria_invalid_order_field():
+    """Test Story model validation with invalid order field."""
+    with pytest.raises(ValueError, match="order field must be an integer"):
+        Story(
+            id="test-story-108",
+            title="Invalid Order Field AC Story",
+            description="Story with invalid order field in acceptance criteria",
+            acceptance_criteria=["Traditional criterion"],
+            structured_acceptance_criteria=[
+                {
+                    "id": "ac-1",
+                    "description": "Invalid order field criterion",
+                    "met": False,
+                    "order": "invalid",
+                }
+            ],
+            epic_id="test-epic-1",
+        )
+
+
+def test_story_structured_acceptance_criteria_duplicate_order():
+    """Test Story model validation with duplicate acceptance criterion orders."""
+    with pytest.raises(ValueError, match="order.*is not unique"):
+        Story(
+            id="test-story-109",
+            title="Duplicate Order AC Story",
+            description="Story with duplicate acceptance criterion orders",
+            acceptance_criteria=["Traditional criterion"],
+            structured_acceptance_criteria=[
+                {
+                    "id": "ac-1",
+                    "description": "First criterion",
+                    "met": False,
+                    "order": 1,
+                },
+                {
+                    "id": "ac-2",
+                    "description": "Duplicate order criterion",
+                    "met": False,
+                    "order": 1,
+                },
+            ],
+            epic_id="test-epic-1",
+        )
+
+
+def test_story_structured_acceptance_criteria_database_persistence(in_memory_db):
+    """Test Story model structured acceptance criteria persistence in database."""
+    criteria = [
+        {
+            "id": "ac-1",
+            "description": "Persistent acceptance criterion",
+            "met": True,
+            "order": 1,
+        },
+        {
+            "id": "ac-2",
+            "description": "Second persistent criterion",
+            "met": False,
+            "order": 2,
+        },
+    ]
+
+    story = Story(
+        id="test-story-110",
+        title="Persistent AC Story",
+        description="Story with structured acceptance criteria to persist",
+        acceptance_criteria=["Should persist criteria"],
+        structured_acceptance_criteria=criteria,
+        epic_id="test-epic-1",
+    )
+
+    # Save to database
+    in_memory_db.add(story)
+    in_memory_db.commit()
+
+    # Retrieve from database
+    retrieved_story = in_memory_db.query(Story).filter_by(id="test-story-110").first()
+
+    assert retrieved_story is not None
+    assert len(retrieved_story.structured_acceptance_criteria) == 2
+    assert retrieved_story.structured_acceptance_criteria[0]["id"] == "ac-1"
+    assert (
+        retrieved_story.structured_acceptance_criteria[0]["description"]
+        == "Persistent acceptance criterion"
+    )
+    assert retrieved_story.structured_acceptance_criteria[0]["met"] is True
+    assert retrieved_story.structured_acceptance_criteria[0]["order"] == 1
+    assert retrieved_story.structured_acceptance_criteria[1]["id"] == "ac-2"
+    assert retrieved_story.structured_acceptance_criteria[1]["met"] is False
+
+
+def test_story_to_dict_includes_structured_acceptance_criteria():
+    """Test that Story.to_dict() includes structured acceptance criteria."""
+    criteria = [
+        {
+            "id": "ac-1",
+            "description": "Test criterion",
+            "met": False,
+            "order": 1,
+        }
+    ]
+
+    story = Story(
+        id="test-story-111",
+        title="To Dict Test Story",
+        description="Story for testing to_dict method",
+        acceptance_criteria=["Traditional criterion"],
+        structured_acceptance_criteria=criteria,
+        epic_id="test-epic-1",
+    )
+
+    story_dict = story.to_dict()
+
+    assert "structured_acceptance_criteria" in story_dict
+    assert story_dict["structured_acceptance_criteria"] == criteria
+    assert len(story_dict["structured_acceptance_criteria"]) == 1
+    assert story_dict["structured_acceptance_criteria"][0]["id"] == "ac-1"

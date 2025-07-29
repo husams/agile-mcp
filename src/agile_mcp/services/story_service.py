@@ -723,3 +723,352 @@ class StoryService:
             raise DatabaseError(
                 f"Database operation failed while reordering tasks: {str(e)}"
             )
+
+    def add_acceptance_criterion_to_story(
+        self, story_id: str, description: str, order: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Add a new acceptance criterion to a story.
+
+        Args:
+            story_id: The unique identifier of the story
+            description: Description of the acceptance criterion
+            order: Optional order for the criterion (auto-incremented if not provided)
+
+        Returns:
+            Dict: Updated story with the new acceptance criterion
+
+        Raises:
+            StoryNotFoundError: If story is not found
+            StoryValidationError: If validation fails
+            DatabaseError: If database operation fails
+        """
+        # Validate input parameters
+        if not story_id or not story_id.strip():
+            raise StoryValidationError("Story ID cannot be empty")
+
+        if not description or not description.strip():
+            raise StoryValidationError(
+                "Acceptance criterion description cannot be empty"
+            )
+
+        try:
+            self.logger.info(
+                "Adding acceptance criterion to story",
+                **create_entity_context(story_id=story_id.strip()),
+                criterion_description=description[:50] if description else None,
+                operation="add_acceptance_criterion_to_story",
+            )
+
+            # Get the story
+            story = self.story_repository.find_story_by_id(story_id.strip())
+            if not story:
+                raise StoryNotFoundError(f"Story with ID '{story_id}' not found")
+
+            # Generate criterion ID and determine order
+            criterion_id = str(uuid.uuid4())
+            if order is None:
+                existing_orders = [
+                    criterion.get("order", 0)
+                    for criterion in story.structured_acceptance_criteria
+                ]
+                order = max(existing_orders, default=0) + 1
+
+            # Create new acceptance criterion
+            new_criterion = {
+                "id": criterion_id,
+                "description": description.strip(),
+                "met": False,
+                "order": order,
+            }
+
+            # Add criterion to story
+            updated_criteria = story.structured_acceptance_criteria + [new_criterion]
+            story.structured_acceptance_criteria = updated_criteria
+
+            # Force SQLAlchemy to recognize the change
+            from sqlalchemy.orm.attributes import flag_modified
+
+            flag_modified(story, "structured_acceptance_criteria")
+
+            # Save changes
+            self.story_repository.db_session.commit()
+            self.story_repository.db_session.refresh(story)
+
+            self.logger.info(
+                "Acceptance criterion added to story successfully",
+                **create_entity_context(story_id=story_id.strip()),
+                criterion_id=criterion_id,
+                operation="add_acceptance_criterion_to_story",
+            )
+
+            return story.to_dict()
+
+        except ValueError as e:
+            # Handle model validation errors
+            raise StoryValidationError(str(e))
+        except SQLAlchemyError as e:
+            self.story_repository.db_session.rollback()
+            raise DatabaseError(
+                f"Database operation failed while adding acceptance criterion to story: {str(e)}"
+            )
+
+    def update_acceptance_criterion_status(
+        self, story_id: str, criterion_id: str, met: bool
+    ) -> Dict[str, Any]:
+        """
+        Update the met status of an acceptance criterion within a story.
+
+        Args:
+            story_id: The unique identifier of the story
+            criterion_id: The unique identifier of the acceptance criterion
+            met: New met status
+
+        Returns:
+            Dict: Updated story with modified acceptance criterion
+
+        Raises:
+            StoryNotFoundError: If story is not found
+            StoryValidationError: If criterion not found or validation fails
+            DatabaseError: If database operation fails
+        """
+        # Validate input parameters
+        if not story_id or not story_id.strip():
+            raise StoryValidationError("Story ID cannot be empty")
+
+        if not criterion_id or not criterion_id.strip():
+            raise StoryValidationError("Acceptance criterion ID cannot be empty")
+
+        try:
+            self.logger.info(
+                "Updating acceptance criterion status",
+                **create_entity_context(story_id=story_id.strip()),
+                criterion_id=criterion_id.strip(),
+                new_met=met,
+                operation="update_acceptance_criterion_status",
+            )
+
+            # Get the story
+            story = self.story_repository.find_story_by_id(story_id.strip())
+            if not story:
+                raise StoryNotFoundError(f"Story with ID '{story_id}' not found")
+
+            # Find and update the acceptance criterion
+            criterion_found = False
+            updated_criteria = []
+            for criterion in story.structured_acceptance_criteria:
+                if criterion["id"] == criterion_id.strip():
+                    criterion["met"] = met
+                    criterion_found = True
+                updated_criteria.append(criterion)
+
+            if not criterion_found:
+                raise StoryValidationError(
+                    f"Acceptance criterion with ID '{criterion_id}' not found in story"
+                )
+
+            # Set the updated criteria list to trigger SQLAlchemy change detection
+            story.structured_acceptance_criteria = updated_criteria
+
+            # Force SQLAlchemy to recognize the change
+            from sqlalchemy.orm.attributes import flag_modified
+
+            flag_modified(story, "structured_acceptance_criteria")
+
+            # Save changes
+            self.story_repository.db_session.commit()
+            self.story_repository.db_session.refresh(story)
+
+            self.logger.info(
+                "Acceptance criterion status updated successfully",
+                **create_entity_context(story_id=story_id.strip()),
+                criterion_id=criterion_id.strip(),
+                new_met=met,
+                operation="update_acceptance_criterion_status",
+            )
+
+            return story.to_dict()
+
+        except ValueError as e:
+            # Handle model validation errors
+            raise StoryValidationError(str(e))
+        except SQLAlchemyError as e:
+            self.story_repository.db_session.rollback()
+            raise DatabaseError(
+                f"Database operation failed while updating acceptance criterion status: {str(e)}"
+            )
+
+    def update_acceptance_criterion_description(
+        self, story_id: str, criterion_id: str, description: str
+    ) -> Dict[str, Any]:
+        """
+        Update the description of an acceptance criterion within a story.
+
+        Args:
+            story_id: The unique identifier of the story
+            criterion_id: The unique identifier of the acceptance criterion
+            description: New criterion description
+
+        Returns:
+            Dict: Updated story with modified acceptance criterion
+
+        Raises:
+            StoryNotFoundError: If story is not found
+            StoryValidationError: If criterion not found or validation fails
+            DatabaseError: If database operation fails
+        """
+        # Validate input parameters
+        if not story_id or not story_id.strip():
+            raise StoryValidationError("Story ID cannot be empty")
+
+        if not criterion_id or not criterion_id.strip():
+            raise StoryValidationError("Acceptance criterion ID cannot be empty")
+
+        if not description or not description.strip():
+            raise StoryValidationError(
+                "Acceptance criterion description cannot be empty"
+            )
+
+        try:
+            self.logger.info(
+                "Updating acceptance criterion description",
+                **create_entity_context(story_id=story_id.strip()),
+                criterion_id=criterion_id.strip(),
+                new_description=description[:50] if description else None,
+                operation="update_acceptance_criterion_description",
+            )
+
+            # Get the story
+            story = self.story_repository.find_story_by_id(story_id.strip())
+            if not story:
+                raise StoryNotFoundError(f"Story with ID '{story_id}' not found")
+
+            # Find and update the acceptance criterion
+            criterion_found = False
+            updated_criteria = []
+            for criterion in story.structured_acceptance_criteria:
+                if criterion["id"] == criterion_id.strip():
+                    criterion["description"] = description.strip()
+                    criterion_found = True
+                updated_criteria.append(criterion)
+
+            if not criterion_found:
+                raise StoryValidationError(
+                    f"Acceptance criterion with ID '{criterion_id}' not found in story"
+                )
+
+            # Set the updated criteria list to trigger SQLAlchemy change detection
+            story.structured_acceptance_criteria = updated_criteria
+
+            # Force SQLAlchemy to recognize the change
+            from sqlalchemy.orm.attributes import flag_modified
+
+            flag_modified(story, "structured_acceptance_criteria")
+
+            # Save changes
+            self.story_repository.db_session.commit()
+            self.story_repository.db_session.refresh(story)
+
+            self.logger.info(
+                "Acceptance criterion description updated successfully",
+                **create_entity_context(story_id=story_id.strip()),
+                criterion_id=criterion_id.strip(),
+                operation="update_acceptance_criterion_description",
+            )
+
+            return story.to_dict()
+
+        except ValueError as e:
+            # Handle model validation errors
+            raise StoryValidationError(str(e))
+        except SQLAlchemyError as e:
+            self.story_repository.db_session.rollback()
+            raise DatabaseError(
+                f"Database operation failed while updating acceptance criterion description: {str(e)}"
+            )
+
+    def reorder_acceptance_criteria(
+        self, story_id: str, criterion_orders: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        Reorder acceptance criteria within a story.
+
+        Args:
+            story_id: The unique identifier of the story
+            criterion_orders: List of dicts with criterion_id and new order
+                Format: [{'criterion_id': 'id1', 'order': 1}, {'criterion_id': 'id2', 'order': 2}]
+
+        Returns:
+            Dict: Updated story with reordered acceptance criteria
+
+        Raises:
+            StoryNotFoundError: If story is not found
+            StoryValidationError: If validation fails
+            DatabaseError: If database operation fails
+        """
+        # Validate input parameters
+        if not story_id or not story_id.strip():
+            raise StoryValidationError("Story ID cannot be empty")
+
+        if not criterion_orders or not isinstance(criterion_orders, list):
+            raise StoryValidationError("Criterion orders must be a non-empty list")
+
+        try:
+            self.logger.info(
+                "Reordering acceptance criteria",
+                **create_entity_context(story_id=story_id.strip()),
+                criterion_count=len(criterion_orders),
+                operation="reorder_acceptance_criteria",
+            )
+
+            # Get the story
+            story = self.story_repository.find_story_by_id(story_id.strip())
+            if not story:
+                raise StoryNotFoundError(f"Story with ID '{story_id}' not found")
+
+            # Create mapping of criterion_id to new order
+            order_mapping = {}
+            for item in criterion_orders:
+                if (
+                    not isinstance(item, dict)
+                    or "criterion_id" not in item
+                    or "order" not in item
+                ):
+                    raise StoryValidationError(
+                        "Each criterion order item must have 'criterion_id' and 'order' fields"
+                    )
+                order_mapping[item["criterion_id"]] = item["order"]
+
+            # Update criterion orders
+            for criterion in story.structured_acceptance_criteria:
+                if criterion["id"] in order_mapping:
+                    criterion["order"] = order_mapping[criterion["id"]]
+
+            # Set criteria to trigger validation and change detection
+            story.structured_acceptance_criteria = story.structured_acceptance_criteria
+
+            # Force SQLAlchemy to recognize the change
+            from sqlalchemy.orm.attributes import flag_modified
+
+            flag_modified(story, "structured_acceptance_criteria")
+
+            # Save changes
+            self.story_repository.db_session.commit()
+            self.story_repository.db_session.refresh(story)
+
+            self.logger.info(
+                "Acceptance criteria reordered successfully",
+                **create_entity_context(story_id=story_id.strip()),
+                operation="reorder_acceptance_criteria",
+            )
+
+            return story.to_dict()
+
+        except ValueError as e:
+            # Handle model validation errors
+            raise StoryValidationError(str(e))
+        except SQLAlchemyError as e:
+            self.story_repository.db_session.rollback()
+            raise DatabaseError(
+                f"Database operation failed while reordering acceptance criteria: {str(e)}"
+            )
