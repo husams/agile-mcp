@@ -111,6 +111,12 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
+    - name: Ensure database schema is up to date
+      env:
+        PYTHONPATH: ${{ github.workspace }}
+      run: |
+        python scripts/ensure_database_schema.py
+
     - name: Run E2E tests with subprocess isolation
       env:
         PYTHONPATH: ${{ github.workspace }}
