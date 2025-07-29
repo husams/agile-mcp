@@ -1041,3 +1041,134 @@ def test_acceptance_criteria_database_error(story_service, mock_repository):
         story_service.reorder_acceptance_criteria(
             "test-story-id", [{"criterion_id": "ac-1", "order": 1}]
         )
+
+
+def test_add_comment_to_story_success(story_service, mock_repository):
+    """Test successful comment addition to story."""
+    # Mock story with existing comments
+    mock_story = Mock()
+    mock_story.comments = []
+    mock_story.to_dict.return_value = {
+        "id": "test-story",
+        "comments": [
+            {
+                "id": "comment-1",
+                "author_role": "Developer Agent",
+                "content": "Test comment",
+                "timestamp": "2025-07-29T10:00:00Z",
+                "reply_to_id": None,
+            }
+        ],
+    }
+    mock_repository.find_story_by_id.return_value = mock_story
+    mock_repository.update_story.return_value = None
+
+    story_service.add_comment_to_story("test-story", "Developer Agent", "Test comment")
+
+    # Verify repository calls
+    mock_repository.find_story_by_id.assert_called_once_with("test-story")
+    mock_repository.update_story.assert_called_once_with(mock_story)
+
+    # Verify comment was added
+    assert len(mock_story.comments) == 1
+    added_comment = mock_story.comments[0]
+    assert added_comment["author_role"] == "Developer Agent"
+    assert added_comment["content"] == "Test comment"
+    assert added_comment["reply_to_id"] is None
+    assert "id" in added_comment
+    assert "timestamp" in added_comment
+
+
+def test_add_comment_to_story_with_reply_to(story_service, mock_repository):
+    """Test adding comment that replies to existing comment."""
+    # Mock story with existing comment
+    existing_comment = {
+        "id": "existing-comment",
+        "author_role": "QA Agent",
+        "content": "Original comment",
+        "timestamp": "2025-07-29T09:00:00Z",
+        "reply_to_id": None,
+    }
+    mock_story = Mock()
+    mock_story.comments = [existing_comment]
+    mock_story.to_dict.return_value = {"id": "test-story", "comments": []}
+    mock_repository.find_story_by_id.return_value = mock_story
+    mock_repository.update_story.return_value = None
+
+    story_service.add_comment_to_story(
+        "test-story", "Human Reviewer", "Reply comment", "existing-comment"
+    )
+
+    # Verify comment was added with correct reply_to_id
+    assert len(mock_story.comments) == 2
+    reply_comment = mock_story.comments[1]
+    assert reply_comment["author_role"] == "Human Reviewer"
+    assert reply_comment["content"] == "Reply comment"
+    assert reply_comment["reply_to_id"] == "existing-comment"
+
+
+def test_add_comment_to_story_empty_story_id(story_service):
+    """Test adding comment with empty story ID raises validation error."""
+    with pytest.raises(StoryValidationError, match="Story ID cannot be empty"):
+        story_service.add_comment_to_story("", "Developer Agent", "Test comment")
+
+
+def test_add_comment_to_story_empty_author_role(story_service):
+    """Test adding comment with empty author role raises validation error."""
+    with pytest.raises(StoryValidationError, match="Author role cannot be empty"):
+        story_service.add_comment_to_story("test-story", "", "Test comment")
+
+
+def test_add_comment_to_story_empty_content(story_service):
+    """Test adding comment with empty content raises validation error."""
+    with pytest.raises(StoryValidationError, match="Comment content cannot be empty"):
+        story_service.add_comment_to_story("test-story", "Developer Agent", "")
+
+
+def test_add_comment_to_story_invalid_author_role(story_service):
+    """Test adding comment with invalid author role raises validation error."""
+    with pytest.raises(StoryValidationError, match="Author role must be one of"):
+        story_service.add_comment_to_story("test-story", "Invalid Role", "Test comment")
+
+
+def test_add_comment_to_story_content_too_long(story_service):
+    """Test adding comment with content exceeding 5000 characters raises error."""
+    long_content = "x" * 5001
+    with pytest.raises(StoryValidationError, match="cannot exceed 5000 characters"):
+        story_service.add_comment_to_story(
+            "test-story", "Developer Agent", long_content
+        )
+
+
+def test_add_comment_to_story_nonexistent_story(story_service, mock_repository):
+    """Test adding comment to non-existent story raises not found error."""
+    mock_repository.find_story_by_id.return_value = None
+
+    with pytest.raises(
+        StoryNotFoundError, match="Story with ID 'nonexistent' not found"
+    ):
+        story_service.add_comment_to_story(
+            "nonexistent", "Developer Agent", "Test comment"
+        )
+
+
+def test_add_comment_to_story_invalid_reply_to_id(story_service, mock_repository):
+    """Test adding comment with invalid reply_to_id raises validation error."""
+    mock_story = Mock()
+    mock_story.comments = []
+    mock_repository.find_story_by_id.return_value = mock_story
+
+    with pytest.raises(StoryValidationError, match="does not exist in story"):
+        story_service.add_comment_to_story(
+            "test-story", "Developer Agent", "Reply comment", "nonexistent-comment"
+        )
+
+
+def test_add_comment_to_story_database_error(story_service, mock_repository):
+    """Test adding comment handles database errors."""
+    mock_repository.find_story_by_id.side_effect = SQLAlchemyError("Database error")
+
+    with pytest.raises(DatabaseError, match="Database operation failed"):
+        story_service.add_comment_to_story(
+            "test-story", "Developer Agent", "Test comment"
+        )

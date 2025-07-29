@@ -154,3 +154,25 @@ class StoryRepository:
             )
         except SQLAlchemyError as e:
             raise e
+
+    def update_story(self, story: Story) -> Story:
+        """
+        Update an existing story with new data.
+
+        Args:
+            story: The story instance with updated data
+
+        Returns:
+            Story: The updated story instance
+
+        Raises:
+            SQLAlchemyError: If database operation fails
+        """
+        try:
+            self.db_session.merge(story)
+            self.db_session.commit()
+            self.db_session.refresh(story)
+            return story
+        except SQLAlchemyError as e:
+            self.db_session.rollback()
+            raise e

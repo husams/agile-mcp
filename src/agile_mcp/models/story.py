@@ -36,6 +36,9 @@ class Story(Base):
         tasks: A list of individual tasks that break down the story work.
             Each task has: {'id': str, 'description': str, 'completed': bool,
             'order': int}
+        comments: A list of comments related to the story for context and discussions.
+            Each comment has: {'id': str, 'author_role': str, 'content': str,
+            'timestamp': datetime, 'reply_to_id': str | None}
         status: Current state (ToDo, InProgress, Review, Done)
         priority: Priority level for ordering (higher number = higher priority),
             default 0
@@ -53,6 +56,9 @@ class Story(Base):
         JSON, nullable=False, default=list
     )
     tasks: Mapped[List[Dict[str, Any]]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
+    comments: Mapped[List[Dict[str, Any]]] = mapped_column(
         JSON, nullable=False, default=list
     )
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="ToDo")
@@ -105,6 +111,7 @@ class Story(Base):
         epic_id: str,
         tasks: Optional[List[Dict[str, Any]]] = None,
         structured_acceptance_criteria: Optional[List[Dict[str, Any]]] = None,
+        comments: Optional[List[Dict[str, Any]]] = None,
         status: str = "ToDo",
         priority: int = 0,
         created_at: Optional[datetime] = None,
@@ -118,6 +125,7 @@ class Story(Base):
         self.acceptance_criteria = acceptance_criteria
         self.structured_acceptance_criteria = structured_acceptance_criteria or []
         self.tasks = tasks or []
+        self.comments = comments or []
         self.epic_id = epic_id
         self.status = status
         self.priority = priority
@@ -132,6 +140,7 @@ class Story(Base):
             "acceptance_criteria": self.acceptance_criteria,
             "structured_acceptance_criteria": self.structured_acceptance_criteria,
             "tasks": self.tasks,
+            "comments": self.comments,
             "status": self.status,
             "priority": self.priority,
             "created_at": self.created_at.isoformat() if self.created_at else None,
@@ -283,6 +292,94 @@ class Story(Base):
             used_orders.add(criterion["order"])
 
         return structured_acceptance_criteria
+
+    @validates("comments")
+    def validate_comments(self, key, comments):
+        """Validate story comments."""
+        if not isinstance(comments, list):
+            raise ValueError("Comments must be a list")
+
+        required_fields = {"id", "author_role", "content", "timestamp", "reply_to_id"}
+        valid_author_roles = {
+            "Developer Agent",
+            "QA Agent",
+            "Human Reviewer",
+            "Scrum Master",
+        }
+        used_ids = set()
+
+        for i, comment in enumerate(comments):
+            if not isinstance(comment, dict):
+                raise ValueError(f"Comment at index {i} must be a dictionary")
+
+            # Check required fields
+            if not required_fields.issubset(comment.keys()):
+                missing = required_fields - comment.keys()
+                raise ValueError(
+                    f"Comment at index {i} missing required fields: {missing}"
+                )
+
+            # Validate id
+            if not isinstance(comment["id"], str) or not comment["id"].strip():
+                raise ValueError(
+                    f"Comment at index {i} must have a non-empty string id"
+                )
+            if comment["id"] in used_ids:
+                raise ValueError(f"Comment id '{comment['id']}' is not unique")
+            used_ids.add(comment["id"])
+
+            # Validate author_role
+            if (
+                not isinstance(comment["author_role"], str)
+                or comment["author_role"] not in valid_author_roles
+            ):
+                raise ValueError(
+                    f"Comment at index {i} author_role must be one of: "
+                    f"{', '.join(valid_author_roles)}"
+                )
+
+            # Validate content
+            if (
+                not isinstance(comment["content"], str)
+                or not comment["content"].strip()
+            ):
+                raise ValueError(
+                    f"Comment at index {i} must have non-empty string content"
+                )
+            if len(comment["content"]) > 5000:
+                raise ValueError(
+                    f"Comment at index {i} content cannot exceed 5000 characters"
+                )
+
+            # Validate timestamp
+            if not isinstance(comment["timestamp"], (str, datetime)):
+                raise ValueError(
+                    f"Comment at index {i} timestamp must be a string or datetime"
+                )
+
+            # Validate reply_to_id (can be None or string)
+            reply_to_id = comment["reply_to_id"]
+            if reply_to_id is not None and (
+                not isinstance(reply_to_id, str) or not reply_to_id.strip()
+            ):
+                raise ValueError(
+                    f"Comment at index {i} reply_to_id must be None or non-empty string"
+                )
+
+            # Check for circular references in reply_to_id
+            if reply_to_id and reply_to_id == comment["id"]:
+                raise ValueError(f"Comment at index {i} cannot reply to itself")
+
+        # Check that reply_to_id references exist within the comments
+        for i, comment in enumerate(comments):
+            reply_to_id = comment["reply_to_id"]
+            if reply_to_id and reply_to_id not in used_ids:
+                raise ValueError(
+                    f"Comment at index {i} reply_to_id '{reply_to_id}' "
+                    f"does not exist in comments"
+                )
+
+        return comments
 
     @validates("status")
     def validate_status(self, key, status):

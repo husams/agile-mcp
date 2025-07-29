@@ -96,6 +96,7 @@ def test_story_to_dict():
         "acceptance_criteria": ["AC1", "AC2", "AC3"],
         "structured_acceptance_criteria": [],
         "tasks": [],
+        "comments": [],
         "epic_id": "test-epic-1",
         "status": "InProgress",
         "priority": 0,
@@ -386,6 +387,7 @@ def test_story_to_dict_with_priority_created_at():
         "acceptance_criteria": ["Should include priority", "Should include created_at"],
         "structured_acceptance_criteria": [],
         "tasks": [],
+        "comments": [],
         "epic_id": "test-epic-1",
         "status": "Review",
         "priority": 7,
@@ -915,3 +917,347 @@ def test_story_to_dict_includes_structured_acceptance_criteria():
     assert story_dict["structured_acceptance_criteria"] == criteria
     assert len(story_dict["structured_acceptance_criteria"]) == 1
     assert story_dict["structured_acceptance_criteria"][0]["id"] == "ac-1"
+
+
+def test_story_with_empty_comments():
+    """Test Story creation with empty comments list."""
+    story = Story(
+        id="test-story-1",
+        title="Test Story",
+        description="Test story with empty comments",
+        acceptance_criteria=["Must work correctly"],
+        comments=[],
+        epic_id="test-epic-1",
+    )
+
+    assert story.comments == []
+    assert isinstance(story.comments, list)
+
+
+def test_story_with_comments():
+    """Test Story creation with comments."""
+    comments = [
+        {
+            "id": "comment-1",
+            "author_role": "Developer Agent",
+            "content": "This is a test comment",
+            "timestamp": "2025-07-29T10:00:00Z",
+            "reply_to_id": None,
+        },
+        {
+            "id": "comment-2",
+            "author_role": "Human Reviewer",
+            "content": "Reply to first comment",
+            "timestamp": "2025-07-29T11:00:00Z",
+            "reply_to_id": "comment-1",
+        },
+    ]
+
+    story = Story(
+        id="test-story-1",
+        title="Test Story",
+        description="Test story with comments",
+        acceptance_criteria=["Must work correctly"],
+        comments=comments,
+        epic_id="test-epic-1",
+    )
+
+    assert len(story.comments) == 2
+    assert story.comments[0]["id"] == "comment-1"
+    assert story.comments[0]["author_role"] == "Developer Agent"
+    assert story.comments[1]["reply_to_id"] == "comment-1"
+
+
+def test_story_to_dict_with_comments():
+    """Test Story to_dict includes comments."""
+    comments = [
+        {
+            "id": "comment-1",
+            "author_role": "QA Agent",
+            "content": "Found an issue",
+            "timestamp": "2025-07-29T12:00:00Z",
+            "reply_to_id": None,
+        }
+    ]
+
+    story = Story(
+        id="test-story-1",
+        title="Test Story",
+        description="Test story to_dict with comments",
+        acceptance_criteria=["Must work correctly"],
+        comments=comments,
+        epic_id="test-epic-1",
+    )
+
+    story_dict = story.to_dict()
+
+    assert "comments" in story_dict
+    assert story_dict["comments"] == comments
+    assert len(story_dict["comments"]) == 1
+    assert story_dict["comments"][0]["author_role"] == "QA Agent"
+
+
+def test_story_comments_validation_empty_list():
+    """Test comments validation allows empty list."""
+    story = Story(
+        id="test-story-1",
+        title="Test Story",
+        description="Test story with empty comments",
+        acceptance_criteria=["Must work correctly"],
+        comments=[],
+        epic_id="test-epic-1",
+    )
+
+    assert story.comments == []
+
+
+def test_story_comments_validation_invalid_type():
+    """Test comments validation rejects non-list types."""
+    with pytest.raises(ValueError, match="Comments must be a list"):
+        Story(
+            id="test-story-1",
+            title="Test Story",
+            description="Test story",
+            acceptance_criteria=["Must work correctly"],
+            comments="not-a-list",
+            epic_id="test-epic-1",
+        )
+
+
+def test_story_comments_validation_invalid_comment_structure():
+    """Test comments validation rejects invalid comment structure."""
+    invalid_comments = [
+        {
+            # Missing required fields
+            "id": "comment-1",
+            "content": "Missing fields",
+        }
+    ]
+
+    with pytest.raises(ValueError, match="missing required fields"):
+        Story(
+            id="test-story-1",
+            title="Test Story",
+            description="Test story",
+            acceptance_criteria=["Must work correctly"],
+            comments=invalid_comments,
+            epic_id="test-epic-1",
+        )
+
+
+def test_story_comments_validation_invalid_author_role():
+    """Test comments validation rejects invalid author roles."""
+    invalid_comments = [
+        {
+            "id": "comment-1",
+            "author_role": "Invalid Role",
+            "content": "Test comment",
+            "timestamp": "2025-07-29T10:00:00Z",
+            "reply_to_id": None,
+        }
+    ]
+
+    with pytest.raises(ValueError, match="author_role must be one of"):
+        Story(
+            id="test-story-1",
+            title="Test Story",
+            description="Test story",
+            acceptance_criteria=["Must work correctly"],
+            comments=invalid_comments,
+            epic_id="test-epic-1",
+        )
+
+
+def test_story_comments_validation_empty_content():
+    """Test comments validation rejects empty content."""
+    invalid_comments = [
+        {
+            "id": "comment-1",
+            "author_role": "Developer Agent",
+            "content": "",
+            "timestamp": "2025-07-29T10:00:00Z",
+            "reply_to_id": None,
+        }
+    ]
+
+    with pytest.raises(ValueError, match="must have non-empty string content"):
+        Story(
+            id="test-story-1",
+            title="Test Story",
+            description="Test story",
+            acceptance_criteria=["Must work correctly"],
+            comments=invalid_comments,
+            epic_id="test-epic-1",
+        )
+
+
+def test_story_comments_validation_content_too_long():
+    """Test comments validation rejects content exceeding 5000 characters."""
+    long_content = "x" * 5001
+    invalid_comments = [
+        {
+            "id": "comment-1",
+            "author_role": "Developer Agent",
+            "content": long_content,
+            "timestamp": "2025-07-29T10:00:00Z",
+            "reply_to_id": None,
+        }
+    ]
+
+    with pytest.raises(ValueError, match="cannot exceed 5000 characters"):
+        Story(
+            id="test-story-1",
+            title="Test Story",
+            description="Test story",
+            acceptance_criteria=["Must work correctly"],
+            comments=invalid_comments,
+            epic_id="test-epic-1",
+        )
+
+
+def test_story_comments_validation_duplicate_ids():
+    """Test comments validation rejects duplicate comment IDs."""
+    invalid_comments = [
+        {
+            "id": "comment-1",
+            "author_role": "Developer Agent",
+            "content": "First comment",
+            "timestamp": "2025-07-29T10:00:00Z",
+            "reply_to_id": None,
+        },
+        {
+            "id": "comment-1",  # Duplicate ID
+            "author_role": "QA Agent",
+            "content": "Second comment",
+            "timestamp": "2025-07-29T11:00:00Z",
+            "reply_to_id": None,
+        },
+    ]
+
+    with pytest.raises(ValueError, match="Comment id 'comment-1' is not unique"):
+        Story(
+            id="test-story-1",
+            title="Test Story",
+            description="Test story",
+            acceptance_criteria=["Must work correctly"],
+            comments=invalid_comments,
+            epic_id="test-epic-1",
+        )
+
+
+def test_story_comments_validation_invalid_reply_to_id():
+    """Test comments validation rejects invalid reply_to_id references."""
+    invalid_comments = [
+        {
+            "id": "comment-1",
+            "author_role": "Developer Agent",
+            "content": "First comment",
+            "timestamp": "2025-07-29T10:00:00Z",
+            "reply_to_id": None,
+        },
+        {
+            "id": "comment-2",
+            "author_role": "QA Agent",
+            "content": "Reply to non-existent comment",
+            "timestamp": "2025-07-29T11:00:00Z",
+            "reply_to_id": "non-existent",  # Invalid reference
+        },
+    ]
+
+    with pytest.raises(ValueError, match="reply_to_id 'non-existent' does not exist"):
+        Story(
+            id="test-story-1",
+            title="Test Story",
+            description="Test story",
+            acceptance_criteria=["Must work correctly"],
+            comments=invalid_comments,
+            epic_id="test-epic-1",
+        )
+
+
+def test_story_comments_validation_circular_reference():
+    """Test comments validation prevents circular references in reply_to_id."""
+    invalid_comments = [
+        {
+            "id": "comment-1",
+            "author_role": "Developer Agent",
+            "content": "Self-referencing comment",
+            "timestamp": "2025-07-29T10:00:00Z",
+            "reply_to_id": "comment-1",  # Self-reference
+        }
+    ]
+
+    with pytest.raises(ValueError, match="cannot reply to itself"):
+        Story(
+            id="test-story-1",
+            title="Test Story",
+            description="Test story",
+            acceptance_criteria=["Must work correctly"],
+            comments=invalid_comments,
+            epic_id="test-epic-1",
+        )
+
+
+def test_story_comments_database_persistence(in_memory_db):
+    """Test Story comments persist correctly in database."""
+    comments = [
+        {
+            "id": "comment-1",
+            "author_role": "Scrum Master",
+            "content": "Sprint planning comment",
+            "timestamp": "2025-07-29T09:00:00Z",
+            "reply_to_id": None,
+        }
+    ]
+
+    story = Story(
+        id="test-story-comments",
+        title="Test Story Comments",
+        description="Test story for comment persistence",
+        acceptance_criteria=["Comments must persist"],
+        comments=comments,
+        epic_id="test-epic-1",
+    )
+
+    in_memory_db.add(story)
+    in_memory_db.commit()
+
+    # Retrieve and verify
+    retrieved_story = (
+        in_memory_db.query(Story).filter(Story.id == "test-story-comments").first()
+    )
+
+    assert retrieved_story is not None
+    assert len(retrieved_story.comments) == 1
+    assert retrieved_story.comments[0]["id"] == "comment-1"
+    assert retrieved_story.comments[0]["author_role"] == "Scrum Master"
+    assert retrieved_story.comments[0]["content"] == "Sprint planning comment"
+
+
+def test_story_to_dict_includes_comments():
+    """Test Story to_dict method includes comments field."""
+    comments = [
+        {
+            "id": "comment-1",
+            "author_role": "Human Reviewer",
+            "content": "Looks good to me",
+            "timestamp": "2025-07-29T14:00:00Z",
+            "reply_to_id": None,
+        }
+    ]
+
+    story = Story(
+        id="test-story-1",
+        title="Test Story",
+        description="Test story to_dict with comments",
+        acceptance_criteria=["Must include comments"],
+        comments=comments,
+        epic_id="test-epic-1",
+    )
+
+    story_dict = story.to_dict()
+
+    assert "comments" in story_dict
+    assert story_dict["comments"] == comments
+    assert len(story_dict["comments"]) == 1
+    assert story_dict["comments"][0]["id"] == "comment-1"

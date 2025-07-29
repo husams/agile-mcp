@@ -4,6 +4,7 @@ Service layer for Story business logic operations.
 
 import os
 import uuid
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -1077,4 +1078,110 @@ class StoryService:
             raise DatabaseError(
                 f"Database operation failed while reordering acceptance "
                 f"criteria: {str(e)}"
+            )
+
+    def add_comment_to_story(
+        self,
+        story_id: str,
+        author_role: str,
+        content: str,
+        reply_to_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Add a new comment to a story.
+
+        Args:
+            story_id: The unique identifier of the story
+            author_role: Role of the commenter
+            content: The comment text content
+            reply_to_id: Optional ID of comment this is replying to
+
+        Returns:
+            Dict: Updated story with the new comment
+
+        Raises:
+            StoryNotFoundError: If story is not found
+            StoryValidationError: If validation fails
+            DatabaseError: If database operation fails
+        """
+        # Validate input parameters
+        if not story_id or not story_id.strip():
+            raise StoryValidationError("Story ID cannot be empty")
+
+        if not author_role or not author_role.strip():
+            raise StoryValidationError("Author role cannot be empty")
+
+        if not content or not content.strip():
+            raise StoryValidationError("Comment content cannot be empty")
+
+        # Validate author role
+        valid_author_roles = {
+            "Developer Agent",
+            "QA Agent",
+            "Human Reviewer",
+            "Scrum Master",
+        }
+        if author_role not in valid_author_roles:
+            raise StoryValidationError(
+                f"Author role must be one of: {', '.join(valid_author_roles)}"
+            )
+
+        # Validate content length
+        if len(content) > 5000:
+            raise StoryValidationError("Comment content cannot exceed 5000 characters")
+
+        try:
+            self.logger.info(
+                "Adding comment to story",
+                **create_entity_context(story_id=story_id.strip()),
+                author_role=author_role,
+                content_length=len(content),
+                operation="add_comment_to_story",
+            )
+
+            # Get the story
+            story = self.story_repository.find_story_by_id(story_id.strip())
+            if not story:
+                raise StoryNotFoundError(f"Story with ID '{story_id}' not found")
+
+            # Validate reply_to_id if provided
+            if reply_to_id:
+                existing_comment_ids = {comment.get("id") for comment in story.comments}
+                if reply_to_id not in existing_comment_ids:
+                    raise StoryValidationError(
+                        f"Reply to comment ID '{reply_to_id}' does not exist in story"
+                    )
+
+            # Generate comment ID and create new comment
+            comment_id = str(uuid.uuid4())
+            new_comment = {
+                "id": comment_id,
+                "author_role": author_role,
+                "content": content.strip(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "reply_to_id": reply_to_id,
+            }
+
+            # Add comment to story
+            story.comments.append(new_comment)
+
+            # Update story in repository
+            self.story_repository.update_story(story)
+
+            self.logger.info(
+                "Comment added to story successfully",
+                **create_entity_context(story_id=story_id.strip()),
+                comment_id=comment_id,
+                operation="add_comment_to_story",
+            )
+
+            return story.to_dict()
+
+        except ValueError as e:
+            # Handle model validation errors
+            raise StoryValidationError(str(e))
+        except SQLAlchemyError as e:
+            self.story_repository.db_session.rollback()
+            raise DatabaseError(
+                f"Database operation failed while adding comment to story: {str(e)}"
             )

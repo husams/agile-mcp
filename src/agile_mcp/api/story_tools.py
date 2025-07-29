@@ -1571,3 +1571,111 @@ def register_story_tools(mcp: FastMCP) -> None:
             raise McpError(
                 ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
             )
+
+    @mcp.tool("comments.addToStory")
+    def add_comment_to_story(
+        story_id: str, author_role: str, content: str, reply_to_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Add a new comment to a story for context and discussions.
+
+        Args:
+            story_id: The unique identifier of the story
+            author_role: Role of the commenter ('Developer Agent', 'QA Agent',
+                'Human Reviewer', 'Scrum Master')
+            content: The comment text content (max 5000 characters)
+            reply_to_id: Optional ID of comment this is replying to for threading
+
+        Returns:
+            Dict containing the updated story with the new comment
+
+        Raises:
+            McpError: If validation fails, story not found, or database operation fails
+        """
+        request_id = str(uuid.uuid4())
+        try:
+            logger.info(
+                "Processing add comment to story request",
+                **create_request_context(
+                    request_id=request_id, tool_name="comments.addToStory"
+                ),
+                **create_entity_context(story_id=story_id),
+                author_role=author_role,
+                content_length=len(content) if content else 0,
+            )
+
+            db_session = get_db()
+            try:
+                story_repository = StoryRepository(db_session)
+                story_service = StoryService(story_repository)
+
+                story_dict = story_service.add_comment_to_story(
+                    story_id, author_role, content, reply_to_id
+                )
+                story_response = StoryResponse(**story_dict)
+
+                logger.info(
+                    "Add comment to story request completed successfully",
+                    **create_request_context(
+                        request_id=request_id, tool_name="comments.addToStory"
+                    ),
+                    **create_entity_context(story_id=story_id),
+                )
+
+                return story_response.model_dump()
+
+            finally:
+                db_session.close()
+
+        except StoryValidationError as e:
+            logger.error(
+                "Story validation error in add comment to story",
+                **create_request_context(
+                    request_id=request_id, tool_name="comments.addToStory"
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type="StoryValidationError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(
+                ErrorData(code=-32001, message=f"Validation error: {str(e)}")
+            )
+        except StoryNotFoundError as e:
+            logger.error(
+                "Story not found error in add comment to story",
+                **create_request_context(
+                    request_id=request_id, tool_name="comments.addToStory"
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type="StoryNotFoundError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(ErrorData(code=-32001, message=f"Story not found: {str(e)}"))
+        except DatabaseError as e:
+            logger.error(
+                "Database error in add comment to story",
+                **create_request_context(
+                    request_id=request_id, tool_name="comments.addToStory"
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type="DatabaseError",
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(ErrorData(code=-32001, message=f"Database error: {str(e)}"))
+        except Exception as e:
+            logger.error(
+                "Unexpected error in add comment to story",
+                **create_request_context(
+                    request_id=request_id, tool_name="comments.addToStory"
+                ),
+                **create_entity_context(story_id=story_id),
+                error_type=type(e).__name__,
+                error_message=str(e),
+                mcp_error_code=-32001,
+            )
+            raise McpError(
+                ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
+            )
