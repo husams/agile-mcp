@@ -3,7 +3,7 @@ Repository layer for Story data access operations.
 """
 
 import uuid
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -20,7 +20,15 @@ class StoryRepository:
         self.db_session = db_session
 
     def create_story(
-        self, title: str, description: str, acceptance_criteria: List[str], epic_id: str
+        self,
+        title: str,
+        description: str,
+        acceptance_criteria: List[str],
+        epic_id: str,
+        tasks: Optional[List[Dict[str, Any]]] = None,
+        structured_acceptance_criteria: Optional[List[Dict[str, Any]]] = None,
+        comments: Optional[List[Dict[str, Any]]] = None,
+        priority: Optional[int] = None,
     ) -> Story:
         """
         Create a new story with default "ToDo" status.
@@ -31,6 +39,10 @@ class StoryRepository:
             acceptance_criteria: A list of conditions that must be met for the
                 story to be considered complete
             epic_id: Foreign key reference to the parent Epic
+            tasks: Optional list of task dictionaries
+            structured_acceptance_criteria: Optional list of structured AC dictionaries
+            comments: Optional list of comment dictionaries
+            priority: Optional story priority (integer)
 
         Returns:
             Story: The created story instance
@@ -56,6 +68,10 @@ class StoryRepository:
                 acceptance_criteria=acceptance_criteria,
                 epic_id=epic_id,
                 status="ToDo",
+                tasks=tasks or [],
+                structured_acceptance_criteria=structured_acceptance_criteria or [],
+                comments=comments or [],
+                priority=priority or 0,
             )
 
             self.db_session.add(story)
@@ -153,4 +169,42 @@ class StoryRepository:
                 .all()
             )
         except SQLAlchemyError as e:
+            raise e
+
+    def update_story(self, story_id: str, updates: Dict[str, Any]) -> Optional[Story]:
+        """
+        Update story with partial field changes.
+
+        Args:
+            story_id: The unique identifier of the story
+            updates: Dictionary of fields to update
+
+        Returns:
+            Optional[Story]: The updated story instance if found, None otherwise
+
+        Raises:
+            SQLAlchemyError: If database operation fails
+        """
+        try:
+            story = self.db_session.query(Story).filter(Story.id == story_id).first()
+            if not story:
+                return None
+
+            # Update basic fields
+            for field, value in updates.items():
+                if hasattr(story, field):
+                    setattr(story, field, value)
+
+                    # For JSON fields, need to flag as modified
+                    if field in ["tasks", "structured_acceptance_criteria", "comments"]:
+                        from sqlalchemy.orm.attributes import flag_modified
+
+                        flag_modified(story, field)
+
+            self.db_session.commit()
+            self.db_session.refresh(story)
+            return story
+
+        except SQLAlchemyError as e:
+            self.db_session.rollback()
             raise e

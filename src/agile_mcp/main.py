@@ -8,6 +8,7 @@ It initializes the FastMCP server instance and handles MCP protocol communicatio
 import sys
 from typing import Optional
 
+from dotenv import load_dotenv
 from fastmcp import FastMCP
 
 try:
@@ -18,7 +19,7 @@ try:
         register_story_tools,
     )
     from .utils.logging_config import configure_logging, get_logger
-except ImportError:
+except ImportError:  # type: ignore
     # Handle when running as script directly
     import os
 
@@ -85,6 +86,8 @@ def main() -> None:
 
     Sets up the server and runs it with stdio transport for MCP communication.
     """
+    # Load environment variables from .env file
+    load_dotenv()
     server: Optional[FastMCP] = None
 
     try:
