@@ -19,13 +19,13 @@ try:
         register_story_tools,
     )
     from .utils.logging_config import configure_logging, get_logger
-except ImportError:
+except ImportError:  # type: ignore
     # Handle when running as script directly
     import os
 
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from api import (
-        register_artifact_tools,  # type: ignore
+    from api import (  # type: ignore
+        register_artifact_tools,
         register_backlog_tools,
         register_epic_tools,
         register_story_tools,
