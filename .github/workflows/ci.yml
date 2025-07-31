@@ -122,6 +122,7 @@ jobs:
         PYTHONPATH: ${{ github.workspace }}
         MCP_TEST_MODE: true
         SQL_DEBUG: false
+      timeout-minutes: 10  # Add timeout to prevent hanging
       run: |
         pytest tests/e2e/ --verbose --tb=short --maxfail=5 --junitxml=pytest-report.xml
 

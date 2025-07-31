@@ -3,69 +3,45 @@ End-to-end tests for backlog.getNextReadyStory via MCP JSON-RPC.
 """
 
 import json
-import os
-import subprocess
-import sys
-from pathlib import Path
-
-import pytest
 
 from .test_helpers import validate_json_response, validate_jsonrpc_response_format
 
-
-@pytest.fixture
-def mcp_server_process(isolated_test_database):
-    """Start MCP server as subprocess with isolated test database."""
-    # Get the path to the run_server.py file
-    run_server_path = Path(__file__).parent.parent.parent / "run_server.py"
-
-    # Set up environment to use isolated test database for CI compatibility
-    env = os.environ.copy()
-    # Use isolated test database to prevent CI conflicts
-    env["TEST_DATABASE_URL"] = f"sqlite:///{isolated_test_database}"
-
-    # Start server process with isolated test database connection
-    process = subprocess.Popen(
-        [sys.executable, str(run_server_path)],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        env=env,
-    )
-
-    yield process
-
-    # Cleanup
-    process.terminate()
-    process.wait()
+# Use the robust fixture from conftest.py instead of custom subprocess handling
 
 
-def send_jsonrpc_request(process, method, params=None):
+def send_jsonrpc_request(process_or_fixture, method, params=None):
     """Send JSON-RPC request to MCP server and return response."""
-    request = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params or {}}
+    # Handle both direct process and mcp_server_subprocess fixture tuple
+    if isinstance(process_or_fixture, tuple):
+        process, env_vars, communicate_json_rpc = process_or_fixture
+        # Use the communicate function from the fixture
+        return communicate_json_rpc(method, params)
+    else:
+        # Legacy support for direct process
+        process = process_or_fixture
+        request = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params or {}}
 
-    request_json = json.dumps(request) + "\n"
-    process.stdin.write(request_json)
-    process.stdin.flush()
+        request_json = json.dumps(request) + "\n"
+        process.stdin.write(request_json)
+        process.stdin.flush()
 
-    # Read response
-    response_line = process.stdout.readline()
-    if not response_line:
-        return None
+        # Read response
+        response_line = process.stdout.readline()
+        if not response_line:
+            return None
 
-    try:
-        response = json.loads(response_line.strip())
-        return response
-    except json.JSONDecodeError:
-        return {"error": "Invalid JSON response", "raw": response_line}
+        try:
+            response = json.loads(response_line.strip())
+            return response
+        except json.JSONDecodeError:
+            return {"error": "Invalid JSON response", "raw": response_line}
 
 
-def initialize_server(process):
+def initialize_server(process_or_fixture):
     """Initialize the MCP server."""
     # Initialize server first
     send_jsonrpc_request(
-        process,
+        process_or_fixture,
         "initialize",
         {
             "protocolVersion": "2024-11-05",
@@ -75,10 +51,30 @@ def initialize_server(process):
     )
 
     # Send initialized notification (no response expected)
-    request = {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}}
-    request_json = json.dumps(request) + "\n"
-    process.stdin.write(request_json)
-    process.stdin.flush()
+    # Handle both direct process and mcp_server_subprocess fixture tuple
+    if isinstance(process_or_fixture, tuple):
+        process, env_vars, communicate_json_rpc = process_or_fixture
+        # For notifications, we need to send directly since communicate_json_rpc
+        # expects a response
+        request = {
+            "jsonrpc": "2.0",
+            "method": "notifications/initialized",
+            "params": {},
+        }
+        request_json = json.dumps(request) + "\n"
+        process.stdin.write(request_json)
+        process.stdin.flush()
+    else:
+        # Legacy support for direct process
+        process = process_or_fixture
+        request = {
+            "jsonrpc": "2.0",
+            "method": "notifications/initialized",
+            "params": {},
+        }
+        request_json = json.dumps(request) + "\n"
+        process.stdin.write(request_json)
+        process.stdin.flush()
 
 
 def create_test_epic(process, title="E2E Test Epic"):
@@ -203,53 +199,53 @@ class TestGetNextReadyStoryE2E:
     """End-to-end tests for getNextReadyStory tool."""
 
     def test_e2e_get_next_ready_story_with_complex_dependency_scenarios(
-        self, mcp_server_process
+        self, mcp_server_subprocess
     ):
         """Test complete E2E workflow focusing on dependency resolution behavior."""
-        initialize_server(mcp_server_process)
+        initialize_server(mcp_server_subprocess)
 
         # Create test epic via JSON-RPC
         epic_id = create_test_epic(
-            mcp_server_process, "E2E Complex Dependency Test Epic"
+            mcp_server_subprocess, "E2E Complex Dependency Test Epic"
         )
 
         # Create stories with descriptive names for dependency testing
         story_a_id = create_test_story(
-            mcp_server_process,
+            mcp_server_subprocess,
             epic_id,
             "E2E-Test-Story-A-Blocked",
             "E2E test story that depends on Story B",
         )
 
         story_b_id = create_test_story(
-            mcp_server_process,
+            mcp_server_subprocess,
             epic_id,
             "E2E-Test-Story-B-Blocked",
             "E2E test story that depends on Story C",
         )
 
         story_c_id = create_test_story(
-            mcp_server_process,
+            mcp_server_subprocess,
             epic_id,
             "E2E-Test-Story-C-Ready",
             "E2E test story that is ready to work on",
         )
 
         story_d_id = create_test_story(
-            mcp_server_process,
+            mcp_server_subprocess,
             epic_id,
             "E2E-Test-Story-D-Ready",
             "E2E test story that is ready to work on",
         )
 
         # Add dependencies via JSON-RPC to create chain: A->B->C, D independent
-        add_story_dependency(mcp_server_process, story_a_id, story_b_id)
-        add_story_dependency(mcp_server_process, story_b_id, story_c_id)
+        add_story_dependency(mcp_server_subprocess, story_a_id, story_b_id)
+        add_story_dependency(mcp_server_subprocess, story_b_id, story_c_id)
 
         # Test behavior: call getNextReadyStory multiple times and track results
         # This validates the tool's behavior in production environment
         response = send_jsonrpc_request(
-            mcp_server_process,
+            mcp_server_subprocess,
             "tools/call",
             {"name": "backlog.getNextReadyStory", "arguments": {}},
         )
@@ -279,11 +275,11 @@ class TestGetNextReadyStoryE2E:
             # This validates that dependent stories become available
             if returned_story_id == story_c_id:
                 # Mark C as Done, which should make B available
-                update_story_status(mcp_server_process, story_c_id, "Done")
+                update_story_status(mcp_server_subprocess, story_c_id, "Done")
 
                 # Now B should become available (its dependency C is done)
                 response = send_jsonrpc_request(
-                    mcp_server_process,
+                    mcp_server_subprocess,
                     "tools/call",
                     {"name": "backlog.getNextReadyStory", "arguments": {}},
                 )
@@ -296,10 +292,10 @@ class TestGetNextReadyStoryE2E:
 
                     if next_story_id == story_b_id:
                         # Mark B as Done, which should make A available
-                        update_story_status(mcp_server_process, story_b_id, "Done")
+                        update_story_status(mcp_server_subprocess, story_b_id, "Done")
 
                         response = send_jsonrpc_request(
-                            mcp_server_process,
+                            mcp_server_subprocess,
                             "tools/call",
                             {"name": "backlog.getNextReadyStory", "arguments": {}},
                         )
@@ -311,18 +307,18 @@ class TestGetNextReadyStoryE2E:
 
         # Clean up all our test stories to avoid polluting production database
         for story_id in [story_a_id, story_b_id, story_c_id, story_d_id]:
-            update_story_status(mcp_server_process, story_id, "Done")
+            update_story_status(mcp_server_subprocess, story_id, "Done")
 
-    def test_e2e_status_update_persistence(self, mcp_server_process):
+    def test_e2e_status_update_persistence(self, mcp_server_subprocess):
         """Test that status updates are properly persisted in the database."""
-        initialize_server(mcp_server_process)
+        initialize_server(mcp_server_subprocess)
 
         # Create test epic via JSON-RPC
-        epic_id = create_test_epic(mcp_server_process, "E2E Persistence Test Epic")
+        epic_id = create_test_epic(mcp_server_subprocess, "E2E Persistence Test Epic")
 
         # Create a test story
         story_id = create_test_story(
-            mcp_server_process,
+            mcp_server_subprocess,
             epic_id,
             "E2E-Persistence-Test-Story",
             "Test status update persistence",
@@ -330,7 +326,7 @@ class TestGetNextReadyStoryE2E:
 
         # First verify our story exists in ToDo status
         verify_response = send_jsonrpc_request(
-            mcp_server_process,
+            mcp_server_subprocess,
             "tools/call",
             {"name": "backlog.getStory", "arguments": {"story_id": story_id}},
         )
@@ -347,7 +343,7 @@ class TestGetNextReadyStoryE2E:
 
         for attempt in range(max_attempts):
             response = send_jsonrpc_request(
-                mcp_server_process,
+                mcp_server_subprocess,
                 "tools/call",
                 {"name": "backlog.getNextReadyStory", "arguments": {}},
             )
@@ -364,14 +360,14 @@ class TestGetNextReadyStoryE2E:
                 break
             else:
                 # Mark this story as Done so we can move to the next one
-                update_story_status(mcp_server_process, returned_story_id, "Done")
+                update_story_status(mcp_server_subprocess, returned_story_id, "Done")
 
         # If we found our story, test persistence
         if our_story_found:
 
             # Verify persistence by calling getStory to check status
             verify_response = send_jsonrpc_request(
-                mcp_server_process,
+                mcp_server_subprocess,
                 "tools/call",
                 {"name": "backlog.getStory", "arguments": {"story_id": story_id}},
             )
@@ -382,7 +378,7 @@ class TestGetNextReadyStoryE2E:
             # Verify that calling again doesn't return the same story (it's now
             # InProgress)
             response2 = send_jsonrpc_request(
-                mcp_server_process,
+                mcp_server_subprocess,
                 "tools/call",
                 {"name": "backlog.getNextReadyStory", "arguments": {}},
             )
@@ -395,25 +391,27 @@ class TestGetNextReadyStoryE2E:
                 assert result2["status"] == "InProgress"
 
         # Clean up - mark our test story as Done
-        update_story_status(mcp_server_process, story_id, "Done")
+        update_story_status(mcp_server_subprocess, story_id, "Done")
 
-    def test_e2e_interaction_with_existing_dependency_tools(self, mcp_server_process):
+    def test_e2e_interaction_with_existing_dependency_tools(
+        self, mcp_server_subprocess
+    ):
         """Test interaction with existing dependency and story tools."""
-        initialize_server(mcp_server_process)
+        initialize_server(mcp_server_subprocess)
 
         # Create test epic via JSON-RPC
-        epic_id = create_test_epic(mcp_server_process, "E2E Interaction Test Epic")
+        epic_id = create_test_epic(mcp_server_subprocess, "E2E Interaction Test Epic")
 
         # Create test stories with unique names
         story_1_id = create_test_story(
-            mcp_server_process,
+            mcp_server_subprocess,
             epic_id,
             "E2E-Interaction-Story-1",
             "First story for dependency interaction test",
         )
 
         story_2_id = create_test_story(
-            mcp_server_process,
+            mcp_server_subprocess,
             epic_id,
             "E2E-Interaction-Story-2",
             "Second story for dependency interaction test",
@@ -422,7 +420,7 @@ class TestGetNextReadyStoryE2E:
         # Verify both stories exist in ToDo status
         for story_id in [story_1_id, story_2_id]:
             verify_response = send_jsonrpc_request(
-                mcp_server_process,
+                mcp_server_subprocess,
                 "tools/call",
                 {"name": "backlog.getStory", "arguments": {"story_id": story_id}},
             )
@@ -430,7 +428,9 @@ class TestGetNextReadyStoryE2E:
             assert story["status"] == "ToDo"
 
         # Add dependency: story 2 depends on story 1
-        dep_response = add_story_dependency(mcp_server_process, story_2_id, story_1_id)
+        dep_response = add_story_dependency(
+            mcp_server_subprocess, story_2_id, story_1_id
+        )
         validate_jsonrpc_response_format(dep_response)
 
         # Test dependency behavior: try to get next ready story multiple times
@@ -440,7 +440,7 @@ class TestGetNextReadyStoryE2E:
 
         for attempt in range(max_attempts):
             response = send_jsonrpc_request(
-                mcp_server_process,
+                mcp_server_subprocess,
                 "tools/call",
                 {"name": "backlog.getNextReadyStory", "arguments": {}},
             )
@@ -458,11 +458,11 @@ class TestGetNextReadyStoryE2E:
             elif returned_id == story_1_id:
                 # Great! We got story 1, which should be available
                 # Now complete story 1 and verify story 2 becomes available
-                update_story_status(mcp_server_process, story_1_id, "Done")
+                update_story_status(mcp_server_subprocess, story_1_id, "Done")
 
                 # Now story 2 should become available
                 response2 = send_jsonrpc_request(
-                    mcp_server_process,
+                    mcp_server_subprocess,
                     "tools/call",
                     {"name": "backlog.getNextReadyStory", "arguments": {}},
                 )
@@ -475,7 +475,7 @@ class TestGetNextReadyStoryE2E:
                 break
             else:
                 # Got some other story, mark it as done and continue
-                update_story_status(mcp_server_process, returned_id, "Done")
+                update_story_status(mcp_server_subprocess, returned_id, "Done")
 
         # Validate that story 2 was not returned while blocked
         assert (
@@ -483,17 +483,17 @@ class TestGetNextReadyStoryE2E:
         ), "Story 2 should not be returned while its dependency is incomplete"
 
         # Clean up test stories
-        update_story_status(mcp_server_process, story_1_id, "Done")
-        update_story_status(mcp_server_process, story_2_id, "Done")
+        update_story_status(mcp_server_subprocess, story_1_id, "Done")
+        update_story_status(mcp_server_subprocess, story_2_id, "Done")
 
-    def test_e2e_empty_response_handling(self, mcp_server_process):
+    def test_e2e_empty_response_handling(self, mcp_server_subprocess):
         """Test E2E response validation and format compliance with production data."""
-        initialize_server(mcp_server_process)
+        initialize_server(mcp_server_subprocess)
 
         # Since we're testing against production database which may have stories,
         # we test the response format validation rather than expecting empty
         response = send_jsonrpc_request(
-            mcp_server_process,
+            mcp_server_subprocess,
             "tools/call",
             {"name": "backlog.getNextReadyStory", "arguments": {}},
         )
@@ -534,21 +534,21 @@ class TestGetNextReadyStoryE2E:
             # Status should be InProgress since getNextReadyStory updates it
             assert parsed_response["status"] == "InProgress"
 
-    def test_e2e_tool_response_format(self, mcp_server_process):
+    def test_e2e_tool_response_format(self, mcp_server_subprocess):
         """Test that the tool returns correctly formatted response."""
-        initialize_server(mcp_server_process)
+        initialize_server(mcp_server_subprocess)
 
         # Create test epic via JSON-RPC
-        epic_id = create_test_epic(mcp_server_process, "E2E Format Test Epic")
+        epic_id = create_test_epic(mcp_server_subprocess, "E2E Format Test Epic")
 
         # Create a story with all fields via JSON-RPC
         story_id = create_test_story(
-            mcp_server_process, epic_id, "Format Test Story", "Test response format"
+            mcp_server_subprocess, epic_id, "Format Test Story", "Test response format"
         )
 
         # Call the tool via JSON-RPC
         response = send_jsonrpc_request(
-            mcp_server_process,
+            mcp_server_subprocess,
             "tools/call",
             {"name": "backlog.getNextReadyStory", "arguments": {}},
         )
@@ -580,4 +580,4 @@ class TestGetNextReadyStoryE2E:
             assert result["title"] == "Format Test Story"
 
         # Clean up test story
-        update_story_status(mcp_server_process, story_id, "Done")
+        update_story_status(mcp_server_subprocess, story_id, "Done")
