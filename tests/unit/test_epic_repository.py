@@ -9,6 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.agile_mcp.models.epic import Base
+from src.agile_mcp.models.project import Project
 from src.agile_mcp.repositories.epic_repository import EpicRepository
 
 
@@ -24,19 +25,33 @@ def in_memory_db():
 
 
 @pytest.fixture
+def test_project(in_memory_db):
+    """Create a test project for epic tests."""
+    project = Project(
+        id="test-project-id",
+        name="Test Project",
+        description="A test project for epic testing",
+    )
+    in_memory_db.add(project)
+    in_memory_db.commit()
+    return project
+
+
+@pytest.fixture
 def epic_repository(in_memory_db):
     """Create Epic repository with test database session."""
     return EpicRepository(in_memory_db)
 
 
-def test_create_epic(epic_repository):
+def test_create_epic(epic_repository, test_project):
     """Test epic creation through repository."""
-    epic = epic_repository.create_epic("Test Epic", "Test description")
+    epic = epic_repository.create_epic("Test Epic", "Test description", test_project.id)
 
     assert epic.id is not None
     assert epic.title == "Test Epic"
     assert epic.description == "Test description"
     assert epic.status == "Draft"
+    assert epic.project_id == test_project.id
 
     # Verify UUID format
     uuid.UUID(epic.id)  # This will raise ValueError if not valid UUID
@@ -48,12 +63,12 @@ def test_find_all_epics_empty(epic_repository):
     assert epics == []
 
 
-def test_find_all_epics_with_data(epic_repository):
+def test_find_all_epics_with_data(epic_repository, test_project):
     """Test finding all epics with existing data."""
     # Create test epics
-    epic1 = epic_repository.create_epic("Epic 1", "Description 1")
-    epic2 = epic_repository.create_epic("Epic 2", "Description 2")
-    epic3 = epic_repository.create_epic("Epic 3", "Description 3")
+    epic1 = epic_repository.create_epic("Epic 1", "Description 1", test_project.id)
+    epic2 = epic_repository.create_epic("Epic 2", "Description 2", test_project.id)
+    epic3 = epic_repository.create_epic("Epic 3", "Description 3", test_project.id)
 
     # Retrieve all epics
     epics = epic_repository.find_all_epics()
@@ -65,9 +80,11 @@ def test_find_all_epics_with_data(epic_repository):
     assert epic3.id in epic_ids
 
 
-def test_find_epic_by_id_exists(epic_repository):
+def test_find_epic_by_id_exists(epic_repository, test_project):
     """Test finding epic by ID when it exists."""
-    created_epic = epic_repository.create_epic("Findable Epic", "Can be found")
+    created_epic = epic_repository.create_epic(
+        "Findable Epic", "Can be found", test_project.id
+    )
 
     found_epic = epic_repository.find_epic_by_id(created_epic.id)
 
@@ -86,21 +103,21 @@ def test_find_epic_by_id_not_exists(epic_repository):
     assert found_epic is None
 
 
-def test_create_epic_generates_unique_ids(epic_repository):
+def test_create_epic_generates_unique_ids(epic_repository, test_project):
     """Test that multiple epic creations generate unique IDs."""
-    epic1 = epic_repository.create_epic("Epic 1", "Description 1")
-    epic2 = epic_repository.create_epic("Epic 2", "Description 2")
-    epic3 = epic_repository.create_epic("Epic 3", "Description 3")
+    epic1 = epic_repository.create_epic("Epic 1", "Description 1", test_project.id)
+    epic2 = epic_repository.create_epic("Epic 2", "Description 2", test_project.id)
+    epic3 = epic_repository.create_epic("Epic 3", "Description 3", test_project.id)
 
     assert epic1.id != epic2.id
     assert epic2.id != epic3.id
     assert epic1.id != epic3.id
 
 
-def test_update_epic_status_success(epic_repository):
+def test_update_epic_status_success(epic_repository, test_project):
     """Test successful epic status update."""
     # Create epic
-    epic = epic_repository.create_epic("Test Epic", "Test description")
+    epic = epic_repository.create_epic("Test Epic", "Test description", test_project.id)
     original_id = epic.id
 
     # Update status
@@ -117,12 +134,14 @@ def test_update_epic_status_success(epic_repository):
     assert found_epic.status == "Ready"
 
 
-def test_update_epic_status_all_valid_statuses(epic_repository):
+def test_update_epic_status_all_valid_statuses(epic_repository, test_project):
     """Test updating epic status to all valid status values."""
     valid_statuses = ["Draft", "Ready", "In Progress", "Done", "On Hold"]
 
     for status in valid_statuses:
-        epic = epic_repository.create_epic(f"Epic {status}", "Test description")
+        epic = epic_repository.create_epic(
+            f"Epic {status}", "Test description", test_project.id
+        )
         updated_epic = epic_repository.update_epic_status(epic.id, status)
 
         assert updated_epic.status == status
@@ -141,19 +160,21 @@ def test_update_epic_status_not_found(epic_repository):
     assert updated_epic is None
 
 
-def test_update_epic_status_invalid_status_constraint(epic_repository):
+def test_update_epic_status_invalid_status_constraint(epic_repository, test_project):
     """Test updating epic with invalid status triggers validation error."""
-    epic = epic_repository.create_epic("Test Epic", "Test description")
+    epic = epic_repository.create_epic("Test Epic", "Test description", test_project.id)
 
     # This should fail due to Epic model validation
     with pytest.raises(ValueError):
         epic_repository.update_epic_status(epic.id, "InvalidStatus")
 
 
-def test_update_epic_status_transaction_rollback(epic_repository, in_memory_db):
+def test_update_epic_status_transaction_rollback(
+    epic_repository, test_project, in_memory_db
+):
     """Test that failed update operations rollback properly."""
     # Create epic
-    epic = epic_repository.create_epic("Test Epic", "Test description")
+    epic = epic_repository.create_epic("Test Epic", "Test description", test_project.id)
     original_status = epic.status
 
     # Attempt invalid update that should fail and rollback
@@ -167,9 +188,9 @@ def test_update_epic_status_transaction_rollback(epic_repository, in_memory_db):
     assert found_epic.status == original_status
 
 
-def test_update_epic_status_sequential_updates(epic_repository):
+def test_update_epic_status_sequential_updates(epic_repository, test_project):
     """Test multiple sequential status updates on same epic."""
-    epic = epic_repository.create_epic("Test Epic", "Test description")
+    epic = epic_repository.create_epic("Test Epic", "Test description", test_project.id)
 
     # Draft -> Ready
     updated_epic = epic_repository.update_epic_status(epic.id, "Ready")

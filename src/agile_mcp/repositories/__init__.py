@@ -6,6 +6,7 @@ implementations for data persistence operations.
 """
 
 from .epic_repository import EpicRepository
+from .project_repository import ProjectRepository
 from .story_repository import StoryRepository
 
-__all__ = ["EpicRepository", "StoryRepository"]
+__all__ = ["ProjectRepository", "EpicRepository", "StoryRepository"]

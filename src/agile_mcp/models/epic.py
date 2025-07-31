@@ -2,7 +2,7 @@
 
 from typing import Any, Dict
 
-from sqlalchemy import CheckConstraint, String, Text
+from sqlalchemy import CheckConstraint, ForeignKey, String, Text
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -27,6 +27,7 @@ class Epic(Base):
         title: The name of the epic
         description: A detailed explanation of the epic's goal
         status: Current state (Draft, Ready, In Progress, Done, On Hold)
+        project_id: Foreign key reference to the parent Project
     """
 
     __tablename__ = "epics"
@@ -35,6 +36,9 @@ class Epic(Base):
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="Draft")
+    project_id: Mapped[str] = mapped_column(
+        String, ForeignKey("projects.id"), nullable=False
+    )
 
     __table_args__ = (
         CheckConstraint("length(title) <= 200", name="ck_epic_title_length"),
@@ -47,15 +51,26 @@ class Epic(Base):
         ),
     )
 
+    # Relationship to project (many-to-one)
+    project = relationship("Project", back_populates="epics")
+
     # Relationship to stories (one-to-many)
     stories = relationship("Story", back_populates="epic")
 
-    def __init__(self, id: str, title: str, description: str, status: str = "Draft"):
+    def __init__(
+        self,
+        id: str,
+        title: str,
+        description: str,
+        project_id: str,
+        status: str = "Draft",
+    ):
         """Initialize Epic with default status of 'Draft'."""
         super().__init__()
         self.id = id
         self.title = title
         self.description = description
+        self.project_id = project_id
         self.status = status
 
     def to_dict(self) -> Dict[str, Any]:
@@ -65,6 +80,7 @@ class Epic(Base):
             "title": self.title,
             "description": self.description,
             "status": self.status,
+            "project_id": self.project_id,
         }
 
     @validates("title")

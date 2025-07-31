@@ -3,6 +3,7 @@
 import os
 
 from src.agile_mcp.models.epic import Epic
+from src.agile_mcp.models.project import Project
 
 
 def test_isolated_memory_db_fixture(isolated_memory_db):
@@ -16,9 +17,19 @@ def test_isolated_memory_db_fixture(isolated_memory_db):
     # Test session creation
     session = session_factory()
     try:
+        # Add test project first
+        project = Project(
+            id="test-project", name="Test Project", description="Test project"
+        )
+        session.add(project)
+
         # Add test data
         epic = Epic(
-            id="fixture_test", title="Fixture Test", description="Test", status="Ready"
+            id="fixture_test",
+            title="Fixture Test",
+            description="Test",
+            project_id="test-project",
+            status="Ready",
         )
         session.add(epic)
         session.commit()
@@ -32,9 +43,19 @@ def test_isolated_memory_db_fixture(isolated_memory_db):
 
 def test_test_session_fixture(test_session):
     """Test the test_session fixture with automatic transaction management."""
+    # Add test project first
+    project = Project(
+        id="test-project-session", name="Test Project", description="Test project"
+    )
+    test_session.add(project)
+
     # Add test data
     epic = Epic(
-        id="session_test", title="Session Test", description="Test", status="Ready"
+        id="session_test",
+        title="Session Test",
+        description="Test",
+        project_id="test-project-session",
+        status="Ready",
     )
     test_session.add(epic)
     test_session.commit()
@@ -52,9 +73,18 @@ def test_integration_session_fixture(integration_session):
     # Use unique ID to avoid conflicts with other tests using shared database
     test_id = f"integration_test_{uuid.uuid4().hex[:8]}"
 
+    # Add test project first
+    project_id = f"test-project-{uuid.uuid4().hex[:8]}"
+    project = Project(id=project_id, name="Test Project", description="Test project")
+    integration_session.add(project)
+
     # Add test data
     epic = Epic(
-        id=test_id, title="Integration Test", description="Test", status="Ready"
+        id=test_id,
+        title="Integration Test",
+        description="Test",
+        project_id=project_id,
+        status="Ready",
     )
     integration_session.add(epic)
     integration_session.commit()
@@ -69,8 +99,20 @@ def test_mock_database_dependencies(mock_database_dependencies):
     # The fixture should return the test session
     session = mock_database_dependencies
 
+    # Add test project first
+    project = Project(
+        id="test-project-mock", name="Test Project", description="Test project"
+    )
+    session.add(project)
+
     # Test that we can use the session
-    epic = Epic(id="mock_test", title="Mock Test", description="Test", status="Ready")
+    epic = Epic(
+        id="mock_test",
+        title="Mock Test",
+        description="Test",
+        project_id="test-project-mock",
+        status="Ready",
+    )
     session.add(epic)
     session.commit()
 
@@ -90,9 +132,19 @@ def test_isolated_file_db_fixture(isolated_file_db):
     # Test session creation
     session = session_factory()
     try:
+        # Add test project first
+        project = Project(
+            id="test-project-file", name="Test Project", description="Test project"
+        )
+        session.add(project)
+
         # Add test data
         epic = Epic(
-            id="file_test", title="File Test", description="Test", status="Ready"
+            id="file_test",
+            title="File Test",
+            description="Test",
+            project_id="test-project-file",
+            status="Ready",
         )
         session.add(epic)
         session.commit()

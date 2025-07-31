@@ -3,6 +3,18 @@ Custom exceptions for service layer business logic.
 """
 
 
+class ProjectValidationError(Exception):
+    """Raised when project data validation fails."""
+
+    pass
+
+
+class ProjectNotFoundError(Exception):
+    """Raised when requested project is not found."""
+
+    pass
+
+
 class EpicValidationError(Exception):
     """Raised when epic data validation fails."""
 

@@ -30,13 +30,16 @@ class EpicService:
         self.epic_repository = epic_repository
         self.logger = get_logger(__name__)
 
-    def create_epic(self, title: str, description: str) -> Dict[str, Any]:
+    def create_epic(
+        self, title: str, description: str, project_id: str
+    ) -> Dict[str, Any]:
         """
         Create a new epic with validation.
 
         Args:
             title: The name of the epic
             description: A detailed explanation of the epic's goal
+            project_id: The ID of the project this epic belongs to
 
         Returns:
             Dict[str, Any]: Dictionary representation of the created epic
@@ -51,6 +54,9 @@ class EpicService:
 
         if not description or not description.strip():
             raise EpicValidationError("Epic description cannot be empty")
+
+        if not project_id or not project_id.strip():
+            raise EpicValidationError("Epic project_id cannot be empty")
 
         if len(title.strip()) > self.MAX_TITLE_LENGTH:
             raise EpicValidationError(
@@ -70,7 +76,9 @@ class EpicService:
                 operation="create_epic",
             )
 
-            epic = self.epic_repository.create_epic(title.strip(), description.strip())
+            epic = self.epic_repository.create_epic(
+                title.strip(), description.strip(), project_id.strip()
+            )
 
             self.logger.info(
                 "Epic created successfully",

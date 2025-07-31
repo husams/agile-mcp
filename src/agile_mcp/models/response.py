@@ -22,6 +22,14 @@ class StoryResponse(BaseModel):
     epic_id: str
 
 
+class ProjectResponse(BaseModel):
+    """Response model for project data."""
+
+    id: str
+    name: str
+    description: str
+
+
 class EpicResponse(BaseModel):
     """Response model for epic data."""
 
@@ -29,6 +37,7 @@ class EpicResponse(BaseModel):
     title: str
     description: str
     status: str
+    project_id: str
 
 
 class ArtifactResponse(BaseModel):

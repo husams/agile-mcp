@@ -33,12 +33,18 @@ def test_create_epic_success(epic_service, mock_repository):
     """Test successful epic creation."""
     # Setup mock
     mock_epic = Epic(
-        id="test-id", title="Test Epic", description="Test description", status="Draft"
+        id="test-id",
+        title="Test Epic",
+        description="Test description",
+        project_id="test-project-id",
+        status="Draft",
     )
     mock_repository.create_epic.return_value = mock_epic
 
     # Call service method
-    result = epic_service.create_epic("Test Epic", "Test description")
+    result = epic_service.create_epic(
+        "Test Epic", "Test description", "test-project-id"
+    )
 
     # Verify result
     expected = {
@@ -46,27 +52,39 @@ def test_create_epic_success(epic_service, mock_repository):
         "title": "Test Epic",
         "description": "Test description",
         "status": "Draft",
+        "project_id": "test-project-id",
     }
     assert result == expected
-    mock_repository.create_epic.assert_called_once_with("Test Epic", "Test description")
+    mock_repository.create_epic.assert_called_once_with(
+        "Test Epic", "Test description", "test-project-id"
+    )
 
 
 def test_create_epic_empty_title(epic_service):
     """Test epic creation with empty title."""
     with pytest.raises(EpicValidationError, match="Epic title cannot be empty"):
-        epic_service.create_epic("", "Valid description")
+        epic_service.create_epic("", "Valid description", "test-project-id")
 
     with pytest.raises(EpicValidationError, match="Epic title cannot be empty"):
-        epic_service.create_epic("   ", "Valid description")
+        epic_service.create_epic("   ", "Valid description", "test-project-id")
 
 
 def test_create_epic_empty_description(epic_service):
     """Test epic creation with empty description."""
     with pytest.raises(EpicValidationError, match="Epic description cannot be empty"):
-        epic_service.create_epic("Valid title", "")
+        epic_service.create_epic("Valid title", "", "test-project-id")
 
     with pytest.raises(EpicValidationError, match="Epic description cannot be empty"):
-        epic_service.create_epic("Valid title", "   ")
+        epic_service.create_epic("Valid title", "   ", "test-project-id")
+
+
+def test_create_epic_empty_project_id(epic_service):
+    """Test epic creation with empty project_id."""
+    with pytest.raises(EpicValidationError, match="Epic project_id cannot be empty"):
+        epic_service.create_epic("Valid title", "Valid description", "")
+
+    with pytest.raises(EpicValidationError, match="Epic project_id cannot be empty"):
+        epic_service.create_epic("Valid title", "Valid description", "   ")
 
 
 def test_create_epic_title_too_long(epic_service):
@@ -76,7 +94,7 @@ def test_create_epic_title_too_long(epic_service):
     with pytest.raises(
         EpicValidationError, match="Epic title cannot exceed 200 characters"
     ):
-        epic_service.create_epic(long_title, "Valid description")
+        epic_service.create_epic(long_title, "Valid description", "test-project-id")
 
 
 def test_create_epic_description_too_long(epic_service):
@@ -86,7 +104,7 @@ def test_create_epic_description_too_long(epic_service):
     with pytest.raises(
         EpicValidationError, match="Epic description cannot exceed 2000 characters"
     ):
-        epic_service.create_epic("Valid title", long_description)
+        epic_service.create_epic("Valid title", long_description, "test-project-id")
 
 
 def test_create_epic_database_error(epic_service, mock_repository):
@@ -99,27 +117,47 @@ def test_create_epic_database_error(epic_service, mock_repository):
     with pytest.raises(
         DatabaseError, match="Database operation failed: Database connection failed"
     ):
-        epic_service.create_epic("Valid title", "Valid description")
+        epic_service.create_epic("Valid title", "Valid description", "test-project-id")
 
 
 def test_create_epic_strips_whitespace(epic_service, mock_repository):
     """Test that epic creation strips whitespace from inputs."""
     mock_epic = Epic(
-        id="test-id", title="Test Epic", description="Test description", status="Draft"
+        id="test-id",
+        title="Test Epic",
+        description="Test description",
+        project_id="test-project-id",
+        status="Draft",
     )
     mock_repository.create_epic.return_value = mock_epic
 
-    epic_service.create_epic("  Test Epic  ", "  Test description  ")
+    epic_service.create_epic(
+        "  Test Epic  ", "  Test description  ", "  test-project-id  "
+    )
 
-    mock_repository.create_epic.assert_called_once_with("Test Epic", "Test description")
+    mock_repository.create_epic.assert_called_once_with(
+        "Test Epic", "Test description", "test-project-id"
+    )
 
 
 def test_find_epics_success(epic_service, mock_repository):
     """Test successful epic retrieval."""
     # Setup mock
     mock_epics = [
-        Epic(id="1", title="Epic 1", description="Desc 1", status="Draft"),
-        Epic(id="2", title="Epic 2", description="Desc 2", status="Ready"),
+        Epic(
+            id="1",
+            title="Epic 1",
+            description="Desc 1",
+            project_id="test-project-1",
+            status="Draft",
+        ),
+        Epic(
+            id="2",
+            title="Epic 2",
+            description="Desc 2",
+            project_id="test-project-2",
+            status="Ready",
+        ),
     ]
     mock_repository.find_all_epics.return_value = mock_epics
 
@@ -128,8 +166,20 @@ def test_find_epics_success(epic_service, mock_repository):
 
     # Verify result
     expected = [
-        {"id": "1", "title": "Epic 1", "description": "Desc 1", "status": "Draft"},
-        {"id": "2", "title": "Epic 2", "description": "Desc 2", "status": "Ready"},
+        {
+            "id": "1",
+            "title": "Epic 1",
+            "description": "Desc 1",
+            "status": "Draft",
+            "project_id": "test-project-1",
+        },
+        {
+            "id": "2",
+            "title": "Epic 2",
+            "description": "Desc 2",
+            "status": "Ready",
+            "project_id": "test-project-2",
+        },
     ]
     assert result == expected
     mock_repository.find_all_epics.assert_called_once()
@@ -160,7 +210,11 @@ def test_update_epic_status_success(epic_service, mock_repository):
     """Test successful epic status update."""
     # Setup mock
     mock_epic = Epic(
-        id="test-id", title="Test Epic", description="Test description", status="Ready"
+        id="test-id",
+        title="Test Epic",
+        description="Test description",
+        project_id="test-project-id",
+        status="Ready",
     )
     mock_repository.update_epic_status.return_value = mock_epic
 
@@ -173,6 +227,7 @@ def test_update_epic_status_success(epic_service, mock_repository):
         "title": "Test Epic",
         "description": "Test description",
         "status": "Ready",
+        "project_id": "test-project-id",
     }
     assert result == expected
     mock_repository.update_epic_status.assert_called_once_with("test-id", "Ready")
@@ -183,7 +238,13 @@ def test_update_epic_status_valid_statuses(epic_service, mock_repository):
     valid_statuses = ["Draft", "Ready", "In Progress", "Done", "On Hold"]
 
     for status in valid_statuses:
-        mock_epic = Epic(id="test-id", title="Test", description="Test", status=status)
+        mock_epic = Epic(
+            id="test-id",
+            title="Test",
+            description="Test",
+            project_id="test-project-id",
+            status=status,
+        )
         mock_repository.update_epic_status.return_value = mock_epic
 
         result = epic_service.update_epic_status("test-id", status)
@@ -237,7 +298,13 @@ def test_update_epic_status_not_found(epic_service, mock_repository):
 
 def test_update_epic_status_strips_whitespace(epic_service, mock_repository):
     """Test that epic status update strips whitespace from inputs."""
-    mock_epic = Epic(id="test-id", title="Test", description="Test", status="Ready")
+    mock_epic = Epic(
+        id="test-id",
+        title="Test",
+        description="Test",
+        project_id="test-project-id",
+        status="Ready",
+    )
     mock_repository.update_epic_status.return_value = mock_epic
 
     epic_service.update_epic_status("  test-id  ", "  Ready  ")

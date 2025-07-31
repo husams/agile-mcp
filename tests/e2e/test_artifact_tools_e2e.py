@@ -93,7 +93,25 @@ def initialize_server(process):
 
 def create_test_epic_and_story(process):
     """Create a test epic and story for artifact testing."""
-    # Create epic first
+    # Create project first
+    project_response = send_jsonrpc_request(
+        process,
+        "tools/call",
+        {
+            "name": "projects.create",
+            "arguments": {
+                "name": "Test Project for Artifacts",
+                "description": "Project created for artifact testing purposes",
+            },
+        },
+    )
+
+    assert "result" in project_response
+    assert "content" in project_response["result"]
+    project_data = json.loads(project_response["result"]["content"][0]["text"])
+    project_id = project_data["id"]
+
+    # Create epic with project_id
     epic_response = send_jsonrpc_request(
         process,
         "tools/call",
@@ -102,6 +120,7 @@ def create_test_epic_and_story(process):
             "arguments": {
                 "title": "Test Epic for Artifacts",
                 "description": "Epic created for artifact testing purposes",
+                "project_id": project_id,
             },
         },
     )
@@ -411,7 +430,23 @@ class TestArtifactToolsE2E:
         # Initialize server
         initialize_server(process)
 
-        # Step 1: Create epic
+        # Step 1: Create project first
+        project_response = send_jsonrpc_request(
+            process,
+            "tools/call",
+            {
+                "name": "projects.create",
+                "arguments": {
+                    "name": "Complete Workflow Project",
+                    "description": "Project for complete workflow testing",
+                },
+            },
+        )
+
+        project_data = json.loads(project_response["result"]["content"][0]["text"])
+        project_id = project_data["id"]
+
+        # Step 2: Create epic
         epic_response = send_jsonrpc_request(
             process,
             "tools/call",
@@ -420,13 +455,14 @@ class TestArtifactToolsE2E:
                 "arguments": {
                     "title": "Complete Workflow Epic",
                     "description": "Epic for complete workflow testing",
+                    "project_id": project_id,
                 },
             },
         )
         epic_data = json.loads(epic_response["result"]["content"][0]["text"])
         epic_id = epic_data["id"]
 
-        # Step 2: Create story
+        # Step 3: Create story
         story_response = send_jsonrpc_request(
             process,
             "tools/call",

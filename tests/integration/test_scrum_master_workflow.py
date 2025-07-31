@@ -15,6 +15,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.agile_mcp.models.epic import Base, Epic
+from src.agile_mcp.models.project import Project
 from src.agile_mcp.models.story import Story
 from src.agile_mcp.repositories.story_repository import StoryRepository
 from src.agile_mcp.services.story_service import StoryService
@@ -37,11 +38,20 @@ def integration_db():
     Session = sessionmaker(bind=engine)
     session = Session()
 
+    # Create a test project first
+    project = Project(
+        id="scrum-master-project-1",
+        name="Scrum Master Workflow Project",
+        description="Project for testing enhanced story creation workflow",
+    )
+    session.add(project)
+
     # Create a test epic for story relationships
     epic = Epic(
         id="scrum-master-epic-1",
         title="Scrum Master Workflow Epic",
         description="Epic for testing enhanced story creation workflow",
+        project_id="scrum-master-project-1",
         status="In Progress",
     )
     session.add(epic)

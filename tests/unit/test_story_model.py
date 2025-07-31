@@ -9,6 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.agile_mcp.models.epic import Base, Epic
+from src.agile_mcp.models.project import Project
 from src.agile_mcp.models.story import Story
 
 
@@ -20,11 +21,20 @@ def in_memory_db():
     Session = sessionmaker(bind=engine)
     session = Session()
 
+    # Create a test project first
+    project = Project(
+        id="test-project-1",
+        name="Test Project",
+        description="Test project for story relationships",
+    )
+    session.add(project)
+
     # Create a test epic for foreign key relationships
     epic = Epic(
         id="test-epic-1",
         title="Test Epic",
         description="Test epic for story relationships",
+        project_id="test-project-1",
         status="Draft",
     )
     session.add(epic)

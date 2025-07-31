@@ -18,6 +18,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.agile_mcp.models.epic import Epic
+from src.agile_mcp.models.project import Project
 from tests.utils.test_database_manager import DatabaseManager
 
 
@@ -36,11 +37,20 @@ def isolated_e2e_database():
     # Create default test data for E2E tests
     session = session_factory()
     try:
+        # Add default project first
+        default_project = Project(
+            id="default-project",
+            name="Default Project",
+            description="Default project for E2E testing",
+        )
+        session.add(default_project)
+
         # Add default epic required by E2E tests
         default_epic = Epic(
             id="default-epic",
             title="Default Epic",
             description="Default epic for E2E testing",
+            project_id="default-project",
             status="Ready",
         )
         session.add(default_epic)
