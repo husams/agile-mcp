@@ -97,3 +97,15 @@ class DuplicateDependencyError(Exception):
     """Raised when attempting to add a dependency that already exists."""
 
     pass
+
+
+class CommentValidationError(Exception):
+    """Raised when comment data validation fails."""
+
+    pass
+
+
+class CommentNotFoundError(Exception):
+    """Raised when requested comment is not found."""
+
+    pass
