@@ -42,7 +42,7 @@ def register_story_tools(mcp: FastMCP) -> None:
         )
         raise
 
-    @mcp.tool("backlog.createStory")
+    @mcp.tool("create_story")
     def create_story(
         epic_id: str,
         title: str,
@@ -172,7 +172,7 @@ def register_story_tools(mcp: FastMCP) -> None:
                 ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
             )
 
-    @mcp.tool("backlog.getStory")
+    @mcp.tool("get_story")
     def get_story(story_id: str) -> Dict[str, Any]:
         """
         Retrieve the full, self-contained details of a specified story.
@@ -280,7 +280,7 @@ def register_story_tools(mcp: FastMCP) -> None:
                 ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
             )
 
-    @mcp.tool("backlog.updateStory")
+    @mcp.tool("update_story")
     def update_story(
         story_id: str,
         title: Optional[str] = None,
@@ -417,7 +417,7 @@ def register_story_tools(mcp: FastMCP) -> None:
                 ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
             )
 
-    @mcp.tool("backlog.updateStoryStatus")
+    @mcp.tool("update_story_status")
     def update_story_status(story_id: str, status: str) -> Dict[str, Any]:
         """
         Update the status of a user story to reflect current work state.
@@ -563,7 +563,7 @@ def register_story_tools(mcp: FastMCP) -> None:
                 )
             )
 
-    @mcp.tool("backlog.executeStoryDodChecklist")
+    @mcp.tool("execute_story_dod_checklist")
     def execute_story_dod_checklist(story_id: str) -> Dict[str, Any]:
         """
         Execute the Definition of Done (DoD) checklist for a story.
@@ -854,7 +854,7 @@ def register_story_tools(mcp: FastMCP) -> None:
                 ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
             )
 
-    @mcp.tool("tasks.addToStory")
+    @mcp.tool("add_task_to_story")
     def add_task_to_story(
         story_id: str, description: str, order: Optional[int] = None
     ) -> Dict[str, Any]:
@@ -959,7 +959,7 @@ def register_story_tools(mcp: FastMCP) -> None:
                 ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
             )
 
-    @mcp.tool("tasks.updateTaskStatus")
+    @mcp.tool("update_task_status")
     def update_task_status(
         story_id: str, task_id: str, completed: bool
     ) -> Dict[str, Any]:
@@ -1071,7 +1071,7 @@ def register_story_tools(mcp: FastMCP) -> None:
                 ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
             )
 
-    @mcp.tool("tasks.updateTaskDescription")
+    @mcp.tool("update_task_description")
     def update_task_description(
         story_id: str, task_id: str, description: str
     ) -> Dict[str, Any]:
@@ -1183,7 +1183,7 @@ def register_story_tools(mcp: FastMCP) -> None:
                 ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
             )
 
-    @mcp.tool("tasks.reorderTasks")
+    @mcp.tool("reorder_story_tasks")
     def reorder_tasks(
         story_id: str, task_orders: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
@@ -1286,7 +1286,7 @@ def register_story_tools(mcp: FastMCP) -> None:
                 ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
             )
 
-    @mcp.tool("acceptanceCriteria.addToStory")
+    @mcp.tool("add_acceptance_criteria_to_story")
     def add_acceptance_criterion_to_story(
         story_id: str, description: str, order: Optional[int] = None
     ) -> Dict[str, Any]:
@@ -1391,7 +1391,7 @@ def register_story_tools(mcp: FastMCP) -> None:
                 ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
             )
 
-    @mcp.tool("acceptanceCriteria.updateStatus")
+    @mcp.tool("update_acceptance_criteria_status")
     def update_acceptance_criterion_status(
         story_id: str, criterion_id: str, met: bool
     ) -> Dict[str, Any]:
@@ -1504,7 +1504,7 @@ def register_story_tools(mcp: FastMCP) -> None:
                 ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
             )
 
-    @mcp.tool("acceptanceCriteria.updateDescription")
+    @mcp.tool("update_acceptance_criteria_description")
     def update_acceptance_criterion_description(
         story_id: str, criterion_id: str, description: str
     ) -> Dict[str, Any]:
@@ -1623,7 +1623,7 @@ def register_story_tools(mcp: FastMCP) -> None:
                 ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
             )
 
-    @mcp.tool("acceptanceCriteria.reorderCriteria")
+    @mcp.tool("reorder_acceptance_criteria")
     def reorder_acceptance_criteria(
         story_id: str, criterion_orders: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
@@ -1735,7 +1735,7 @@ def register_story_tools(mcp: FastMCP) -> None:
                 ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
             )
 
-    @mcp.tool("comments.addToStory")
+    @mcp.tool("add_comment_to_story")
     def add_comment_to_story(
         story_id: str, author_role: str, content: str, reply_to_id: Optional[str] = None
     ) -> Dict[str, Any]:

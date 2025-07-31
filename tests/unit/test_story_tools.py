@@ -57,7 +57,7 @@ def test_register_story_tools_handles_database_creation_failure(mock_fastmcp):
 
 
 class TestCreateStoryTool:
-    """Test the backlog.createStory tool."""
+    """Test the create_story tool."""
 
     def test_create_story_success(self, mock_fastmcp):
         """Test successful story creation via API tool."""
@@ -126,7 +126,7 @@ class TestCreateStoryTool:
             # Find the create_story tool
             create_story_func = None
             for call in tool_calls:
-                if len(call[0]) > 0 and call[0][0] == "backlog.createStory":
+                if len(call[0]) > 0 and call[0][0] == "create_story":
                     create_story_func = call[0][1] if len(call[0]) > 1 else None
                     break
 
@@ -211,7 +211,7 @@ class TestCreateStoryTool:
 
 
 class TestGetStoryTool:
-    """Test the backlog.getStory tool."""
+    """Test the get_story tool."""
 
     def test_get_story_success(self, mock_fastmcp):
         """Test successful story retrieval via API tool."""
@@ -329,16 +329,16 @@ def test_both_tools_registered(mock_fastmcp):
             elif "name" in call[1]:  # keyword args
                 tool_names.append(call[1]["name"])
 
-        assert "backlog.createStory" in tool_names or any(
+        assert "create_story" in tool_names or any(
             "createStory" in str(call) for call in tool_calls
         )
-        assert "backlog.getStory" in tool_names or any(
+        assert "get_story" in tool_names or any(
             "getStory" in str(call) for call in tool_calls
         )
 
 
 class TestUpdateStoryStatusTool:
-    """Test the backlog.updateStoryStatus tool."""
+    """Test the update_story_status tool."""
 
     def test_update_story_status_success(self, mock_fastmcp):
         """Test successful story status update via API tool."""
@@ -535,19 +535,19 @@ def test_all_three_tools_registered(mock_fastmcp):
             elif "name" in call[1]:  # keyword args
                 tool_names.append(call[1]["name"])
 
-        assert "backlog.createStory" in tool_names or any(
+        assert "create_story" in tool_names or any(
             "createStory" in str(call) for call in tool_calls
         )
-        assert "backlog.getStory" in tool_names or any(
+        assert "get_story" in tool_names or any(
             "getStory" in str(call) for call in tool_calls
         )
-        assert "backlog.updateStoryStatus" in tool_names or any(
+        assert "update_story_status" in tool_names or any(
             "updateStoryStatus" in str(call) for call in tool_calls
         )
 
 
 class TestCommentsAddToStoryTool:
-    """Test the comments.addToStory tool."""
+    """Test the add_comment_to_story tool."""
 
     def test_add_comment_to_story_success(self, mock_fastmcp):
         """Test successful comment addition via API tool."""
@@ -749,14 +749,14 @@ class TestCommentsAddToStoryTool:
 
 
 def test_comments_tool_registered(mock_fastmcp):
-    """Test that the comments.addToStory tool is registered."""
+    """Test that the add_comment_to_story tool is registered."""
     register_story_tools(mock_fastmcp)
 
     # Extract tool names from all mock.tool calls
     tool_calls = mock_fastmcp.tool.call_args_list
     tool_names = [call[0][0] if call[0] else "" for call in tool_calls]
 
-    # Check that comments.addToStory tool is registered
-    assert "comments.addToStory" in tool_names or any(
+    # Check that add_comment_to_story tool is registered
+    assert "add_comment_to_story" in tool_names or any(
         "addToStory" in str(call) for call in tool_calls
     )

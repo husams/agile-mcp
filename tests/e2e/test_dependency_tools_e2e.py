@@ -3,66 +3,43 @@ End-to-end tests for Dependency tools via MCP JSON-RPC over stdio transport.
 """
 
 import json
-import os
-import subprocess
-import sys
-from pathlib import Path
 
-import pytest
+# Use the robust fixture from conftest.py instead of custom subprocess handling
 
 
-@pytest.fixture
-def mcp_server_process(isolated_test_database):
-    """Start MCP server as subprocess with isolated database."""
-    # Get the path to the run_server.py file
-    run_server_path = Path(__file__).parent.parent.parent / "run_server.py"
-
-    # Set up environment with isolated test database
-    env = os.environ.copy()
-    env["TEST_DATABASE_URL"] = f"sqlite:///{isolated_test_database}"
-
-    # Start server process with isolated database
-    process = subprocess.Popen(
-        [sys.executable, str(run_server_path)],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        env=env,
-    )
-
-    yield process
-
-    # Cleanup
-    process.terminate()
-    process.wait()
-
-
-def send_jsonrpc_request(process, method, params=None):
+def send_jsonrpc_request(process_or_fixture, method, params=None):
     """Send JSON-RPC request to MCP server and return response."""
-    request = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params or {}}
+    # Handle both direct process and mcp_server_subprocess fixture tuple
+    if isinstance(process_or_fixture, tuple):
+        process, env_vars, communicate_json_rpc = process_or_fixture
+        # Use the communicate function from the fixture
+        return communicate_json_rpc(method, params)
+    else:
+        # Legacy support for direct process
+        process = process_or_fixture
+        request = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params or {}}
 
-    request_json = json.dumps(request) + "\n"
-    process.stdin.write(request_json)
-    process.stdin.flush()
+        request_json = json.dumps(request) + "\n"
+        process.stdin.write(request_json)
+        process.stdin.flush()
 
-    # Read response
-    response_line = process.stdout.readline()
-    if not response_line:
-        return None
+        # Read response
+        response_line = process.stdout.readline()
+        if not response_line:
+            return None
 
-    try:
-        response = json.loads(response_line.strip())
-        return response
-    except json.JSONDecodeError:
-        return {"error": "Invalid JSON response", "raw": response_line}
+        try:
+            response = json.loads(response_line.strip())
+            return response
+        except json.JSONDecodeError:
+            return {"error": "Invalid JSON response", "raw": response_line}
 
 
-def initialize_server(process):
+def initialize_server(process_or_fixture):
     """Initialize the MCP server."""
     # Initialize server first
     send_jsonrpc_request(
-        process,
+        process_or_fixture,
         "initialize",
         {
             "protocolVersion": "2024-11-05",
@@ -72,10 +49,30 @@ def initialize_server(process):
     )
 
     # Send initialized notification (no response expected)
-    request = {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}}
-    request_json = json.dumps(request) + "\n"
-    process.stdin.write(request_json)
-    process.stdin.flush()
+    # Handle both direct process and mcp_server_subprocess fixture tuple
+    if isinstance(process_or_fixture, tuple):
+        process, env_vars, communicate_json_rpc = process_or_fixture
+        # For notifications, we need to send directly since communicate_json_rpc
+        # expects a response
+        request = {
+            "jsonrpc": "2.0",
+            "method": "notifications/initialized",
+            "params": {},
+        }
+        request_json = json.dumps(request) + "\n"
+        process.stdin.write(request_json)
+        process.stdin.flush()
+    else:
+        # Legacy support for direct process
+        process = process_or_fixture
+        request = {
+            "jsonrpc": "2.0",
+            "method": "notifications/initialized",
+            "params": {},
+        }
+        request_json = json.dumps(request) + "\n"
+        process.stdin.write(request_json)
+        process.stdin.flush()
 
 
 def create_test_epic(process):
@@ -85,7 +82,7 @@ def create_test_epic(process):
         process,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": "Dependency Test Project",
                 "description": "Project for testing story dependencies",
@@ -101,7 +98,7 @@ def create_test_epic(process):
         process,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": "Dependency Test Epic",
                 "description": "Epic for testing story dependencies",
@@ -123,7 +120,7 @@ def create_test_story(process, epic_id, title):
         process,
         "tools/call",
         {
-            "name": "backlog.createStory",
+            "name": "create_story",
             "arguments": {
                 "epic_id": epic_id,
                 "title": title,
@@ -143,22 +140,22 @@ def create_test_story(process, epic_id, title):
 class TestDependencyToolsE2E:
     """End-to-end tests for dependency management tools."""
 
-    def test_backlog_add_dependency_e2e_success(self, mcp_server_process):
-        """Test backlog.addDependency tool via MCP JSON-RPC - success case."""
+    def test_backlog_add_dependency_e2e_success(self, mcp_server_subprocess):
+        """Test add_story_dependency tool via MCP JSON-RPC - success case."""
         # Initialize server
-        initialize_server(mcp_server_process)
+        initialize_server(mcp_server_subprocess)
 
         # First create test epic and stories
-        epic_id = create_test_epic(mcp_server_process)
-        story_1_id = create_test_story(mcp_server_process, epic_id, "Test Story 1")
-        story_2_id = create_test_story(mcp_server_process, epic_id, "Test Story 2")
+        epic_id = create_test_epic(mcp_server_subprocess)
+        story_1_id = create_test_story(mcp_server_subprocess, epic_id, "Test Story 1")
+        story_2_id = create_test_story(mcp_server_subprocess, epic_id, "Test Story 2")
 
         # Test dependency addition
         response = send_jsonrpc_request(
-            mcp_server_process,
+            mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {
                     "story_id": story_1_id,
                     "depends_on_story_id": story_2_id,
@@ -187,23 +184,25 @@ class TestDependencyToolsE2E:
         assert result_data["depends_on_story_id"] == story_2_id
         assert "Dependency added" in result_data["message"]
 
-    def test_backlog_add_dependency_e2e_circular_prevention(self, mcp_server_process):
+    def test_backlog_add_dependency_e2e_circular_prevention(
+        self, mcp_server_subprocess
+    ):
         """Test circular dependency prevention in complete system."""
         # Initialize server
-        initialize_server(mcp_server_process)
+        initialize_server(mcp_server_subprocess)
 
         # Create test epic and stories
-        epic_id = create_test_epic(mcp_server_process)
-        story_1_id = create_test_story(mcp_server_process, epic_id, "Story A")
-        story_2_id = create_test_story(mcp_server_process, epic_id, "Story B")
-        story_3_id = create_test_story(mcp_server_process, epic_id, "Story C")
+        epic_id = create_test_epic(mcp_server_subprocess)
+        story_1_id = create_test_story(mcp_server_subprocess, epic_id, "Story A")
+        story_2_id = create_test_story(mcp_server_subprocess, epic_id, "Story B")
+        story_3_id = create_test_story(mcp_server_subprocess, epic_id, "Story C")
 
         # Create dependency chain: A -> B -> C
         send_jsonrpc_request(
-            mcp_server_process,
+            mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {
                     "story_id": story_1_id,
                     "depends_on_story_id": story_2_id,
@@ -212,10 +211,10 @@ class TestDependencyToolsE2E:
         )
 
         send_jsonrpc_request(
-            mcp_server_process,
+            mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {
                     "story_id": story_2_id,
                     "depends_on_story_id": story_3_id,
@@ -226,10 +225,10 @@ class TestDependencyToolsE2E:
         # Try to create circular dependency: C -> A (would create A -> B -> C ->
         # A cycle)
         response = send_jsonrpc_request(
-            mcp_server_process,
+            mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {
                     "story_id": story_3_id,
                     "depends_on_story_id": story_1_id,
@@ -251,21 +250,21 @@ class TestDependencyToolsE2E:
         error_text = result["content"][0]["text"].lower()
         assert "circular dependency" in error_text
 
-    def test_backlog_add_dependency_e2e_story_not_found(self, mcp_server_process):
+    def test_backlog_add_dependency_e2e_story_not_found(self, mcp_server_subprocess):
         """Test story not found error handling."""
         # Initialize server
-        initialize_server(mcp_server_process)
+        initialize_server(mcp_server_subprocess)
 
         # Create test epic and one story
-        epic_id = create_test_epic(mcp_server_process)
-        story_1_id = create_test_story(mcp_server_process, epic_id, "Existing Story")
+        epic_id = create_test_epic(mcp_server_subprocess)
+        story_1_id = create_test_story(mcp_server_subprocess, epic_id, "Existing Story")
 
         # Try to create dependency with non-existent story
         response = send_jsonrpc_request(
-            mcp_server_process,
+            mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {
                     "story_id": story_1_id,
                     "depends_on_story_id": "nonexistent-story-id",
@@ -287,22 +286,24 @@ class TestDependencyToolsE2E:
         error_text = result["content"][0]["text"].lower()
         assert "story not found" in error_text
 
-    def test_backlog_add_dependency_e2e_duplicate_dependency(self, mcp_server_process):
+    def test_backlog_add_dependency_e2e_duplicate_dependency(
+        self, mcp_server_subprocess
+    ):
         """Test duplicate dependency error handling."""
         # Initialize server
-        initialize_server(mcp_server_process)
+        initialize_server(mcp_server_subprocess)
 
         # Create test epic and stories
-        epic_id = create_test_epic(mcp_server_process)
-        story_1_id = create_test_story(mcp_server_process, epic_id, "Story 1")
-        story_2_id = create_test_story(mcp_server_process, epic_id, "Story 2")
+        epic_id = create_test_epic(mcp_server_subprocess)
+        story_1_id = create_test_story(mcp_server_subprocess, epic_id, "Story 1")
+        story_2_id = create_test_story(mcp_server_subprocess, epic_id, "Story 2")
 
         # Add dependency first time (should succeed)
         response1 = send_jsonrpc_request(
-            mcp_server_process,
+            mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {
                     "story_id": story_1_id,
                     "depends_on_story_id": story_2_id,
@@ -313,10 +314,10 @@ class TestDependencyToolsE2E:
 
         # Try to add same dependency again (should fail)
         response2 = send_jsonrpc_request(
-            mcp_server_process,
+            mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {
                     "story_id": story_1_id,
                     "depends_on_story_id": story_2_id,
@@ -339,24 +340,24 @@ class TestDependencyToolsE2E:
         assert "duplicate dependency" in error_text or "already exists" in error_text
 
     def test_backlog_add_dependency_e2e_self_dependency_prevention(
-        self, mcp_server_process
+        self, mcp_server_subprocess
     ):
         """Test prevention of self-dependency."""
         # Initialize server
-        initialize_server(mcp_server_process)
+        initialize_server(mcp_server_subprocess)
 
         # Create test epic and story
-        epic_id = create_test_epic(mcp_server_process)
+        epic_id = create_test_epic(mcp_server_subprocess)
         story_id = create_test_story(
-            mcp_server_process, epic_id, "Self Dependent Story"
+            mcp_server_subprocess, epic_id, "Self Dependent Story"
         )
 
         # Try to create self-dependency
         response = send_jsonrpc_request(
-            mcp_server_process,
+            mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {"story_id": story_id, "depends_on_story_id": story_id},
             },
         )
@@ -377,17 +378,17 @@ class TestDependencyToolsE2E:
             "cannot depend on itself" in error_text or "validation error" in error_text
         )
 
-    def test_backlog_add_dependency_e2e_validation_errors(self, mcp_server_process):
+    def test_backlog_add_dependency_e2e_validation_errors(self, mcp_server_subprocess):
         """Test input validation error handling."""
         # Initialize server
-        initialize_server(mcp_server_process)
+        initialize_server(mcp_server_subprocess)
 
         # Test empty story_id
         response1 = send_jsonrpc_request(
-            mcp_server_process,
+            mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {"story_id": "", "depends_on_story_id": "some-story-id"},
             },
         )
@@ -402,10 +403,10 @@ class TestDependencyToolsE2E:
 
         # Test empty depends_on_story_id
         response2 = send_jsonrpc_request(
-            mcp_server_process,
+            mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {"story_id": "some-story-id", "depends_on_story_id": ""},
             },
         )
@@ -419,17 +420,17 @@ class TestDependencyToolsE2E:
         assert "validation error" in error_text2
 
     def test_backlog_add_dependency_e2e_complex_dependency_graph(
-        self, mcp_server_process
+        self, mcp_server_subprocess
     ):
         """Test complex dependency graph creation and validation."""
         # Initialize server
-        initialize_server(mcp_server_process)
+        initialize_server(mcp_server_subprocess)
 
         # Create test epic and multiple stories
-        epic_id = create_test_epic(mcp_server_process)
+        epic_id = create_test_epic(mcp_server_subprocess)
         story_ids = []
         for i in range(5):
-            story_id = create_test_story(mcp_server_process, epic_id, f"Story {i+1}")
+            story_id = create_test_story(mcp_server_subprocess, epic_id, f"Story {i+1}")
             story_ids.append(story_id)
 
         # Create complex dependency graph:
@@ -448,10 +449,10 @@ class TestDependencyToolsE2E:
         # Add all valid dependencies
         for story_id, depends_on_id in dependencies:
             response = send_jsonrpc_request(
-                mcp_server_process,
+                mcp_server_subprocess,
                 "tools/call",
                 {
-                    "name": "backlog.addDependency",
+                    "name": "add_story_dependency",
                     "arguments": {
                         "story_id": story_id,
                         "depends_on_story_id": depends_on_id,
@@ -465,10 +466,10 @@ class TestDependencyToolsE2E:
         # Test circular dependency prevention: try Story 5 -> Story 1 (would
         # create cycle)
         response = send_jsonrpc_request(
-            mcp_server_process,
+            mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {
                     "story_id": story_ids[4],  # Story 5
                     "depends_on_story_id": story_ids[0],  # Story 1
@@ -485,23 +486,25 @@ class TestDependencyToolsE2E:
         assert "circular dependency" in error_text
 
     def test_backlog_add_dependency_e2e_integration_with_existing_tools(
-        self, mcp_server_process
+        self, mcp_server_subprocess
     ):
         """Test integration with existing story management tools."""
         # Initialize server
-        initialize_server(mcp_server_process)
+        initialize_server(mcp_server_subprocess)
 
         # Create test epic and stories using existing tools
-        epic_id = create_test_epic(mcp_server_process)
-        story_1_id = create_test_story(mcp_server_process, epic_id, "Feature Story")
-        story_2_id = create_test_story(mcp_server_process, epic_id, "Foundation Story")
+        epic_id = create_test_epic(mcp_server_subprocess)
+        story_1_id = create_test_story(mcp_server_subprocess, epic_id, "Feature Story")
+        story_2_id = create_test_story(
+            mcp_server_subprocess, epic_id, "Foundation Story"
+        )
 
         # Add dependency
         response = send_jsonrpc_request(
-            mcp_server_process,
+            mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {
                     "story_id": story_1_id,
                     "depends_on_story_id": story_2_id,
@@ -516,18 +519,18 @@ class TestDependencyToolsE2E:
 
         # Verify stories still exist and can be retrieved
         story_1_response = send_jsonrpc_request(
-            mcp_server_process,
+            mcp_server_subprocess,
             "tools/call",
-            {"name": "backlog.getStory", "arguments": {"story_id": story_1_id}},
+            {"name": "get_story", "arguments": {"story_id": story_1_id}},
         )
         assert "error" not in story_1_response
         result = story_1_response.get("result", {})
         assert result.get("isError") is not True
 
         story_2_response = send_jsonrpc_request(
-            mcp_server_process,
+            mcp_server_subprocess,
             "tools/call",
-            {"name": "backlog.getStory", "arguments": {"story_id": story_2_id}},
+            {"name": "get_story", "arguments": {"story_id": story_2_id}},
         )
         assert "error" not in story_2_response
         result = story_2_response.get("result", {})

@@ -35,7 +35,7 @@ def register_project_tools(mcp: FastMCP) -> None:
         )
         raise
 
-    @mcp.tool("projects.create")
+    @mcp.tool("create_project")
     def create_project(name: str, description: str) -> Dict[str, Any]:
         """
         Create a new project with the specified name and description.
@@ -120,7 +120,7 @@ def register_project_tools(mcp: FastMCP) -> None:
                 ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
             )
 
-    @mcp.tool("projects.find")
+    @mcp.tool("find_projects")
     def find_projects() -> List[Dict[str, Any]]:
         """
         Retrieve a list of all existing projects.

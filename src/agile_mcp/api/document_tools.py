@@ -327,7 +327,7 @@ def register_document_tools(mcp: FastMCP) -> None:
     """Register document management tools with the FastMCP server."""
     logger = get_logger(__name__)
 
-    @mcp.tool("documents.ingest")
+    @mcp.tool("ingest_document")
     def ingest_document(
         project_id: str,
         file_path: str,
@@ -351,7 +351,7 @@ def register_document_tools(mcp: FastMCP) -> None:
         """
         return documents_ingest(project_id, file_path, content, title)
 
-    @mcp.tool("documents.getSection")
+    @mcp.tool("get_document_section")
     def get_section(
         section_id: Optional[str] = None,
         title: Optional[str] = None,

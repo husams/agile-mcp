@@ -3,13 +3,7 @@ End-to-end tests for Artifact tools via MCP JSON-RPC over stdio transport.
 """
 
 import json
-import os
-import subprocess
-import sys
 import time
-from pathlib import Path
-
-import pytest
 
 from tests.e2e.test_helpers import (
     validate_artifact_tool_response,
@@ -18,35 +12,18 @@ from tests.e2e.test_helpers import (
     validate_jsonrpc_response_format,
 )
 
-
-@pytest.fixture
-def mcp_server_process(isolated_test_database):
-    """Start MCP server as subprocess with isolated database."""
-    # Get the path to the run_server.py file
-    run_server_path = Path(__file__).parent.parent.parent / "run_server.py"
-
-    # Set up environment with isolated test database
-    env = os.environ.copy()
-    env["TEST_DATABASE_URL"] = f"sqlite:///{isolated_test_database}"
-
-    # Start server process with isolated database
-    process = subprocess.Popen(
-        [sys.executable, str(run_server_path)],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        env=env,
-    )
-
-    yield process
-
-    # Cleanup
-    process.terminate()
-    process.wait()
+# Use the robust fixture from conftest.py instead of custom subprocess handling
 
 
-def send_jsonrpc_request(process, method, params=None):
+def send_jsonrpc_request(process_or_fixture, method, params=None):
+    """Send JSON-RPC request to MCP server and return response."""
+    # Handle both direct process and mcp_server_subprocess fixture tuple
+    if isinstance(process_or_fixture, tuple):
+        process, env_vars, communicate_json_rpc = process_or_fixture
+    else:
+        process = process_or_fixture
+
+    # Original function body follows:
     """Send JSON-RPC request to MCP server and return validated response."""
     request = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params or {}}
 
@@ -69,11 +46,17 @@ def send_jsonrpc_request(process, method, params=None):
     return validated_response
 
 
-def initialize_server(process):
+def initialize_server(process_or_fixture):
     """Initialize the MCP server for testing."""
+    # Handle both direct process and mcp_server_subprocess fixture tuple
+    if isinstance(process_or_fixture, tuple):
+        process, env_vars, communicate_json_rpc = process_or_fixture
+    else:
+        process = process_or_fixture
+
     # Send initialize request
     init_response = send_jsonrpc_request(
-        process,
+        process_or_fixture,
         "initialize",
         {
             "protocolVersion": "2024-11-05",
@@ -98,7 +81,7 @@ def create_test_epic_and_story(process):
         process,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": "Test Project for Artifacts",
                 "description": "Project created for artifact testing purposes",
@@ -116,7 +99,7 @@ def create_test_epic_and_story(process):
         process,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": "Test Epic for Artifacts",
                 "description": "Epic created for artifact testing purposes",
@@ -135,7 +118,7 @@ def create_test_epic_and_story(process):
         process,
         "tools/call",
         {
-            "name": "backlog.createStory",
+            "name": "create_story",
             "arguments": {
                 "epic_id": epic_id,
                 "title": "Test Story for Artifacts",
@@ -159,9 +142,9 @@ def create_test_epic_and_story(process):
 class TestArtifactToolsE2E:
     """End-to-end tests for artifact management tools."""
 
-    def test_artifacts_link_to_story_e2e_success(self, mcp_server_process):
-        """Test artifacts.linkToStory tool via MCP JSON-RPC - success case."""
-        process = mcp_server_process
+    def test_artifacts_link_to_story_e2e_success(self, mcp_server_subprocess):
+        """Test link_artifact_to_story tool via MCP JSON-RPC - success case."""
+        process = mcp_server_subprocess
 
         # Initialize server
         init_response = initialize_server(process)
@@ -175,7 +158,7 @@ class TestArtifactToolsE2E:
             process,
             "tools/call",
             {
-                "name": "artifacts.linkToStory",
+                "name": "link_artifact_to_story",
                 "arguments": {
                     "story_id": story_id,
                     "uri": "file:///path/to/implementation.js",
@@ -200,9 +183,9 @@ class TestArtifactToolsE2E:
         assert artifact_response.story_id == story_id
         assert artifact_response.id is not None
 
-    def test_artifacts_link_to_story_e2e_validation_error(self, mcp_server_process):
-        """Test artifacts.linkToStory tool with validation error."""
-        process = mcp_server_process
+    def test_artifacts_link_to_story_e2e_validation_error(self, mcp_server_subprocess):
+        """Test link_artifact_to_story tool with validation error."""
+        process = mcp_server_subprocess
 
         # Initialize server
         initialize_server(process)
@@ -215,7 +198,7 @@ class TestArtifactToolsE2E:
             process,
             "tools/call",
             {
-                "name": "artifacts.linkToStory",
+                "name": "link_artifact_to_story",
                 "arguments": {
                     "story_id": story_id,
                     "uri": "",
@@ -238,9 +221,9 @@ class TestArtifactToolsE2E:
         assert "Artifact validation error" in validated_error["message"]
         assert "URI cannot be empty" in validated_error["message"]
 
-    def test_artifacts_link_to_story_e2e_invalid_relation(self, mcp_server_process):
-        """Test artifacts.linkToStory tool with invalid relation type."""
-        process = mcp_server_process
+    def test_artifacts_link_to_story_e2e_invalid_relation(self, mcp_server_subprocess):
+        """Test link_artifact_to_story tool with invalid relation type."""
+        process = mcp_server_subprocess
 
         # Initialize server
         initialize_server(process)
@@ -253,7 +236,7 @@ class TestArtifactToolsE2E:
             process,
             "tools/call",
             {
-                "name": "artifacts.linkToStory",
+                "name": "link_artifact_to_story",
                 "arguments": {
                     "story_id": story_id,
                     "uri": "file:///path/to/code.js",
@@ -275,9 +258,9 @@ class TestArtifactToolsE2E:
         # Verify error message content
         assert "Invalid relation type" in validated_error["message"]
 
-    def test_artifacts_link_to_story_e2e_story_not_found(self, mcp_server_process):
-        """Test artifacts.linkToStory tool with non-existent story."""
-        process = mcp_server_process
+    def test_artifacts_link_to_story_e2e_story_not_found(self, mcp_server_subprocess):
+        """Test link_artifact_to_story tool with non-existent story."""
+        process = mcp_server_subprocess
 
         # Initialize server
         initialize_server(process)
@@ -287,7 +270,7 @@ class TestArtifactToolsE2E:
             process,
             "tools/call",
             {
-                "name": "artifacts.linkToStory",
+                "name": "link_artifact_to_story",
                 "arguments": {
                     "story_id": "non-existent-story-id",
                     "uri": "file:///path/to/code.js",
@@ -302,9 +285,9 @@ class TestArtifactToolsE2E:
         assert response["result"]["isError"] is True
         assert "Story not found" in response["result"]["content"][0]["text"]
 
-    def test_artifacts_list_for_story_e2e_success(self, mcp_server_process):
-        """Test artifacts.listForStory tool via MCP JSON-RPC - success case."""
-        process = mcp_server_process
+    def test_artifacts_list_for_story_e2e_success(self, mcp_server_subprocess):
+        """Test list_story_artifacts tool via MCP JSON-RPC - success case."""
+        process = mcp_server_subprocess
 
         # Initialize server
         initialize_server(process)
@@ -325,7 +308,7 @@ class TestArtifactToolsE2E:
                 process,
                 "tools/call",
                 {
-                    "name": "artifacts.linkToStory",
+                    "name": "link_artifact_to_story",
                     "arguments": {
                         "story_id": story_id,
                         "uri": artifact_data["uri"],
@@ -340,7 +323,7 @@ class TestArtifactToolsE2E:
         list_response = send_jsonrpc_request(
             process,
             "tools/call",
-            {"name": "artifacts.listForStory", "arguments": {"story_id": story_id}},
+            {"name": "list_story_artifacts", "arguments": {"story_id": story_id}},
         )
 
         # Verify response structure
@@ -367,9 +350,9 @@ class TestArtifactToolsE2E:
             assert artifact["story_id"] == story_id
             assert artifact["relation"] in ["implementation", "design", "test"]
 
-    def test_artifacts_list_for_story_e2e_empty_result(self, mcp_server_process):
-        """Test artifacts.listForStory tool with no artifacts."""
-        process = mcp_server_process
+    def test_artifacts_list_for_story_e2e_empty_result(self, mcp_server_subprocess):
+        """Test list_story_artifacts tool with no artifacts."""
+        process = mcp_server_subprocess
 
         # Initialize server
         initialize_server(process)
@@ -381,7 +364,7 @@ class TestArtifactToolsE2E:
         list_response = send_jsonrpc_request(
             process,
             "tools/call",
-            {"name": "artifacts.listForStory", "arguments": {"story_id": story_id}},
+            {"name": "list_story_artifacts", "arguments": {"story_id": story_id}},
         )
 
         # Verify response structure
@@ -400,9 +383,9 @@ class TestArtifactToolsE2E:
         assert isinstance(artifacts_list, list)
         assert len(artifacts_list) == 0
 
-    def test_artifacts_list_for_story_e2e_validation_error(self, mcp_server_process):
-        """Test artifacts.listForStory tool with validation error."""
-        process = mcp_server_process
+    def test_artifacts_list_for_story_e2e_validation_error(self, mcp_server_subprocess):
+        """Test list_story_artifacts tool with validation error."""
+        process = mcp_server_subprocess
 
         # Initialize server
         initialize_server(process)
@@ -411,7 +394,7 @@ class TestArtifactToolsE2E:
         response = send_jsonrpc_request(
             process,
             "tools/call",
-            {"name": "artifacts.listForStory", "arguments": {"story_id": ""}},
+            {"name": "list_story_artifacts", "arguments": {"story_id": ""}},
         )
 
         # Verify error response (FastMCP returns successful response with error content)
@@ -422,10 +405,10 @@ class TestArtifactToolsE2E:
         assert "Story ID cannot be empty" in response["result"]["content"][0]["text"]
 
     def test_complete_workflow_create_story_link_artifacts_retrieve(
-        self, mcp_server_process
+        self, mcp_server_subprocess
     ):
         """Test complete workflow: create story, link artifacts, retrieve artifacts."""
-        process = mcp_server_process
+        process = mcp_server_subprocess
 
         # Initialize server
         initialize_server(process)
@@ -435,7 +418,7 @@ class TestArtifactToolsE2E:
             process,
             "tools/call",
             {
-                "name": "projects.create",
+                "name": "create_project",
                 "arguments": {
                     "name": "Complete Workflow Project",
                     "description": "Project for complete workflow testing",
@@ -451,7 +434,7 @@ class TestArtifactToolsE2E:
             process,
             "tools/call",
             {
-                "name": "backlog.createEpic",
+                "name": "create_epic",
                 "arguments": {
                     "title": "Complete Workflow Epic",
                     "description": "Epic for complete workflow testing",
@@ -467,7 +450,7 @@ class TestArtifactToolsE2E:
             process,
             "tools/call",
             {
-                "name": "backlog.createStory",
+                "name": "create_story",
                 "arguments": {
                     "epic_id": epic_id,
                     "title": "Complete Workflow Story",
@@ -498,7 +481,7 @@ class TestArtifactToolsE2E:
                 process,
                 "tools/call",
                 {
-                    "name": "artifacts.linkToStory",
+                    "name": "link_artifact_to_story",
                     "arguments": {
                         "story_id": story_id,
                         "uri": uri,
@@ -514,7 +497,7 @@ class TestArtifactToolsE2E:
         list_response = send_jsonrpc_request(
             process,
             "tools/call",
-            {"name": "artifacts.listForStory", "arguments": {"story_id": story_id}},
+            {"name": "list_story_artifacts", "arguments": {"story_id": story_id}},
         )
 
         assert "result" in list_response
@@ -538,7 +521,7 @@ class TestArtifactToolsE2E:
         story_get_response = send_jsonrpc_request(
             process,
             "tools/call",
-            {"name": "backlog.getStory", "arguments": {"story_id": story_id}},
+            {"name": "get_story", "arguments": {"story_id": story_id}},
         )
 
         assert "result" in story_get_response
@@ -546,9 +529,9 @@ class TestArtifactToolsE2E:
         assert retrieved_story["id"] == story_id
         assert retrieved_story["title"] == "Complete Workflow Story"
 
-    def test_artifacts_with_various_uri_formats(self, mcp_server_process):
+    def test_artifacts_with_various_uri_formats(self, mcp_server_subprocess):
         """Test artifact linking with various valid URI formats."""
-        process = mcp_server_process
+        process = mcp_server_subprocess
 
         # Initialize server
         initialize_server(process)
@@ -572,7 +555,7 @@ class TestArtifactToolsE2E:
                 process,
                 "tools/call",
                 {
-                    "name": "artifacts.linkToStory",
+                    "name": "link_artifact_to_story",
                     "arguments": {
                         "story_id": story_id,
                         "uri": uri,
@@ -591,7 +574,7 @@ class TestArtifactToolsE2E:
         list_response = send_jsonrpc_request(
             process,
             "tools/call",
-            {"name": "artifacts.listForStory", "arguments": {"story_id": story_id}},
+            {"name": "list_story_artifacts", "arguments": {"story_id": story_id}},
         )
 
         artifacts_list = json.loads(list_response["result"]["content"][0]["text"])
@@ -601,9 +584,9 @@ class TestArtifactToolsE2E:
         for uri in test_uris:
             assert uri in retrieved_uris
 
-    def test_artifacts_with_invalid_uri_formats(self, mcp_server_process):
+    def test_artifacts_with_invalid_uri_formats(self, mcp_server_subprocess):
         """Test artifact linking with invalid URI formats returns proper errors."""
-        process = mcp_server_process
+        process = mcp_server_subprocess
 
         # Initialize server
         initialize_server(process)
@@ -629,7 +612,7 @@ class TestArtifactToolsE2E:
                 process,
                 "tools/call",
                 {
-                    "name": "artifacts.linkToStory",
+                    "name": "link_artifact_to_story",
                     "arguments": {
                         "story_id": story_id,
                         "uri": invalid_uri,
@@ -647,9 +630,9 @@ class TestArtifactToolsE2E:
                 "validation error" in response["result"]["content"][0]["text"].lower()
             )
 
-    def test_server_capabilities_include_artifact_tools(self, mcp_server_process):
+    def test_server_capabilities_include_artifact_tools(self, mcp_server_subprocess):
         """Test that server initialization includes artifact tools in capabilities."""
-        process = mcp_server_process
+        process = mcp_server_subprocess
 
         # Initialize server and check capabilities
         init_response = initialize_server(process)

@@ -198,9 +198,7 @@ class TestLoggingIntegration:
         # Simulate API layer error logging
         logger.error(
             "Story validation error in create story",
-            **create_request_context(
-                request_id="req-789", tool_name="backlog.createStory"
-            ),
+            **create_request_context(request_id="req-789", tool_name="create_story"),
             **create_entity_context(epic_id="epic-456"),
             error_type="StoryValidationError",
             error_message="Story title cannot be empty",
@@ -212,7 +210,7 @@ class TestLoggingIntegration:
 
         # Verify API error-specific fields
         assert log_data["request_id"] == "req-789"
-        assert log_data["tool_name"] == "backlog.createStory"
+        assert log_data["tool_name"] == "create_story"
         assert log_data["epic_id"] == "epic-456"
         assert log_data["error_type"] == "StoryValidationError"
         assert log_data["error_message"] == "Story title cannot be empty"

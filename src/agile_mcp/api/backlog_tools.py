@@ -45,7 +45,7 @@ def register_backlog_tools(mcp: FastMCP) -> None:
         )
         raise
 
-    @mcp.tool("backlog.getStorySection")
+    @mcp.tool("get_story_section")
     def get_story_section(story_id: str, section_name: str) -> Dict[str, Any]:
         """
         Retrieve a specific section from a story by its unique ID and section name.
@@ -68,7 +68,7 @@ def register_backlog_tools(mcp: FastMCP) -> None:
             logger.info(
                 "Processing get story section request",
                 **create_request_context(
-                    request_id=request_id, tool_name="backlog.getStorySection"
+                    request_id=request_id, tool_name="get_story_section"
                 ),
                 **create_entity_context(story_id=story_id),
                 section_name=section_name,
@@ -108,7 +108,7 @@ def register_backlog_tools(mcp: FastMCP) -> None:
             logger.error(
                 "Story validation error in get story section",
                 **create_request_context(
-                    request_id=request_id, tool_name="backlog.getStorySection"
+                    request_id=request_id, tool_name="get_story_section"
                 ),
                 **create_entity_context(story_id=story_id),
                 section_name=section_name,
@@ -127,7 +127,7 @@ def register_backlog_tools(mcp: FastMCP) -> None:
             logger.error(
                 "Story not found error in get story section",
                 **create_request_context(
-                    request_id=request_id, tool_name="backlog.getStorySection"
+                    request_id=request_id, tool_name="get_story_section"
                 ),
                 **create_entity_context(story_id=story_id),
                 section_name=section_name,
@@ -146,7 +146,7 @@ def register_backlog_tools(mcp: FastMCP) -> None:
             logger.error(
                 "Section not found error in get story section",
                 **create_request_context(
-                    request_id=request_id, tool_name="backlog.getStorySection"
+                    request_id=request_id, tool_name="get_story_section"
                 ),
                 **create_entity_context(story_id=story_id),
                 section_name=section_name,
@@ -165,7 +165,7 @@ def register_backlog_tools(mcp: FastMCP) -> None:
             logger.error(
                 "Database error in get story section",
                 **create_request_context(
-                    request_id=request_id, tool_name="backlog.getStorySection"
+                    request_id=request_id, tool_name="get_story_section"
                 ),
                 **create_entity_context(story_id=story_id),
                 section_name=section_name,
@@ -184,7 +184,7 @@ def register_backlog_tools(mcp: FastMCP) -> None:
             logger.error(
                 "Unexpected error in get story section",
                 **create_request_context(
-                    request_id=request_id, tool_name="backlog.getStorySection"
+                    request_id=request_id, tool_name="get_story_section"
                 ),
                 **create_entity_context(story_id=story_id),
                 section_name=section_name,
@@ -200,7 +200,7 @@ def register_backlog_tools(mcp: FastMCP) -> None:
                 )
             )
 
-    @mcp.tool("backlog.addDependency")
+    @mcp.tool("add_story_dependency")
     def add_dependency(story_id: str, depends_on_story_id: str) -> str:
         """
         Add a dependency relationship between two stories.
@@ -305,7 +305,7 @@ def register_backlog_tools(mcp: FastMCP) -> None:
                 )
             )
 
-    @mcp.tool("backlog.getNextReadyStory")
+    @mcp.tool("get_next_ready_story")
     def get_next_ready_story() -> Dict[str, Any]:
         """Get the next story that is ready for implementation.
 

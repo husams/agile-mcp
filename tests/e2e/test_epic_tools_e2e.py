@@ -3,43 +3,17 @@ End-to-end tests for Epic tools via MCP JSON-RPC over stdio transport.
 """
 
 import json
-import os
-import subprocess
-import sys
-from pathlib import Path
 
-import pytest
+# Use the robust fixture from conftest.py instead of custom subprocess handling
 
 
-@pytest.fixture
-def mcp_server_process(isolated_test_database):
-    """Start MCP server as subprocess with isolated database."""
-    # Get the path to the run_server.py file
-    run_server_path = Path(__file__).parent.parent.parent / "run_server.py"
-
-    # Set up environment with isolated test database
-    env = os.environ.copy()
-    env["TEST_DATABASE_URL"] = f"sqlite:///{isolated_test_database}"
-
-    # Start server process with isolated database
-    process = subprocess.Popen(
-        [sys.executable, str(run_server_path)],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        env=env,
-    )
-
-    yield process
-
-    # Cleanup
-    process.terminate()
-    process.wait()
-
-
-def send_jsonrpc_request(process, method, params=None):
+def send_jsonrpc_request(process_or_fixture, method, params=None):
     """Send JSON-RPC request to MCP server and return response."""
+    # Handle both direct process and mcp_server_subprocess fixture tuple
+    if isinstance(process_or_fixture, tuple):
+        process, env_vars, communicate_json_rpc = process_or_fixture
+    else:
+        process = process_or_fixture
     request = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params or {}}
 
     request_json = json.dumps(request) + "\n"
@@ -55,11 +29,11 @@ def send_jsonrpc_request(process, method, params=None):
     return json.loads(response_line.strip())
 
 
-def test_mcp_server_initialization(mcp_server_process):
+def test_mcp_server_initialization(mcp_server_subprocess):
     """Test MCP server initialization handshake."""
     # Send initialize request
     response = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "initialize",
         {
             "protocolVersion": "2024-11-05",
@@ -75,11 +49,11 @@ def test_mcp_server_initialization(mcp_server_process):
     assert response["result"]["serverInfo"]["name"] == "Agile Management Server"
 
 
-def test_create_epic_tool_success(mcp_server_process):
+def test_create_epic_tool_success(mcp_server_subprocess):
     """Test successful epic creation via MCP tool."""
     # Initialize server first
     send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "initialize",
         {
             "protocolVersion": "2024-11-05",
@@ -89,17 +63,22 @@ def test_create_epic_tool_success(mcp_server_process):
     )
 
     # Send initialized notification (no response expected)
+    # Handle both direct process and mcp_server_subprocess fixture tuple
+    if isinstance(mcp_server_subprocess, tuple):
+        process, env_vars, communicate_json_rpc = mcp_server_subprocess
+    else:
+        process = mcp_server_subprocess
     request = {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}}
     request_json = json.dumps(request) + "\n"
-    mcp_server_process.stdin.write(request_json)
-    mcp_server_process.stdin.flush()
+    process.stdin.write(request_json)
+    process.stdin.flush()
 
     # Create project first
     project_response = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": "Test Project E2E",
                 "description": "Project for E2E epic testing",
@@ -112,10 +91,10 @@ def test_create_epic_tool_success(mcp_server_process):
 
     # Call create_epic tool
     response = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": "Test Epic E2E",
                 "description": "This is an end-to-end test epic",
@@ -138,11 +117,11 @@ def test_create_epic_tool_success(mcp_server_process):
     assert "id" in epic_dict
 
 
-def test_find_epics_tool_success(mcp_server_process):
+def test_find_epics_tool_success(mcp_server_subprocess):
     """Test successful epic retrieval via MCP tool."""
     # Initialize server first
     send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "initialize",
         {
             "protocolVersion": "2024-11-05",
@@ -152,17 +131,22 @@ def test_find_epics_tool_success(mcp_server_process):
     )
 
     # Send initialized notification (no response expected)
+    # Handle both direct process and mcp_server_subprocess fixture tuple
+    if isinstance(mcp_server_subprocess, tuple):
+        process, env_vars, communicate_json_rpc = mcp_server_subprocess
+    else:
+        process = mcp_server_subprocess
     request = {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}}
     request_json = json.dumps(request) + "\n"
-    mcp_server_process.stdin.write(request_json)
-    mcp_server_process.stdin.flush()
+    process.stdin.write(request_json)
+    process.stdin.flush()
 
     # Create project first
     project_response = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": "Findable Project",
                 "description": "Project for findable epic testing",
@@ -175,10 +159,10 @@ def test_find_epics_tool_success(mcp_server_process):
 
     # Create an epic first
     _ = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": "Findable Epic",
                 "description": "This epic should be findable",
@@ -189,7 +173,9 @@ def test_find_epics_tool_success(mcp_server_process):
 
     # Call find_epics tool
     response = send_jsonrpc_request(
-        mcp_server_process, "tools/call", {"name": "backlog.findEpics", "arguments": {}}
+        mcp_server_subprocess,
+        "tools/call",
+        {"name": "find_epics", "arguments": {}},
     )
 
     # Verify response
@@ -212,11 +198,11 @@ def test_find_epics_tool_success(mcp_server_process):
     assert findable_epic["status"] == "Draft"
 
 
-def test_create_epic_validation_error(mcp_server_process):
+def test_create_epic_validation_error(mcp_server_subprocess):
     """Test epic creation with validation errors."""
     # Initialize server first
     send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "initialize",
         {
             "protocolVersion": "2024-11-05",
@@ -226,17 +212,22 @@ def test_create_epic_validation_error(mcp_server_process):
     )
 
     # Send initialized notification (no response expected)
+    # Handle both direct process and mcp_server_subprocess fixture tuple
+    if isinstance(mcp_server_subprocess, tuple):
+        process, env_vars, communicate_json_rpc = mcp_server_subprocess
+    else:
+        process = mcp_server_subprocess
     request = {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}}
     request_json = json.dumps(request) + "\n"
-    mcp_server_process.stdin.write(request_json)
-    mcp_server_process.stdin.flush()
+    process.stdin.write(request_json)
+    process.stdin.flush()
 
     # Create project first
     project_response = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": "Validation Test Project",
                 "description": "Project for validation testing",
@@ -249,10 +240,10 @@ def test_create_epic_validation_error(mcp_server_process):
 
     # Call create_epic tool with empty title
     response = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": "",
                 "description": "Valid description",
@@ -270,11 +261,11 @@ def test_create_epic_validation_error(mcp_server_process):
     assert "Epic title cannot be empty" in response["result"]["content"][0]["text"]
 
 
-def test_create_epic_with_long_title_error(mcp_server_process):
+def test_create_epic_with_long_title_error(mcp_server_subprocess):
     """Test epic creation with title too long."""
     # Initialize server first
     send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "initialize",
         {
             "protocolVersion": "2024-11-05",
@@ -284,17 +275,22 @@ def test_create_epic_with_long_title_error(mcp_server_process):
     )
 
     # Send initialized notification (no response expected)
+    # Handle both direct process and mcp_server_subprocess fixture tuple
+    if isinstance(mcp_server_subprocess, tuple):
+        process, env_vars, communicate_json_rpc = mcp_server_subprocess
+    else:
+        process = mcp_server_subprocess
     request = {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}}
     request_json = json.dumps(request) + "\n"
-    mcp_server_process.stdin.write(request_json)
-    mcp_server_process.stdin.flush()
+    process.stdin.write(request_json)
+    process.stdin.flush()
 
     # Create project first
     project_response = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": "Long Title Test Project",
                 "description": "Project for long title testing",
@@ -308,10 +304,10 @@ def test_create_epic_with_long_title_error(mcp_server_process):
     # Call create_epic tool with title too long
     long_title = "x" * 201  # Exceeds 200 character limit
     response = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": long_title,
                 "description": "Valid description",
@@ -332,11 +328,11 @@ def test_create_epic_with_long_title_error(mcp_server_process):
     )
 
 
-def initialize_server(mcp_server_process):
+def initialize_server(mcp_server_subprocess):
     """Helper function to initialize MCP server."""
     # Send initialize request
     send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "initialize",
         {
             "protocolVersion": "2024-11-05",
@@ -346,22 +342,27 @@ def initialize_server(mcp_server_process):
     )
 
     # Send initialized notification (no response expected)
+    # Handle both direct process and mcp_server_subprocess fixture tuple
+    if isinstance(mcp_server_subprocess, tuple):
+        process, env_vars, communicate_json_rpc = mcp_server_subprocess
+    else:
+        process = mcp_server_subprocess
     request = {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}}
     request_json = json.dumps(request) + "\n"
-    mcp_server_process.stdin.write(request_json)
-    mcp_server_process.stdin.flush()
+    process.stdin.write(request_json)
+    process.stdin.flush()
 
 
-def test_update_epic_status_tool_success(mcp_server_process):
+def test_update_epic_status_tool_success(mcp_server_subprocess):
     """Test successful epic status update via MCP tool."""
-    initialize_server(mcp_server_process)
+    initialize_server(mcp_server_subprocess)
 
     # Create project first
     project_response = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": "Update Test Project",
                 "description": "Project for update testing",
@@ -374,10 +375,10 @@ def test_update_epic_status_tool_success(mcp_server_process):
 
     # Create an epic first
     create_response = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": "Epic to Update",
                 "description": "This epic will be updated",
@@ -393,10 +394,10 @@ def test_update_epic_status_tool_success(mcp_server_process):
 
     # Update epic status
     response = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.updateEpicStatus",
+            "name": "update_epic_status",
             "arguments": {"epic_id": epic_id, "status": "Ready"},
         },
     )
@@ -415,19 +416,19 @@ def test_update_epic_status_tool_success(mcp_server_process):
     assert updated_epic_dict["status"] == "Ready"
 
 
-def test_update_epic_status_all_valid_statuses(mcp_server_process):
+def test_update_epic_status_all_valid_statuses(mcp_server_subprocess):
     """Test updating epic status to all valid status values."""
-    initialize_server(mcp_server_process)
+    initialize_server(mcp_server_subprocess)
 
     valid_statuses = ["Draft", "Ready", "In Progress", "Done", "On Hold"]
 
     for status in valid_statuses:
         # Create project first
         project_response = send_jsonrpc_request(
-            mcp_server_process,
+            mcp_server_subprocess,
             "tools/call",
             {
-                "name": "projects.create",
+                "name": "create_project",
                 "arguments": {
                     "name": f"Project for {status}",
                     "description": f"Project for testing {status} status",
@@ -440,10 +441,10 @@ def test_update_epic_status_all_valid_statuses(mcp_server_process):
 
         # Create an epic
         create_response = send_jsonrpc_request(
-            mcp_server_process,
+            mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.createEpic",
+                "name": "create_epic",
                 "arguments": {
                     "title": f"Epic {status}",
                     "description": f"Epic for testing {status} status",
@@ -458,10 +459,10 @@ def test_update_epic_status_all_valid_statuses(mcp_server_process):
 
         # Update status
         response = send_jsonrpc_request(
-            mcp_server_process,
+            mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.updateEpicStatus",
+                "name": "update_epic_status",
                 "arguments": {"epic_id": epic_id, "status": status},
             },
         )
@@ -472,16 +473,16 @@ def test_update_epic_status_all_valid_statuses(mcp_server_process):
         assert updated_epic_dict["status"] == status
 
 
-def test_update_epic_status_not_found(mcp_server_process):
+def test_update_epic_status_not_found(mcp_server_subprocess):
     """Test updating status of non-existent epic."""
-    initialize_server(mcp_server_process)
+    initialize_server(mcp_server_subprocess)
 
     # Try to update non-existent epic
     response = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.updateEpicStatus",
+            "name": "update_epic_status",
             "arguments": {"epic_id": "nonexistent-id", "status": "Ready"},
         },
     )
@@ -496,16 +497,16 @@ def test_update_epic_status_not_found(mcp_server_process):
     )
 
 
-def test_update_epic_status_invalid_status(mcp_server_process):
+def test_update_epic_status_invalid_status(mcp_server_subprocess):
     """Test updating epic with invalid status values."""
-    initialize_server(mcp_server_process)
+    initialize_server(mcp_server_subprocess)
 
     # Create project first
     project_response = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": "Invalid Status Test Project",
                 "description": "Project for invalid status testing",
@@ -518,10 +519,10 @@ def test_update_epic_status_invalid_status(mcp_server_process):
 
     # Create an epic first
     create_response = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": "Epic for Invalid Status",
                 "description": "This epic will test invalid status",
@@ -538,10 +539,10 @@ def test_update_epic_status_invalid_status(mcp_server_process):
 
     for invalid_status in invalid_statuses:
         response = send_jsonrpc_request(
-            mcp_server_process,
+            mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.updateEpicStatus",
+                "name": "update_epic_status",
                 "arguments": {"epic_id": epic_id, "status": invalid_status},
             },
         )
@@ -553,16 +554,16 @@ def test_update_epic_status_invalid_status(mcp_server_process):
         assert "Epic status must be one of" in response["result"]["content"][0]["text"]
 
 
-def test_update_epic_status_empty_parameters(mcp_server_process):
+def test_update_epic_status_empty_parameters(mcp_server_subprocess):
     """Test updating epic with empty parameters."""
-    initialize_server(mcp_server_process)
+    initialize_server(mcp_server_subprocess)
 
     # Test empty epic_id
     response = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.updateEpicStatus",
+            "name": "update_epic_status",
             "arguments": {"epic_id": "", "status": "Ready"},
         },
     )
@@ -573,10 +574,10 @@ def test_update_epic_status_empty_parameters(mcp_server_process):
 
     # Test empty status
     response = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.updateEpicStatus",
+            "name": "update_epic_status",
             "arguments": {"epic_id": "some-id", "status": ""},
         },
     )
@@ -586,16 +587,16 @@ def test_update_epic_status_empty_parameters(mcp_server_process):
     assert "Epic status cannot be empty" in response["result"]["content"][0]["text"]
 
 
-def test_update_epic_status_integration_with_find_epics(mcp_server_process):
+def test_update_epic_status_integration_with_find_epics(mcp_server_subprocess):
     """Test that status updates are reflected in findEpics calls (AC 4)."""
-    initialize_server(mcp_server_process)
+    initialize_server(mcp_server_subprocess)
 
     # Create project first
     project_response = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": "Integration Test Project",
                 "description": "Project for integration testing",
@@ -608,10 +609,10 @@ def test_update_epic_status_integration_with_find_epics(mcp_server_process):
 
     # Create an epic
     create_response = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": "Integration Test Epic",
                 "description": "Epic for testing integration with findEpics",
@@ -626,17 +627,19 @@ def test_update_epic_status_integration_with_find_epics(mcp_server_process):
 
     # Update status
     send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.updateEpicStatus",
+            "name": "update_epic_status",
             "arguments": {"epic_id": epic_id, "status": "In Progress"},
         },
     )
 
     # Verify change is reflected in findEpics
     find_response = send_jsonrpc_request(
-        mcp_server_process, "tools/call", {"name": "backlog.findEpics", "arguments": {}}
+        mcp_server_subprocess,
+        "tools/call",
+        {"name": "find_epics", "arguments": {}},
     )
 
     epics_data = find_response["result"]["content"][0]["text"]
@@ -648,16 +651,16 @@ def test_update_epic_status_integration_with_find_epics(mcp_server_process):
     assert updated_epic["status"] == "In Progress"
 
 
-def test_multiple_status_transitions_workflow(mcp_server_process):
+def test_multiple_status_transitions_workflow(mcp_server_subprocess):
     """Test multiple status transitions through workflow states."""
-    initialize_server(mcp_server_process)
+    initialize_server(mcp_server_subprocess)
 
     # Create project first
     project_response = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": "Workflow Test Project",
                 "description": "Project for workflow testing",
@@ -670,10 +673,10 @@ def test_multiple_status_transitions_workflow(mcp_server_process):
 
     # Create an epic
     create_response = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": "Workflow Epic",
                 "description": "Epic for testing workflow transitions",
@@ -695,10 +698,10 @@ def test_multiple_status_transitions_workflow(mcp_server_process):
 
     for target_status, description in workflow_transitions:
         response = send_jsonrpc_request(
-            mcp_server_process,
+            mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.updateEpicStatus",
+                "name": "update_epic_status",
                 "arguments": {"epic_id": epic_id, "status": target_status},
             },
         )
@@ -710,7 +713,9 @@ def test_multiple_status_transitions_workflow(mcp_server_process):
 
     # Verify final state in findEpics
     find_response = send_jsonrpc_request(
-        mcp_server_process, "tools/call", {"name": "backlog.findEpics", "arguments": {}}
+        mcp_server_subprocess,
+        "tools/call",
+        {"name": "find_epics", "arguments": {}},
     )
 
     epics_data = find_response["result"]["content"][0]["text"]
@@ -720,16 +725,16 @@ def test_multiple_status_transitions_workflow(mcp_server_process):
     assert final_epic["status"] == "Done"
 
 
-def test_create_update_retrieve_complete_workflow(mcp_server_process):
+def test_create_update_retrieve_complete_workflow(mcp_server_subprocess):
     """Test complete workflow: create epic, update status, then retrieve epic."""
-    initialize_server(mcp_server_process)
+    initialize_server(mcp_server_subprocess)
 
     # Step 1: Create project first
     project_response = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": "Complete Workflow Project",
                 "description": "Project for complete workflow testing",
@@ -742,10 +747,10 @@ def test_create_update_retrieve_complete_workflow(mcp_server_process):
 
     # Step 2: Create epic
     create_response = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": "Complete Workflow Epic",
                 "description": "Epic for testing complete workflow",
@@ -763,10 +768,10 @@ def test_create_update_retrieve_complete_workflow(mcp_server_process):
 
     # Step 2: Update status
     update_response = send_jsonrpc_request(
-        mcp_server_process,
+        mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.updateEpicStatus",
+            "name": "update_epic_status",
             "arguments": {"epic_id": epic_id, "status": "On Hold"},
         },
     )
@@ -782,7 +787,9 @@ def test_create_update_retrieve_complete_workflow(mcp_server_process):
 
     # Step 3: Retrieve updated epic via findEpics
     find_response = send_jsonrpc_request(
-        mcp_server_process, "tools/call", {"name": "backlog.findEpics", "arguments": {}}
+        mcp_server_subprocess,
+        "tools/call",
+        {"name": "find_epics", "arguments": {}},
     )
 
     epics_data = find_response["result"]["content"][0]["text"]

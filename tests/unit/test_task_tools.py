@@ -66,14 +66,14 @@ class TestTaskManagementToolsRegistration:
             registered_tool_names = [call[0][0] for call in tool_calls]
 
             # Check that our task management tools are in the registered tools
-            assert "tasks.addToStory" in registered_tool_names
-            assert "tasks.updateTaskStatus" in registered_tool_names
-            assert "tasks.updateTaskDescription" in registered_tool_names
-            assert "tasks.reorderTasks" in registered_tool_names
+            assert "add_task_to_story" in registered_tool_names
+            assert "update_task_status" in registered_tool_names
+            assert "update_task_description" in registered_tool_names
+            assert "reorder_story_tasks" in registered_tool_names
 
 
 class TestAddTaskToStoryTool:
-    """Test the tasks.addToStory tool functionality."""
+    """Test the add_task_to_story tool functionality."""
 
     def test_add_task_service_integration(self, mock_fastmcp, sample_story_with_tasks):
         """Test that add task tool integrates with story service correctly."""
@@ -115,7 +115,7 @@ class TestAddTaskToStoryTool:
 
 
 class TestUpdateTaskStatusTool:
-    """Test the tasks.updateTaskStatus tool functionality."""
+    """Test the update_task_status tool functionality."""
 
     def test_update_task_status_service_integration(
         self, mock_fastmcp, sample_story_with_tasks
@@ -152,7 +152,7 @@ class TestUpdateTaskStatusTool:
 
 
 class TestUpdateTaskDescriptionTool:
-    """Test the tasks.updateTaskDescription tool functionality."""
+    """Test the update_task_description tool functionality."""
 
     def test_update_task_description_service_integration(
         self, mock_fastmcp, sample_story_with_tasks
@@ -191,7 +191,7 @@ class TestUpdateTaskDescriptionTool:
 
 
 class TestReorderTasksTool:
-    """Test the tasks.reorderTasks tool functionality."""
+    """Test the reorder_story_tasks tool functionality."""
 
     def test_reorder_tasks_service_integration(
         self, mock_fastmcp, sample_story_with_tasks
