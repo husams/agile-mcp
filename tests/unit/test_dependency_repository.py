@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
 from src.agile_mcp.models.epic import Base, Epic
+from src.agile_mcp.models.project import Project
 from src.agile_mcp.models.story import Story
 from src.agile_mcp.repositories.dependency_repository import DependencyRepository
 
@@ -48,11 +49,18 @@ def dependency_repository(test_session):
 @pytest.fixture
 def test_stories(test_session):
     """Create test stories for dependency testing."""
+    # Create test project first
+    project = Project(
+        id="test-project-1", name="Test Project", description="Project for testing"
+    )
+    test_session.add(project)
+
     # Create test epic first
     epic = Epic(
         id="test-epic-1",
         title="Test Epic",
         description="Epic for testing",
+        project_id="test-project-1",
         status="Ready",
     )
     test_session.add(epic)

@@ -9,6 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.agile_mcp.models.epic import Base, Epic
+from src.agile_mcp.models.project import Project
 
 # Story model available if needed
 from src.agile_mcp.repositories.story_repository import StoryRepository
@@ -23,11 +24,20 @@ def integration_db():
     Session = sessionmaker(bind=engine)
     session = Session()
 
+    # Create a test project first
+    project = Project(
+        id="integration-project-1",
+        name="Integration Test Project",
+        description="Project for integration testing",
+    )
+    session.add(project)
+
     # Create a test epic for story relationships
     epic = Epic(
         id="integration-epic-1",
         title="Integration Test Epic",
         description="Epic for integration testing",
+        project_id="integration-project-1",
         status="Ready",
     )
     session.add(epic)
