@@ -123,8 +123,6 @@ def mcp_server_subprocess(isolated_e2e_database):
 
         # Simplified startup approach for CI environments
         # In CI, we skip complex startup verification and rely on test timeouts
-        import os
-
         is_ci = os.getenv("GITHUB_ACTIONS") == "true" or os.getenv("CI") == "true"
 
         if is_ci:
