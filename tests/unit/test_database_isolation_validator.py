@@ -28,10 +28,10 @@ def test_validate_clean_database_state():
         project = Project(
             id="contamination-proj",
             name="Contamination Project",
-            description="Test project"
+            description="Test project",
         )
         session.add(project)
-        
+
         # Add test data to contaminate
         epic = Epic(
             id="contamination-test",
@@ -213,10 +213,10 @@ def test_validator_contamination_details():
         project = Project(
             id="contamination-details-proj",
             name="Contamination Details Project",
-            description="Test project for contamination details"
+            description="Test project for contamination details",
         )
         session.add(project)
-        
+
         # Add multiple contamination records
         for i in range(3):
             epic = Epic(
