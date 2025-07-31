@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from src.agile_mcp.models.artifact import Artifact
 from src.agile_mcp.models.epic import Epic
+from src.agile_mcp.models.project import Project
 from src.agile_mcp.models.story import Story
 
 
@@ -33,6 +34,56 @@ class DataFactory:
         self.session = session
         # Track created objects for cleanup
         self._created_objects: list[Any] = []
+        # Default project for epic creation
+        self._default_project: Optional[Project] = None
+
+    def _get_or_create_default_project(self) -> Project:
+        """Get or create the default project for epic creation."""
+        if self._default_project is None:
+            self._default_project = Project(
+                id=f"test-project-{uuid.uuid4().hex[:8]}",
+                name="Test Project",
+                description="Default test project created by TestDataFactory",
+            )
+            self.session.add(self._default_project)
+            self._created_objects.append(self._default_project)
+            self.session.commit()
+        return self._default_project
+
+    def create_project(
+        self,
+        project_id: Optional[str] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        **kwargs,
+    ) -> Project:
+        """
+        Create a test project with consistent defaults.
+
+        Args:
+            project_id: Project ID (generates UUID if not provided)
+            name: Project name (generates default if not provided)
+            description: Project description (generates default if not provided)
+            **kwargs: Additional project attributes
+
+        Returns:
+            Created Project instance
+        """
+        if project_id is None:
+            project_id = f"test-project-{uuid.uuid4().hex[:8]}"
+
+        if name is None:
+            name = f"Test Project {project_id[-8:]}"
+
+        if description is None:
+            description = f"Test project created by TestDataFactory for {project_id}"
+
+        project = Project(id=project_id, name=name, description=description, **kwargs)
+
+        self.session.add(project)
+        self._created_objects.append(project)
+
+        return project
 
     def create_epic(
         self,
@@ -40,6 +91,7 @@ class DataFactory:
         title: Optional[str] = None,
         description: Optional[str] = None,
         status: str = "Ready",
+        project_id: Optional[str] = None,
         **kwargs,
     ) -> Epic:
         """
@@ -50,6 +102,7 @@ class DataFactory:
             title: Epic title (generates default if not provided)
             description: Epic description (generates default if not provided)
             status: Epic status (default: "Ready")
+            project_id: Project ID (uses default project if not provided)
             **kwargs: Additional epic attributes
 
         Returns:
@@ -64,8 +117,17 @@ class DataFactory:
         if description is None:
             description = f"Test epic created by TestDataFactory for {epic_id}"
 
+        if project_id is None:
+            project = self._get_or_create_default_project()
+            project_id = project.id
+
         epic = Epic(
-            id=epic_id, title=title, description=description, status=status, **kwargs
+            id=epic_id,
+            title=title,
+            description=description,
+            project_id=project_id,
+            status=status,
+            **kwargs,
         )
 
         self.session.add(epic)
@@ -351,10 +413,12 @@ class DataFactory:
         Returns:
             Dictionary with counts by object type
         """
-        counts = {"Epic": 0, "Story": 0, "Artifact": 0}
+        counts = {"Project": 0, "Epic": 0, "Story": 0, "Artifact": 0}
 
         for obj in self._created_objects:
-            if isinstance(obj, Epic):
+            if isinstance(obj, Project):
+                counts["Project"] += 1
+            elif isinstance(obj, Epic):
                 counts["Epic"] += 1
             elif isinstance(obj, Story):
                 counts["Story"] += 1

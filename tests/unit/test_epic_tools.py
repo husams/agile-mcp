@@ -24,7 +24,11 @@ def test_epic_service_integration_update_status():
     from src.agile_mcp.models.epic import Epic
 
     mock_epic = Epic(
-        id="test-id", title="Test Epic", description="Test description", status="Ready"
+        id="test-id",
+        title="Test Epic",
+        description="Test description",
+        project_id="test-project",
+        status="Ready",
     )
     mock_repository.update_epic_status.return_value = mock_epic
 
@@ -36,6 +40,7 @@ def test_epic_service_integration_update_status():
         "title": "Test Epic",
         "description": "Test description",
         "status": "Ready",
+        "project_id": "test-project",
     }
     assert result == expected
     mock_repository.update_epic_status.assert_called_once_with("test-id", "Ready")
@@ -82,7 +87,13 @@ def test_epic_service_update_status_valid_statuses():
     for status in valid_statuses:
         from src.agile_mcp.models.epic import Epic
 
-        mock_epic = Epic(id="test-id", title="Test", description="Test", status=status)
+        mock_epic = Epic(
+            id="test-id",
+            title="Test",
+            description="Test",
+            project_id="test-project",
+            status=status,
+        )
         mock_repository.update_epic_status.return_value = mock_epic
 
         result = service.update_epic_status("test-id", status)

@@ -5,6 +5,7 @@ import threading
 import time
 
 from src.agile_mcp.models.epic import Epic
+from src.agile_mcp.models.project import Project
 from tests.utils.test_database_manager import DatabaseManager
 
 
@@ -21,8 +22,18 @@ def test_memory_database_creation():
     # Test session creation
     session = session_factory()
     try:
+        # Insert test project first
+        project = Project(id="test-project", name="Test Project", description="Test")
+        session.add(project)
+
         # Insert test data
-        epic = Epic(id="test", title="Test Epic", description="Test", status="Ready")
+        epic = Epic(
+            id="test",
+            title="Test Epic",
+            description="Test",
+            project_id="test-project",
+            status="Ready",
+        )
         session.add(epic)
         session.commit()
 
@@ -47,13 +58,33 @@ def test_database_isolation():
     session2 = factory2()
 
     try:
+        # Add project to first database
+        project1 = Project(id="project1", name="Project 1", description="Test")
+        session1.add(project1)
+
         # Add data to first database
-        epic1 = Epic(id="epic1", title="Epic 1", description="Test", status="Ready")
+        epic1 = Epic(
+            id="epic1",
+            title="Epic 1",
+            description="Test",
+            project_id="project1",
+            status="Ready",
+        )
         session1.add(epic1)
         session1.commit()
 
+        # Add project to second database
+        project2 = Project(id="project2", name="Project 2", description="Test")
+        session2.add(project2)
+
         # Add different data to second database
-        epic2 = Epic(id="epic2", title="Epic 2", description="Test", status="Ready")
+        epic2 = Epic(
+            id="epic2",
+            title="Epic 2",
+            description="Test",
+            project_id="project2",
+            status="Ready",
+        )
         session2.add(epic2)
         session2.commit()
 
@@ -75,8 +106,16 @@ def test_context_manager():
 
     # Test unit test context
     with manager.get_test_session("unit", "test_003") as session:
+        # Add project first
+        project = Project(id="ctx-project", name="Context Project", description="Test")
+        session.add(project)
+
         epic = Epic(
-            id="ctx_test", title="Context Test", description="Test", status="Ready"
+            id="ctx_test",
+            title="Context Test",
+            description="Test",
+            project_id="ctx-project",
+            status="Ready",
         )
         session.add(epic)
         session.commit()
@@ -116,10 +155,19 @@ def test_thread_safety():
     def create_and_test_db(thread_id):
         try:
             with manager.get_test_session("unit", f"thread_{thread_id}") as session:
+                # Add project first
+                project = Project(
+                    id=f"thread-project-{thread_id}",
+                    name=f"Thread Project {thread_id}",
+                    description="Thread test",
+                )
+                session.add(project)
+
                 epic = Epic(
                     id=f"thread_epic_{thread_id}",
                     title=f"Thread {thread_id} Epic",
                     description="Thread test",
+                    project_id=f"thread-project-{thread_id}",
                     status="Ready",
                 )
                 session.add(epic)
