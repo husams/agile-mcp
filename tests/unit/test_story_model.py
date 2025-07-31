@@ -97,6 +97,7 @@ def test_story_to_dict():
         "structured_acceptance_criteria": [],
         "tasks": [],
         "comments": [],
+        "dev_notes": None,
         "epic_id": "test-epic-1",
         "status": "InProgress",
         "priority": 0,
@@ -388,6 +389,7 @@ def test_story_to_dict_with_priority_created_at():
         "structured_acceptance_criteria": [],
         "tasks": [],
         "comments": [],
+        "dev_notes": None,
         "epic_id": "test-epic-1",
         "status": "Review",
         "priority": 7,
@@ -917,6 +919,72 @@ def test_story_to_dict_includes_structured_acceptance_criteria():
     assert story_dict["structured_acceptance_criteria"] == criteria
     assert len(story_dict["structured_acceptance_criteria"]) == 1
     assert story_dict["structured_acceptance_criteria"][0]["id"] == "ac-1"
+
+
+def test_story_dev_notes_validation():
+    """Test Story model dev_notes field validation."""
+    # Test with valid dev_notes
+    story = Story(
+        id="test-story-dev-notes",
+        title="Dev Notes Test Story",
+        description="Story for testing dev_notes field",
+        acceptance_criteria=["Should accept valid dev_notes"],
+        epic_id="test-epic-1",
+        dev_notes="This is a test dev note with technical context",
+    )
+    assert story.dev_notes == "This is a test dev note with technical context"
+
+    # Test with None dev_notes (should be allowed)
+    story_none = Story(
+        id="test-story-dev-notes-none",
+        title="Dev Notes None Test Story",
+        description="Story for testing None dev_notes",
+        acceptance_criteria=["Should accept None dev_notes"],
+        epic_id="test-epic-1",
+        dev_notes=None,
+    )
+    assert story_none.dev_notes is None
+
+    # Test validation error for non-string dev_notes
+    with pytest.raises(ValueError, match="Dev notes must be a string"):
+        Story(
+            id="test-story-dev-notes-invalid",
+            title="Invalid Dev Notes Test Story",
+            description="Story for testing invalid dev_notes",
+            acceptance_criteria=["Should reject non-string dev_notes"],
+            epic_id="test-epic-1",
+            dev_notes=123,  # Invalid: not a string
+        )
+
+    # Test validation error for dev_notes that are too long
+    long_dev_notes = "x" * 10001  # Exceeds 10000 character limit
+    with pytest.raises(ValueError, match="Dev notes cannot exceed 10000 characters"):
+        Story(
+            id="test-story-dev-notes-too-long",
+            title="Long Dev Notes Test Story",
+            description="Story for testing overly long dev_notes",
+            acceptance_criteria=["Should reject dev_notes that are too long"],
+            epic_id="test-epic-1",
+            dev_notes=long_dev_notes,
+        )
+
+
+def test_story_to_dict_includes_dev_notes():
+    """Test Story model to_dict method includes dev_notes field."""
+    dev_notes_content = "Technical context: Use JWT tokens with Redis session storage"
+    story = Story(
+        id="test-story-dev-notes-dict",
+        title="Dev Notes Dict Test Story",
+        description="Story for testing dev_notes in to_dict",
+        acceptance_criteria=["Should include dev_notes in dict"],
+        epic_id="test-epic-1",
+        dev_notes=dev_notes_content,
+    )
+
+    story_dict = story.to_dict()
+
+    assert "dev_notes" in story_dict
+    assert story_dict["dev_notes"] == dev_notes_content
 
 
 def test_story_comments_validation_empty_list():

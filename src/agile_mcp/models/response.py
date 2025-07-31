@@ -15,6 +15,7 @@ class StoryResponse(BaseModel):
     structured_acceptance_criteria: List[Dict[str, Any]]
     tasks: List[Dict[str, Any]]
     comments: List[Dict[str, Any]]
+    dev_notes: Optional[str]
     status: str
     priority: int
     created_at: Optional[str]

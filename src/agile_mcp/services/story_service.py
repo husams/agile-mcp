@@ -52,6 +52,7 @@ class StoryService:
         tasks: Optional[List[Dict[str, Any]]] = None,
         structured_acceptance_criteria: Optional[List[Dict[str, Any]]] = None,
         comments: Optional[List[Dict[str, Any]]] = None,
+        dev_notes: Optional[str] = None,
         priority: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
@@ -68,6 +69,7 @@ class StoryService:
             structured_acceptance_criteria: Optional list of structured AC
                 dictionaries
             comments: Optional list of comment dictionaries
+            dev_notes: Optional pre-compiled technical context and notes
             priority: Optional story priority (integer)
 
         Returns:
@@ -120,6 +122,8 @@ class StoryService:
             )
         if comments is not None:
             self._validate_comments(comments)
+        if dev_notes is not None:
+            self._validate_dev_notes(dev_notes)
 
         try:
             self.logger.info(
@@ -137,6 +141,7 @@ class StoryService:
                 tasks=tasks or [],
                 structured_acceptance_criteria=structured_acceptance_criteria or [],
                 comments=comments or [],
+                dev_notes=dev_notes,
                 priority=priority,
             )
 
@@ -280,6 +285,7 @@ class StoryService:
         tasks: Optional[List[Dict[str, Any]]] = None,
         structured_acceptance_criteria: Optional[List[Dict[str, Any]]] = None,
         comments: Optional[List[Dict[str, Any]]] = None,
+        dev_notes: Optional[str] = None,
         status: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
@@ -293,6 +299,7 @@ class StoryService:
             tasks: Optional new tasks list
             structured_acceptance_criteria: Optional new structured AC list
             comments: Optional new comments list
+            dev_notes: Optional pre-compiled technical context and notes
             status: Optional new status
 
         Returns:
@@ -316,6 +323,8 @@ class StoryService:
             )
         if comments is not None:
             self._validate_comments(comments)
+        if dev_notes is not None:
+            self._validate_dev_notes(dev_notes)
 
         # Validate basic fields if provided
         if title is not None:
@@ -381,6 +390,8 @@ class StoryService:
                 )
             if comments is not None:
                 updates["comments"] = comments
+            if dev_notes is not None:
+                updates["dev_notes"] = dev_notes
             if status is not None:
                 updates["status"] = status
 
@@ -1499,3 +1510,12 @@ class StoryService:
 
             # timestamp validation is flexible - can be datetime or string
             # reply_to_id is optional
+
+    def _validate_dev_notes(self, dev_notes: str) -> None:
+        """Validate dev_notes content."""
+        if not isinstance(dev_notes, str):
+            raise StoryValidationError("Dev notes must be a string")
+
+        # Optional: Add length validation
+        if len(dev_notes.strip()) > 10000:
+            raise StoryValidationError("Dev notes cannot exceed 10000 characters")

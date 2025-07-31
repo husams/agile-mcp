@@ -50,6 +50,7 @@ def register_story_tools(mcp: FastMCP) -> None:
         tasks: Optional[List[Dict[str, Any]]] = None,
         structured_acceptance_criteria: Optional[List[Dict[str, Any]]] = None,
         comments: Optional[List[Dict[str, Any]]] = None,
+        dev_notes: Optional[str] = None,
         priority: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
@@ -66,6 +67,7 @@ def register_story_tools(mcp: FastMCP) -> None:
             structured_acceptance_criteria: Optional list of structured AC
                 dictionaries
             comments: Optional list of comment dictionaries
+            dev_notes: Optional pre-compiled technical context and notes
             priority: Optional story priority (integer)
 
         Returns:
@@ -98,6 +100,7 @@ def register_story_tools(mcp: FastMCP) -> None:
                     tasks=tasks,
                     structured_acceptance_criteria=structured_acceptance_criteria,
                     comments=comments,
+                    dev_notes=dev_notes,
                     priority=priority,
                 )
                 story_response = StoryResponse(**story_dict)
@@ -282,6 +285,7 @@ def register_story_tools(mcp: FastMCP) -> None:
         tasks: Optional[List[Dict[str, Any]]] = None,
         structured_acceptance_criteria: Optional[List[Dict[str, Any]]] = None,
         comments: Optional[List[Dict[str, Any]]] = None,
+        dev_notes: Optional[str] = None,
         status: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
@@ -297,6 +301,7 @@ def register_story_tools(mcp: FastMCP) -> None:
             structured_acceptance_criteria: Optional list of structured AC
                 dictionaries
             comments: Optional list of comment dictionaries
+            dev_notes: Optional pre-compiled technical context and notes
             status: Optional new status ("ToDo", "InProgress", "Review", "Done")
 
         Returns:
@@ -328,6 +333,7 @@ def register_story_tools(mcp: FastMCP) -> None:
                     tasks=tasks,
                     structured_acceptance_criteria=structured_acceptance_criteria,
                     comments=comments,
+                    dev_notes=dev_notes,
                     status=status,
                 )
 

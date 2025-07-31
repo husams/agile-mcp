@@ -123,7 +123,7 @@ jobs:
         MCP_TEST_MODE: true
         SQL_DEBUG: false
       run: |
-        pytest tests/e2e/ --verbose --tb=short --maxfail=5
+        pytest tests/e2e/ --verbose --tb=short --maxfail=5 --junitxml=pytest-report.xml
 
     - name: Cleanup test database files
       if: always()
@@ -137,9 +137,8 @@ jobs:
       if: always()
       with:
         name: e2e-test-results
-        path: |
-          pytest-report.xml
-          test-results/
+        path: pytest-report.xml
+        if-no-files-found: warn
 
   security-scan:
     name: Security Scan

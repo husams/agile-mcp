@@ -68,6 +68,7 @@ def test_create_story_success(story_service, mock_repository):
         tasks=[],
         structured_acceptance_criteria=[],
         comments=[],
+        dev_notes=None,
         priority=None,
     )
 
@@ -377,8 +378,75 @@ def test_create_story_strips_whitespace(story_service, mock_repository):
         tasks=[],
         structured_acceptance_criteria=[],
         comments=[],
+        dev_notes=None,
         priority=None,
     )
+
+
+def test_create_story_with_dev_notes(story_service, mock_repository):
+    """Test successful story creation with dev_notes."""
+    dev_notes_content = "Technical context: Use JWT authentication with Redis sessions"
+    mock_story = Story(
+        id="test-story-dev-notes",
+        title="Test Story with Dev Notes",
+        description="As a user, I want to test dev_notes",
+        acceptance_criteria=["Should work", "Should include dev_notes"],
+        epic_id="test-epic-id",
+        dev_notes=dev_notes_content,
+        status="ToDo",
+    )
+    mock_repository.create_story.return_value = mock_story
+
+    # Call service method with dev_notes
+    result = story_service.create_story(
+        title="Test Story with Dev Notes",
+        description="As a user, I want to test dev_notes",
+        acceptance_criteria=["Should work", "Should include dev_notes"],
+        epic_id="test-epic-id",
+        dev_notes=dev_notes_content,
+    )
+
+    # Verify result contains dev_notes
+    assert result["dev_notes"] == dev_notes_content
+
+    # Verify repository was called with dev_notes
+    mock_repository.create_story.assert_called_once_with(
+        "Test Story with Dev Notes",
+        "As a user, I want to test dev_notes",
+        ["Should work", "Should include dev_notes"],
+        "test-epic-id",
+        tasks=[],
+        structured_acceptance_criteria=[],
+        comments=[],
+        dev_notes=dev_notes_content,
+        priority=None,
+    )
+
+
+def test_create_story_dev_notes_validation_error(story_service, mock_repository):
+    """Test story creation with invalid dev_notes."""
+    # Test with non-string dev_notes
+    with pytest.raises(StoryValidationError, match="Dev notes must be a string"):
+        story_service.create_story(
+            title="Test Story",
+            description="As a user, I want to test",
+            acceptance_criteria=["Should work"],
+            epic_id="test-epic-id",
+            dev_notes=123,  # Invalid: not a string
+        )
+
+    # Test with dev_notes that are too long
+    long_dev_notes = "x" * 10001
+    with pytest.raises(
+        StoryValidationError, match="Dev notes cannot exceed 10000 characters"
+    ):
+        story_service.create_story(
+            title="Test Story",
+            description="As a user, I want to test",
+            acceptance_criteria=["Should work"],
+            epic_id="test-epic-id",
+            dev_notes=long_dev_notes,
+        )
 
 
 def test_update_story_status_success(story_service, mock_repository):

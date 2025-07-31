@@ -28,6 +28,7 @@ class StoryRepository:
         tasks: Optional[List[Dict[str, Any]]] = None,
         structured_acceptance_criteria: Optional[List[Dict[str, Any]]] = None,
         comments: Optional[List[Dict[str, Any]]] = None,
+        dev_notes: Optional[str] = None,
         priority: Optional[int] = None,
     ) -> Story:
         """
@@ -42,6 +43,7 @@ class StoryRepository:
             tasks: Optional list of task dictionaries
             structured_acceptance_criteria: Optional list of structured AC dictionaries
             comments: Optional list of comment dictionaries
+            dev_notes: Optional pre-compiled technical context and notes
             priority: Optional story priority (integer)
 
         Returns:
@@ -71,6 +73,7 @@ class StoryRepository:
                 tasks=tasks or [],
                 structured_acceptance_criteria=structured_acceptance_criteria or [],
                 comments=comments or [],
+                dev_notes=dev_notes,
                 priority=priority or 0,
             )
 

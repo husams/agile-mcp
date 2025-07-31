@@ -61,6 +61,7 @@ class Story(Base):
     comments: Mapped[List[Dict[str, Any]]] = mapped_column(
         JSON, nullable=False, default=list
     )
+    dev_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="ToDo")
     priority: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(
@@ -112,6 +113,7 @@ class Story(Base):
         tasks: Optional[List[Dict[str, Any]]] = None,
         structured_acceptance_criteria: Optional[List[Dict[str, Any]]] = None,
         comments: Optional[List[Dict[str, Any]]] = None,
+        dev_notes: Optional[str] = None,
         status: str = "ToDo",
         priority: int = 0,
         created_at: Optional[datetime] = None,
@@ -126,6 +128,7 @@ class Story(Base):
         self.structured_acceptance_criteria = structured_acceptance_criteria or []
         self.tasks = tasks or []
         self.comments = comments or []
+        self.dev_notes = dev_notes
         self.epic_id = epic_id
         self.status = status
         self.priority = priority
@@ -151,6 +154,7 @@ class Story(Base):
             "structured_acceptance_criteria": self.structured_acceptance_criteria,
             "tasks": self.tasks,
             "comments": serialized_comments,
+            "dev_notes": self.dev_notes,
             "status": self.status,
             "priority": self.priority,
             "created_at": self.created_at.isoformat() if self.created_at else None,
@@ -377,6 +381,17 @@ class Story(Base):
                     )
 
         return comments
+
+    @validates("dev_notes")
+    def validate_dev_notes(self, key, dev_notes):
+        """Validate story dev_notes field."""
+        if dev_notes is not None:
+            if not isinstance(dev_notes, str):
+                raise ValueError("Dev notes must be a string")
+            # Optional: Add length limit for dev_notes
+            if len(dev_notes) > 10000:  # Generous limit for structured content
+                raise ValueError("Dev notes cannot exceed 10000 characters")
+        return dev_notes
 
     @validates("status")
     def validate_status(self, key, status):
