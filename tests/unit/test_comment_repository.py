@@ -6,12 +6,11 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from src.agile_mcp.models.comment import Comment
 from src.agile_mcp.models.epic import Base, Epic
 from src.agile_mcp.models.project import Project
 from src.agile_mcp.models.story import Story
 from src.agile_mcp.repositories.comment_repository import CommentRepository
-from src.agile_mcp.services.exceptions import CommentNotFoundError, DatabaseError
+from src.agile_mcp.services.exceptions import CommentNotFoundError
 
 
 @pytest.fixture
@@ -117,7 +116,9 @@ def test_get_comment_by_id(comment_repository):
 
 def test_get_comment_by_id_not_found(comment_repository):
     """Test retrieving a non-existent comment raises CommentNotFoundError."""
-    with pytest.raises(CommentNotFoundError, match="Comment with id 'non-existent' not found"):
+    with pytest.raises(
+        CommentNotFoundError, match="Comment with id 'non-existent' not found"
+    ):
         comment_repository.get_comment_by_id("non-existent")
 
 
@@ -132,7 +133,7 @@ def test_get_comments_by_story_id(comment_repository):
     comment2 = comment_repository.create_comment(
         story_id="test-story-1",
         author_role="QA Agent",
-        content="Second comment", 
+        content="Second comment",
     )
 
     # Retrieve comments for the story

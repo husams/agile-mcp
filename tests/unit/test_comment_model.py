@@ -181,7 +181,9 @@ def test_comment_reply_to_validation():
     assert comment.reply_to_id == "parent-comment-id"
 
     # Empty string should raise ValueError
-    with pytest.raises(ValueError, match="reply_to_id must be None or a non-empty string"):
+    with pytest.raises(
+        ValueError, match="reply_to_id must be None or a non-empty string"
+    ):
         Comment(
             id="test-comment-3",
             story_id="test-story-1",
@@ -214,7 +216,9 @@ def test_comment_database_persistence(in_memory_db):
     in_memory_db.commit()
 
     # Retrieve and verify
-    retrieved = in_memory_db.query(Comment).filter(Comment.id == "test-comment-1").first()
+    retrieved = (
+        in_memory_db.query(Comment).filter(Comment.id == "test-comment-1").first()
+    )
     assert retrieved is not None
     assert retrieved.id == "test-comment-1"
     assert retrieved.story_id == "test-story-1"
@@ -235,12 +239,16 @@ def test_comment_story_relationship(in_memory_db):
     in_memory_db.commit()
 
     # Test relationship
-    retrieved_comment = in_memory_db.query(Comment).filter(Comment.id == "test-comment-1").first()
+    retrieved_comment = (
+        in_memory_db.query(Comment).filter(Comment.id == "test-comment-1").first()
+    )
     assert retrieved_comment.story is not None
     assert retrieved_comment.story.id == "test-story-1"
 
     # Test reverse relationship
-    retrieved_story = in_memory_db.query(Story).filter(Story.id == "test-story-1").first()
+    retrieved_story = (
+        in_memory_db.query(Story).filter(Story.id == "test-story-1").first()
+    )
     assert len(retrieved_story.story_comments) == 1
     assert retrieved_story.story_comments[0].id == "test-comment-1"
 
@@ -269,16 +277,26 @@ def test_comment_threading_relationship(in_memory_db):
     in_memory_db.commit()
 
     # Test that reply_to_id is properly set (basic functionality)
-    retrieved_reply = in_memory_db.query(Comment).filter(Comment.id == "reply-comment-1").first()
+    retrieved_reply = (
+        in_memory_db.query(Comment).filter(Comment.id == "reply-comment-1").first()
+    )
     assert retrieved_reply.reply_to_id == "parent-comment-1"
-    
+
     # Test that we can find the parent by querying
-    parent_from_db = in_memory_db.query(Comment).filter(Comment.id == retrieved_reply.reply_to_id).first()
+    parent_from_db = (
+        in_memory_db.query(Comment)
+        .filter(Comment.id == retrieved_reply.reply_to_id)
+        .first()
+    )
     assert parent_from_db is not None
     assert parent_from_db.id == "parent-comment-1"
-    
+
     # Test that we can find replies by querying
-    replies = in_memory_db.query(Comment).filter(Comment.reply_to_id == "parent-comment-1").all()
+    replies = (
+        in_memory_db.query(Comment)
+        .filter(Comment.reply_to_id == "parent-comment-1")
+        .all()
+    )
     assert len(replies) == 1
     assert replies[0].id == "reply-comment-1"
 

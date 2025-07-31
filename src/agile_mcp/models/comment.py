@@ -14,7 +14,7 @@ from .epic import Base
 
 class AuthorRole(Enum):
     """Enumeration of predefined author roles for comments."""
-    
+
     DEVELOPER_AGENT = "Developer Agent"
     QA_AGENT = "QA Agent"
     SCRUM_MASTER = "Scrum Master"
@@ -53,7 +53,9 @@ class Comment(Base):
     __tablename__ = "comments"
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
-    story_id: Mapped[str] = mapped_column(String, ForeignKey("stories.id"), nullable=False)
+    story_id: Mapped[str] = mapped_column(
+        String, ForeignKey("stories.id"), nullable=False
+    )
     author_role: Mapped[str] = mapped_column(String(50), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     timestamp: Mapped[datetime] = mapped_column(
@@ -108,12 +110,12 @@ class Comment(Base):
         """Validate comment content."""
         if not content or not content.strip():
             raise ValueError("Comment content cannot be empty")
-        
+
         # Set reasonable maximum length for comment content
         max_length = 10000
         if len(content.strip()) > max_length:
             raise ValueError(f"Comment content cannot exceed {max_length} characters")
-        
+
         return content.strip()
 
     @validates("reply_to_id")
@@ -122,11 +124,11 @@ class Comment(Base):
         if reply_to_id is not None:
             if not isinstance(reply_to_id, str) or not reply_to_id.strip():
                 raise ValueError("reply_to_id must be None or a non-empty string")
-            
+
             # Prevent self-referencing
-            if reply_to_id == getattr(self, 'id', None):
+            if reply_to_id == getattr(self, "id", None):
                 raise ValueError("Comment cannot reply to itself")
-        
+
         return reply_to_id
 
     def __repr__(self) -> str:
@@ -141,5 +143,5 @@ Comment.replies = relationship(
     "Comment",
     backref="parent_comment",
     remote_side=[Comment.id],
-    foreign_keys=[Comment.reply_to_id]
+    foreign_keys=[Comment.reply_to_id],
 )

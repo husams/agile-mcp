@@ -2,18 +2,16 @@
 Unit tests for CommentService.
 """
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
-from src.agile_mcp.models.comment import AuthorRole, Comment
 from src.agile_mcp.repositories.comment_repository import CommentRepository
 from src.agile_mcp.repositories.story_repository import StoryRepository
 from src.agile_mcp.services.comment_service import CommentService
 from src.agile_mcp.services.exceptions import (
     CommentNotFoundError,
     CommentValidationError,
-    DatabaseError,
     StoryNotFoundError,
 )
 
@@ -36,11 +34,13 @@ def comment_service(mock_comment_repository, mock_story_repository):
     return CommentService(mock_comment_repository, mock_story_repository)
 
 
-def test_create_comment_success(comment_service, mock_story_repository, mock_comment_repository):
+def test_create_comment_success(
+    comment_service, mock_story_repository, mock_comment_repository
+):
     """Test successful comment creation."""
     # Mock story exists
     mock_story_repository.find_story_by_id.return_value = Mock()
-    
+
     # Mock comment creation
     mock_comment = Mock()
     mock_comment.to_dict.return_value = {
@@ -63,7 +63,7 @@ def test_create_comment_success(comment_service, mock_story_repository, mock_com
     assert result["story_id"] == "story-1"
     assert result["author_role"] == "Developer Agent"
     assert result["content"] == "Test comment"
-    
+
     mock_story_repository.find_story_by_id.assert_called_once_with("story-1")
     mock_comment_repository.create_comment.assert_called_once_with(
         story_id="story-1",
@@ -97,11 +97,13 @@ def test_create_comment_story_not_found(comment_service, mock_story_repository):
         )
 
 
-def test_create_comment_with_reply_success(comment_service, mock_story_repository, mock_comment_repository):
+def test_create_comment_with_reply_success(
+    comment_service, mock_story_repository, mock_comment_repository
+):
     """Test successful comment creation with reply_to_id."""
     # Mock story exists
     mock_story_repository.find_story_by_id.return_value = Mock()
-    
+
     # Mock parent comment exists and belongs to same story
     mock_parent_comment = Mock()
     mock_parent_comment.story_id = "story-1"
@@ -130,16 +132,20 @@ def test_create_comment_with_reply_success(comment_service, mock_story_repositor
     mock_comment_repository.get_comment_by_id.assert_called_once_with("comment-1")
 
 
-def test_create_comment_reply_different_story(comment_service, mock_story_repository, mock_comment_repository):
+def test_create_comment_reply_different_story(
+    comment_service, mock_story_repository, mock_comment_repository
+):
     """Test comment creation fails when reply_to_id belongs to different story."""
     mock_story_repository.find_story_by_id.return_value = Mock()
-    
+
     # Mock parent comment belongs to different story
     mock_parent_comment = Mock()
     mock_parent_comment.story_id = "different-story"
     mock_comment_repository.get_comment_by_id.return_value = mock_parent_comment
 
-    with pytest.raises(CommentValidationError, match="Reply comment must belong to the same story"):
+    with pytest.raises(
+        CommentValidationError, match="Reply comment must belong to the same story"
+    ):
         comment_service.create_comment(
             story_id="story-1",
             author_role="QA Agent",
@@ -148,10 +154,14 @@ def test_create_comment_reply_different_story(comment_service, mock_story_reposi
         )
 
 
-def test_create_comment_reply_not_found(comment_service, mock_story_repository, mock_comment_repository):
+def test_create_comment_reply_not_found(
+    comment_service, mock_story_repository, mock_comment_repository
+):
     """Test comment creation fails when reply_to_id doesn't exist."""
     mock_story_repository.find_story_by_id.return_value = Mock()
-    mock_comment_repository.get_comment_by_id.side_effect = CommentNotFoundError("Comment not found")
+    mock_comment_repository.get_comment_by_id.side_effect = CommentNotFoundError(
+        "Comment not found"
+    )
 
     with pytest.raises(CommentNotFoundError):
         comment_service.create_comment(
@@ -183,19 +193,29 @@ def test_get_comment_success(comment_service, mock_comment_repository):
 
 def test_get_comment_not_found(comment_service, mock_comment_repository):
     """Test comment retrieval when comment doesn't exist."""
-    mock_comment_repository.get_comment_by_id.side_effect = CommentNotFoundError("Comment not found")
+    mock_comment_repository.get_comment_by_id.side_effect = CommentNotFoundError(
+        "Comment not found"
+    )
 
     with pytest.raises(CommentNotFoundError):
         comment_service.get_comment("non-existent")
 
 
-def test_get_story_comments_success(comment_service, mock_story_repository, mock_comment_repository):
+def test_get_story_comments_success(
+    comment_service, mock_story_repository, mock_comment_repository
+):
     """Test successful story comments retrieval."""
     mock_story_repository.find_story_by_id.return_value = Mock()
-    
+
     mock_comments = [Mock(), Mock()]
-    mock_comments[0].to_dict.return_value = {"id": "comment-1", "content": "First comment"}
-    mock_comments[1].to_dict.return_value = {"id": "comment-2", "content": "Second comment"}
+    mock_comments[0].to_dict.return_value = {
+        "id": "comment-1",
+        "content": "First comment",
+    }
+    mock_comments[1].to_dict.return_value = {
+        "id": "comment-2",
+        "content": "Second comment",
+    }
     mock_comment_repository.get_comments_by_story_id.return_value = mock_comments
 
     result = comment_service.get_story_comments("story-1")
@@ -247,7 +267,9 @@ def test_update_comment_empty_content(comment_service):
 
 def test_update_comment_not_found(comment_service, mock_comment_repository):
     """Test comment update when comment doesn't exist."""
-    mock_comment_repository.update_comment.side_effect = CommentNotFoundError("Comment not found")
+    mock_comment_repository.update_comment.side_effect = CommentNotFoundError(
+        "Comment not found"
+    )
 
     with pytest.raises(CommentNotFoundError):
         comment_service.update_comment("non-existent", "New content")
@@ -264,7 +286,9 @@ def test_delete_comment_success(comment_service, mock_comment_repository):
 
 def test_delete_comment_not_found(comment_service, mock_comment_repository):
     """Test comment deletion when comment doesn't exist."""
-    mock_comment_repository.delete_comment.side_effect = CommentNotFoundError("Comment not found")
+    mock_comment_repository.delete_comment.side_effect = CommentNotFoundError(
+        "Comment not found"
+    )
 
     with pytest.raises(CommentNotFoundError):
         comment_service.delete_comment("non-existent")
@@ -289,7 +313,9 @@ def test_get_comment_thread_success(comment_service, mock_comment_repository):
 
 def test_get_comment_thread_not_found(comment_service, mock_comment_repository):
     """Test comment thread retrieval when root comment doesn't exist."""
-    mock_comment_repository.get_comment_thread.side_effect = CommentNotFoundError("Comment not found")
+    mock_comment_repository.get_comment_thread.side_effect = CommentNotFoundError(
+        "Comment not found"
+    )
 
     with pytest.raises(CommentNotFoundError):
         comment_service.get_comment_thread("non-existent")
@@ -299,7 +325,7 @@ def test_get_comment_replies_success(comment_service, mock_comment_repository):
     """Test successful comment replies retrieval."""
     # Mock parent comment exists
     mock_comment_repository.get_comment_by_id.return_value = Mock()
-    
+
     mock_replies = [Mock(), Mock()]
     mock_replies[0].to_dict.return_value = {"id": "reply-1", "content": "First reply"}
     mock_replies[1].to_dict.return_value = {"id": "reply-2", "content": "Second reply"}
@@ -316,7 +342,9 @@ def test_get_comment_replies_success(comment_service, mock_comment_repository):
 
 def test_get_comment_replies_parent_not_found(comment_service, mock_comment_repository):
     """Test comment replies retrieval when parent comment doesn't exist."""
-    mock_comment_repository.get_comment_by_id.side_effect = CommentNotFoundError("Comment not found")
+    mock_comment_repository.get_comment_by_id.side_effect = CommentNotFoundError(
+        "Comment not found"
+    )
 
     with pytest.raises(CommentNotFoundError):
         comment_service.get_comment_replies("non-existent")

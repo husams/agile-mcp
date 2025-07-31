@@ -201,7 +201,9 @@ def register_story_tools(mcp: FastMCP) -> None:
             try:
                 story_repository = StoryRepository(db_session)
                 comment_repository = CommentRepository(db_session)
-                story_service = StoryService(story_repository, comment_repository=comment_repository)
+                story_service = StoryService(
+                    story_repository, comment_repository=comment_repository
+                )
 
                 story_dict = story_service.get_story(story_id)
                 story_response = StoryResponse(**story_dict)

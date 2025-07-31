@@ -9,11 +9,11 @@ from .story import Story
 
 __all__ = [
     "Project",
-    "Epic", 
+    "Epic",
     "Story",
     "Artifact",
     "Document",
     "DocumentSection",
     "Comment",
-    "AuthorRole"
+    "AuthorRole",
 ]

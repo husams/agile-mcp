@@ -87,7 +87,9 @@ class Story(Base):
     artifacts = relationship("Artifact", back_populates="story")
 
     # Relationship to comments (one-to-many)
-    story_comments = relationship("Comment", back_populates="story", cascade="all, delete-orphan")
+    story_comments = relationship(
+        "Comment", back_populates="story", cascade="all, delete-orphan"
+    )
 
     # Many-to-many relationship for dependencies
     dependencies = relationship(

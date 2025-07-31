@@ -147,9 +147,7 @@ class CommentService:
         except Exception as e:
             raise DatabaseError(f"Unexpected error retrieving story comments: {str(e)}")
 
-    def update_comment(
-        self, comment_id: str, content: str
-    ) -> Dict[str, Any]:
+    def update_comment(self, comment_id: str, content: str) -> Dict[str, Any]:
         """
         Update comment content.
 
@@ -259,4 +257,6 @@ class CommentService:
         except DatabaseError:
             raise
         except Exception as e:
-            raise DatabaseError(f"Unexpected error retrieving comment replies: {str(e)}")
+            raise DatabaseError(
+                f"Unexpected error retrieving comment replies: {str(e)}"
+            )

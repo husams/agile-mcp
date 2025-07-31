@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from ..repositories.comment_repository import CommentRepository
 from ..repositories.dependency_repository import DependencyRepository
 from ..repositories.story_repository import StoryRepository
 from ..utils.logging_config import create_entity_context, get_logger
@@ -189,14 +190,20 @@ class StoryService:
             story = self.story_repository.find_story_by_id(story_id.strip())
             if not story:
                 raise StoryNotFoundError(f"Story with ID '{story_id}' not found")
-            
+
             story_dict = story.to_dict()
-            
+
             # If comment repository is available, load relational comments
             if self.comment_repository:
                 try:
-                    relational_comments = self.comment_repository.get_comments_by_story_id(story_id.strip())
-                    story_dict["relational_comments"] = [comment.to_dict() for comment in relational_comments]
+                    relational_comments = (
+                        self.comment_repository.get_comments_by_story_id(
+                            story_id.strip()
+                        )
+                    )
+                    story_dict["relational_comments"] = [
+                        comment.to_dict() for comment in relational_comments
+                    ]
                 except Exception as e:
                     # Log warning but don't fail the story retrieval
                     self.logger.warning(
@@ -207,7 +214,7 @@ class StoryService:
                     story_dict["relational_comments"] = []
             else:
                 story_dict["relational_comments"] = []
-            
+
             return story_dict
         except SQLAlchemyError as e:
             raise DatabaseError(

@@ -1,7 +1,7 @@
 """FastMCP tools for Comment management operations."""
 
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from fastmcp import FastMCP
 from fastmcp.exceptions import McpError
@@ -43,19 +43,16 @@ def register_comment_tools(mcp: FastMCP) -> None:
 
     @mcp.tool("story.addComment")
     def add_comment(
-        story_id: str, 
-        author_role: str, 
-        content: str, 
-        reply_to_id: Optional[str] = None
+        story_id: str, author_role: str, content: str, reply_to_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Add a structured comment to a story with role and timestamp.
 
         Args:
             story_id: The unique identifier of the story
-            author_role: The role of the comment author (must be from predefined roles:
-                'Developer Agent', 'QA Agent', 'Scrum Master', 'Product Owner', 
-                'Human Reviewer', 'System')
+            author_role: The role of the comment author (must be from predefined
+                roles: 'Developer Agent', 'QA Agent', 'Scrum Master',
+                'Product Owner', 'Human Reviewer', 'System')
             content: The comment text content
             reply_to_id: Optional ID of comment this is replying to for threading
 
@@ -293,7 +290,8 @@ def register_comment_tools(mcp: FastMCP) -> None:
             Dict containing the updated comment details
 
         Raises:
-            McpError: If validation fails, comment not found, or database operation fails
+            McpError: If validation fails, comment not found, or database
+                operation fails
         """
         request_id = str(uuid.uuid4())
         try:

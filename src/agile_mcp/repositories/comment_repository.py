@@ -117,9 +117,7 @@ class CommentRepository:
         except SQLAlchemyError as e:
             raise DatabaseError(f"Database error retrieving story comments: {str(e)}")
 
-    def update_comment(
-        self, comment_id: str, content: Optional[str] = None
-    ) -> Comment:
+    def update_comment(self, comment_id: str, content: Optional[str] = None) -> Comment:
         """
         Update comment content.
 
