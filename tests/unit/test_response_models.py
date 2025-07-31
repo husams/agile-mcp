@@ -94,6 +94,7 @@ class TestEpicResponse:
             "title": "Test Epic",
             "description": "A test epic description",
             "status": "Draft",
+            "project_id": "project-456",
         }
 
         response = EpicResponse(**data)
@@ -108,6 +109,7 @@ class TestEpicResponse:
             "title": "Test Epic",
             "description": "A test epic description",
             "status": "Ready",
+            "project_id": "project-456",
         }
 
         response = EpicResponse(**data)

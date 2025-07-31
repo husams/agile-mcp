@@ -3,6 +3,7 @@
 import os
 
 from src.agile_mcp.models.epic import Epic
+from src.agile_mcp.models.project import Project
 from tests.utils.database_isolation_validator import DatabaseIsolationValidator
 from tests.utils.test_database_manager import DatabaseManager
 
@@ -23,11 +24,20 @@ def test_validate_clean_database_state():
     # Test with contaminated database
     session = session_factory()
     try:
+        # Add test project first
+        project = Project(
+            id="contamination-proj",
+            name="Contamination Project",
+            description="Test project"
+        )
+        session.add(project)
+        
         # Add test data to contaminate
         epic = Epic(
             id="contamination-test",
             title="Contamination",
             description="Test",
+            project_id="contamination-proj",
             status="Ready",
         )
         session.add(epic)
@@ -199,12 +209,21 @@ def test_validator_contamination_details():
     session = session_factory()
 
     try:
+        # Add test project first
+        project = Project(
+            id="contamination-details-proj",
+            name="Contamination Details Project",
+            description="Test project for contamination details"
+        )
+        session.add(project)
+        
         # Add multiple contamination records
         for i in range(3):
             epic = Epic(
                 id=f"contamination-{i}",
                 title=f"Contamination {i}",
                 description=f"Contamination record {i}",
+                project_id="contamination-details-proj",
                 status="Ready",
             )
             session.add(epic)

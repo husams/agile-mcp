@@ -228,6 +228,7 @@ class TestPydanticModelValidation:
             "title": "Test Epic",
             "description": "Test description",
             "status": "Ready",
+            "project_id": "project-1",
         }
         result = validate_epic_response(data)
         assert isinstance(result, EpicResponse)
