@@ -1115,7 +1115,11 @@ def test_story_comments_validation_invalid_timestamp():
     }
 
     with pytest.raises(
-        ValueError, match="Comment at index 0 timestamp field must be a datetime object"
+        ValueError,
+        match=(
+            "Comment at index 0 timestamp field must be a datetime object "
+            "or ISO format string"
+        ),
     ):
         Story(
             id="test-story-comments-7",
