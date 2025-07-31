@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
 from src.agile_mcp.models.epic import Base, Epic
+from src.agile_mcp.models.project import Project
 from src.agile_mcp.models.story import Story
 from src.agile_mcp.repositories.artifact_repository import ArtifactRepository
 
@@ -22,11 +23,20 @@ def in_memory_db():
     Session = sessionmaker(bind=engine)
     session = Session()
 
+    # Create a test project first
+    project = Project(
+        id="test-project-1",
+        name="Test Project",
+        description="Test project for artifact relationships",
+    )
+    session.add(project)
+
     # Create a test epic and story for foreign key relationships
     epic = Epic(
         id="test-epic-1",
         title="Test Epic",
         description="Test epic for artifact relationships",
+        project_id="test-project-1",
         status="Draft",
     )
     session.add(epic)
