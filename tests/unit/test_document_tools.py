@@ -131,6 +131,8 @@ class TestDocumentsIngest:
         mock_get_db,
     ):
         """Test document ingestion with project validation error."""
+        from fastmcp.exceptions import McpError
+
         # Mock database session
         mock_session = MagicMock()
         mock_get_db.return_value = mock_session
@@ -148,17 +150,17 @@ class TestDocumentsIngest:
             "Project not found"
         )
 
-        result = documents_ingest(
-            project_id="nonexistent",
-            file_path="/path/to/doc.md",
-            content="Content",
-            title=None,
-        )
+        # Verify McpError is raised
+        with pytest.raises(McpError) as exc_info:
+            documents_ingest(
+                project_id="nonexistent",
+                file_path="/path/to/doc.md",
+                content="Content",
+                title=None,
+            )
 
-        # Verify error response
-        assert result["status"] == "error"
-        assert result["error_code"] == "VALIDATION_ERROR"
-        assert "Project not found" in result["message"]
+        assert exc_info.value.error.code == -32001
+        assert "Project not found" in exc_info.value.error.message
 
     @patch("src.agile_mcp.api.document_tools.get_db")
     @patch("src.agile_mcp.api.document_tools.DocumentRepository")
@@ -172,6 +174,8 @@ class TestDocumentsIngest:
         mock_get_db,
     ):
         """Test document ingestion with database error."""
+        from fastmcp.exceptions import McpError
+
         # Mock database session
         mock_session = MagicMock()
         mock_get_db.return_value = mock_session
@@ -189,35 +193,37 @@ class TestDocumentsIngest:
             "Database connection failed"
         )
 
-        result = documents_ingest(
-            project_id="project-1",
-            file_path="/path/to/doc.md",
-            content="Content",
-            title=None,
-        )
+        # Verify McpError is raised
+        with pytest.raises(McpError) as exc_info:
+            documents_ingest(
+                project_id="project-1",
+                file_path="/path/to/doc.md",
+                content="Content",
+                title=None,
+            )
 
-        # Verify error response
-        assert result["status"] == "error"
-        assert result["error_code"] == "DATABASE_ERROR"
-        assert "Database connection failed" in result["message"]
+        assert exc_info.value.error.code == -32002
+        assert "Database connection failed" in exc_info.value.error.message
 
     @patch("src.agile_mcp.api.document_tools.get_db")
     def test_documents_ingest_unexpected_error(self, mock_get_db):
         """Test document ingestion with unexpected error."""
+        from fastmcp.exceptions import McpError
+
         # Mock database session to raise unexpected error
         mock_get_db.side_effect = Exception("Unexpected error")
 
-        result = documents_ingest(
-            project_id="project-1",
-            file_path="/path/to/doc.md",
-            content="Content",
-            title=None,
-        )
+        # Verify McpError is raised
+        with pytest.raises(McpError) as exc_info:
+            documents_ingest(
+                project_id="project-1",
+                file_path="/path/to/doc.md",
+                content="Content",
+                title=None,
+            )
 
-        # Verify error response
-        assert result["status"] == "error"
-        assert result["error_code"] == "INTERNAL_ERROR"
-        assert "Unexpected error during document ingestion" in result["message"]
+        assert exc_info.value.error.code == -32000
+        assert "Unexpected error" in exc_info.value.error.message
 
 
 class TestDocumentsGetSection:
@@ -250,16 +256,20 @@ class TestDocumentsGetSection:
         mock_service_class.return_value = mock_service
         mock_service.get_section_by_id.return_value = {
             "id": "section-1",
+            "document_id": "doc-1",
             "title": "Introduction",
             "content": "This is the introduction.",
+            "order": 0,
         }
 
         result = documents_getSection(section_id="section-1")
 
         # Verify success response
-        assert result["status"] == "success"
-        assert result["data"]["id"] == "section-1"
-        assert "Introduction" in result["message"]
+        assert result["id"] == "section-1"
+        assert result["document_id"] == "doc-1"
+        assert result["title"] == "Introduction"
+        assert result["content"] == "This is the introduction."
+        assert result["order"] == 0
 
         # Verify service was called correctly
         mock_service.get_section_by_id.assert_called_once_with("section-1")
@@ -276,6 +286,8 @@ class TestDocumentsGetSection:
         mock_get_db,
     ):
         """Test section retrieval by ID when not found."""
+        from fastmcp.exceptions import McpError
+
         # Mock database session
         mock_session = MagicMock()
         mock_get_db.return_value = mock_session
@@ -291,12 +303,12 @@ class TestDocumentsGetSection:
         mock_service_class.return_value = mock_service
         mock_service.get_section_by_id.return_value = None
 
-        result = documents_getSection(section_id="nonexistent")
+        # Verify McpError is raised
+        with pytest.raises(McpError) as exc_info:
+            documents_getSection(section_id="nonexistent")
 
-        # Verify error response
-        assert result["status"] == "error"
-        assert result["error_code"] == "NOT_FOUND"
-        assert "Section with ID 'nonexistent' not found" in result["message"]
+        assert exc_info.value.error.code == -32003
+        assert "Section with ID 'nonexistent' not found" in exc_info.value.error.message
 
     @patch("src.agile_mcp.api.document_tools.get_db")
     @patch("src.agile_mcp.api.document_tools.DocumentRepository")
@@ -324,16 +336,31 @@ class TestDocumentsGetSection:
         mock_service = MagicMock()
         mock_service_class.return_value = mock_service
         mock_service.get_sections_by_title.return_value = [
-            {"id": "section-1", "title": "Introduction", "content": "Content 1"},
-            {"id": "section-2", "title": "Introduction", "content": "Content 2"},
+            {
+                "id": "section-1",
+                "document_id": "doc-1",
+                "title": "Introduction",
+                "content": "Content 1",
+                "order": 0,
+            },
+            {
+                "id": "section-2",
+                "document_id": "doc-1",
+                "title": "Introduction",
+                "content": "Content 2",
+                "order": 1,
+            },
         ]
 
         result = documents_getSection(title="Introduction")
 
-        # Verify success response
-        assert result["status"] == "success"
-        assert len(result["data"]) == 2
-        assert "Found 2 section(s)" in result["message"]
+        # Verify response is a list of section model dumps
+        assert isinstance(result, list)
+        assert len(result) == 2
+        assert result[0]["id"] == "section-1"
+        assert result[0]["title"] == "Introduction"
+        assert result[1]["id"] == "section-2"
+        assert result[1]["title"] == "Introduction"
 
         # Verify service was called correctly
         mock_service.get_sections_by_title.assert_called_once_with(
@@ -366,16 +393,24 @@ class TestDocumentsGetSection:
         mock_service = MagicMock()
         mock_service_class.return_value = mock_service
         mock_service.get_sections_by_title.return_value = [
-            {"id": "section-1", "title": "Introduction", "content": "Content"}
+            {
+                "id": "section-1",
+                "document_id": "doc-1",
+                "title": "Introduction",
+                "content": "Content",
+                "order": 0,
+            }
         ]
 
         result = documents_getSection(
             title="Introduction", document_id="doc-1", project_id="project-1"
         )
 
-        # Verify success response
-        assert result["status"] == "success"
-        assert len(result["data"]) == 1
+        # Verify response is a list of section model dumps
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0]["id"] == "section-1"
+        assert result[0]["title"] == "Introduction"
 
         # Verify service was called with filters
         mock_service.get_sections_by_title.assert_called_once_with(
@@ -394,6 +429,8 @@ class TestDocumentsGetSection:
         mock_get_db,
     ):
         """Test section retrieval by title when not found."""
+        from fastmcp.exceptions import McpError
+
         # Mock database session
         mock_session = MagicMock()
         mock_get_db.return_value = mock_session
@@ -409,23 +446,26 @@ class TestDocumentsGetSection:
         mock_service_class.return_value = mock_service
         mock_service.get_sections_by_title.return_value = []
 
-        result = documents_getSection(title="Nonexistent")
+        # Verify McpError is raised for not found
+        with pytest.raises(McpError) as exc_info:
+            documents_getSection(title="Nonexistent")
 
-        # Verify error response
-        assert result["status"] == "error"
-        assert result["error_code"] == "NOT_FOUND"
+        assert exc_info.value.error.code == -32003
         assert (
-            "No sections found with title containing 'Nonexistent'" in result["message"]
+            "No sections found with title containing 'Nonexistent'"
+            in exc_info.value.error.message
         )
 
     def test_documents_getSection_no_parameters(self):
         """Test section retrieval with no search parameters."""
-        result = documents_getSection()
+        from fastmcp.exceptions import McpError
 
-        # Verify error response
-        assert result["status"] == "error"
-        assert result["error_code"] == "VALIDATION_ERROR"
-        assert "Must provide either section_id or title" in result["message"]
+        # Verify McpError is raised
+        with pytest.raises(McpError) as exc_info:
+            documents_getSection()
+
+        assert exc_info.value.error.code == -32001
+        assert "Must provide either section_id or title" in exc_info.value.error.message
 
     @patch("src.agile_mcp.api.document_tools.get_db")
     @patch("src.agile_mcp.api.document_tools.DocumentRepository")
@@ -439,6 +479,8 @@ class TestDocumentsGetSection:
         mock_get_db,
     ):
         """Test section retrieval with validation error."""
+        from fastmcp.exceptions import McpError
+
         # Mock database session
         mock_session = MagicMock()
         mock_get_db.return_value = mock_session
@@ -456,22 +498,24 @@ class TestDocumentsGetSection:
             "Invalid section ID"
         )
 
-        result = documents_getSection(section_id="")
+        # Verify McpError is raised - empty section_id triggers validation error
+        with pytest.raises(McpError) as exc_info:
+            documents_getSection(section_id="")
 
-        # Verify error response
-        assert result["status"] == "error"
-        assert result["error_code"] == "VALIDATION_ERROR"
-        assert "Invalid section ID" in result["message"]
+        assert exc_info.value.error.code == -32001
+        assert "Must provide either section_id or title" in exc_info.value.error.message
 
     @patch("src.agile_mcp.api.document_tools.get_db")
     def test_documents_getSection_unexpected_error(self, mock_get_db):
         """Test section retrieval with unexpected error."""
+        from fastmcp.exceptions import McpError
+
         # Mock database session to raise unexpected error
         mock_get_db.side_effect = Exception("Unexpected error")
 
-        result = documents_getSection(section_id="section-1")
+        # Verify McpError is raised
+        with pytest.raises(McpError) as exc_info:
+            documents_getSection(section_id="section-1")
 
-        # Verify error response
-        assert result["status"] == "error"
-        assert result["error_code"] == "INTERNAL_ERROR"
-        assert "Unexpected error during section retrieval" in result["message"]
+        assert exc_info.value.error.code == -32000
+        assert "Unexpected error" in exc_info.value.error.message
