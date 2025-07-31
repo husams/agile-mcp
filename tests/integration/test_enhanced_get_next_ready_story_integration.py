@@ -15,9 +15,11 @@ import pytest
 from src.agile_mcp.models.epic import Base
 from src.agile_mcp.repositories.dependency_repository import DependencyRepository
 from src.agile_mcp.repositories.epic_repository import EpicRepository
+from src.agile_mcp.repositories.project_repository import ProjectRepository
 from src.agile_mcp.repositories.story_repository import StoryRepository
 from src.agile_mcp.services.dependency_service import DependencyService
 from src.agile_mcp.services.epic_service import EpicService
+from src.agile_mcp.services.project_service import ProjectService
 from src.agile_mcp.services.story_service import StoryService
 
 
@@ -63,16 +65,24 @@ class TestEnhancedGetNextReadyStoryIntegration:
 
         try:
             # Create repositories and services
+            project_repository = ProjectRepository(db_session)
             epic_repository = EpicRepository(db_session)
             story_repository = StoryRepository(db_session)
             dependency_repository = DependencyRepository(db_session)
 
+            project_service = ProjectService(project_repository)
             epic_service = EpicService(epic_repository)
             story_service = StoryService(story_repository, dependency_repository)
 
+            # Create a test project
+            project = project_service.create_project(
+                "Integration Test Project", "Project for integration testing"
+            )
+            project_id = project["id"]
+
             # Create a test epic
             epic = epic_service.create_epic(
-                "Integration Test Epic", "Epic for integration testing"
+                "Integration Test Epic", "Epic for integration testing", project_id
             )
             epic_id = epic["id"]
 
@@ -210,17 +220,25 @@ Ready for development with complete technical context.
 
         try:
             # Create repositories and services
+            project_repository = ProjectRepository(db_session)
             epic_repository = EpicRepository(db_session)
             story_repository = StoryRepository(db_session)
             dependency_repository = DependencyRepository(db_session)
 
+            project_service = ProjectService(project_repository)
             epic_service = EpicService(epic_repository)
             story_service = StoryService(story_repository, dependency_repository)
             dependency_service = DependencyService(dependency_repository)
 
+            # Create test project
+            project = project_service.create_project(
+                "Dependency Test Project", "Project for dependency testing"
+            )
+            project_id = project["id"]
+
             # Create test epic
             epic = epic_service.create_epic(
-                "Dependency Test Epic", "Epic for dependency testing"
+                "Dependency Test Epic", "Epic for dependency testing", project_id
             )
             epic_id = epic["id"]
 
@@ -336,16 +354,24 @@ Ready for development with complete technical context.
 
         try:
             # Create repositories and services
+            project_repository = ProjectRepository(db_session)
             epic_repository = EpicRepository(db_session)
             story_repository = StoryRepository(db_session)
             dependency_repository = DependencyRepository(db_session)
 
+            project_service = ProjectService(project_repository)
             epic_service = EpicService(epic_repository)
             story_service = StoryService(story_repository, dependency_repository)
 
+            # Create test project
+            project = project_service.create_project(
+                "JSON Test Project", "Project for JSON serialization testing"
+            )
+            project_id = project["id"]
+
             # Create test epic
             epic = epic_service.create_epic(
-                "JSON Test Epic", "Epic for JSON serialization testing"
+                "JSON Test Epic", "Epic for JSON serialization testing", project_id
             )
             epic_id = epic["id"]
 
@@ -456,16 +482,24 @@ Implementation complete within 10KB dev_notes limit.
 
         try:
             # Create repositories and services
+            project_repository = ProjectRepository(db_session)
             epic_repository = EpicRepository(db_session)
             story_repository = StoryRepository(db_session)
             dependency_repository = DependencyRepository(db_session)
 
+            project_service = ProjectService(project_repository)
             epic_service = EpicService(epic_repository)
             story_service = StoryService(story_repository, dependency_repository)
 
+            # Create test project
+            project = project_service.create_project(
+                "Performance Test Project", "Project for performance testing"
+            )
+            project_id = project["id"]
+
             # Create test epic
             epic = epic_service.create_epic(
-                "Performance Test Epic", "Epic for performance testing"
+                "Performance Test Epic", "Epic for performance testing", project_id
             )
             epic_id = epic["id"]
 

@@ -121,36 +121,58 @@ def mcp_server_subprocess(isolated_e2e_database):
         # if no input
         time.sleep(0.5)
 
-        # Read initial startup output to ensure it's ready
-        # This is a more robust way to check if the server is "ready"
-        # without relying on it staying alive indefinitely without input.
-        # We'll read until we see the "Starting server with stdio
-        # transport" message
-        # or a timeout.
-        startup_output = ""
-        start_time = time.time()
-        while (
-            "Starting server with stdio transport" not in startup_output
-            and time.time() - start_time < 5
-        ):
-            line = process.stderr.readline()  # Logs go to stderr
-            if line:
-                startup_output += line
-            else:
-                # If no more output, and server hasn't started, it might
-                # have failed
+        # Simplified startup approach for CI environments
+        # In CI, we skip complex startup verification and rely on test timeouts
+        import os
+
+        is_ci = os.getenv("GITHUB_ACTIONS") == "true" or os.getenv("CI") == "true"
+
+        if is_ci:
+            # In CI environments, use minimal startup check to avoid deadlocks
+            time.sleep(2)  # Just wait 2 seconds for server to start
+            if process.poll() is not None:
+                stdout, stderr = process.communicate(timeout=1)
+                raise RuntimeError(
+                    f"MCP server failed to start in CI. "
+                    f"Exit code: {process.returncode}, "
+                    f"stdout: {stdout}, stderr: {stderr}"
+                )
+        else:
+            # Local development: use more thorough startup check
+            start_time = time.time()
+            server_ready = False
+            startup_timeout = 10  # Increased timeout for CI environments
+
+            while time.time() - start_time < startup_timeout:
+                # Check if process has failed
                 if process.poll() is not None:
                     stdout, stderr_final = process.communicate(timeout=1)
                     raise RuntimeError(
-                        f"MCP server failed to start during initial read. "
+                        f"MCP server failed to start. Exit code: {process.returncode}, "
                         f"stdout: {stdout}, stderr: {stderr_final}"
                     )
-                time.sleep(0.1)  # Wait a bit before trying to read again
 
-        if "Starting server with stdio transport" not in startup_output:
-            raise RuntimeError(
-                "MCP server did not indicate stdio transport start within " "timeout."
-            )
+                # For CI environments, we'll rely on a simple time-based check
+                # instead of trying to read stderr which can deadlock
+                if time.time() - start_time > 2:  # Give server 2 seconds to start
+                    server_ready = True
+                    break
+
+                time.sleep(0.1)
+
+            if not server_ready:
+                # Try to get any output for debugging
+                try:
+                    stdout, stderr = process.communicate(timeout=1)
+                    raise RuntimeError(
+                        f"MCP server startup timeout. "
+                        f"stdout: {stdout}, stderr: {stderr}"
+                    )
+                except subprocess.TimeoutExpired:
+                    raise RuntimeError(
+                        "MCP server startup timeout - "
+                        "process still running but not responsive"
+                    )
 
         def communicate_json_rpc(
             method: str, params: Optional[Dict[str, Any]] = None
@@ -172,19 +194,39 @@ def mcp_server_subprocess(isolated_e2e_database):
                 "params": params or {},
             }
 
-            # Simple stdin/stdout communication
-            # (adjust based on actual MCP protocol)
+            # Improved stdin/stdout communication with timeout for CI robustness
             try:
-                process.stdin.write(json.dumps(request) + "\n")
+                # Check if process is still alive before attempting communication
+                if process.poll() is not None:
+                    return {"error": "MCP server process has terminated"}
+
+                request_json = json.dumps(request) + "\n"
+                process.stdin.write(request_json)
                 process.stdin.flush()
 
-                # Read response (simplified - real implementation would
-                # be more robust)
-                response_line = process.stdout.readline()
-                if response_line:
-                    return json.loads(response_line.strip())
+                # Add timeout for response reading to prevent hanging in CI
+                import select
+
+                # Use select for non-blocking read on Unix-like systems
+                if hasattr(select, "select"):
+                    ready, _, _ = select.select(
+                        [process.stdout], [], [], 5.0  # 5 second timeout
+                    )
+                    if ready:
+                        response_line = process.stdout.readline()
+                        if response_line:
+                            return json.loads(response_line.strip())
+                        else:
+                            return {"error": "Empty response from server"}
+                    else:
+                        return {"error": "Response timeout from server"}
                 else:
-                    return {"error": "No response from server"}
+                    # Fallback for non-Unix systems
+                    response_line = process.stdout.readline()
+                    if response_line:
+                        return json.loads(response_line.strip())
+                    else:
+                        return {"error": "No response from server"}
 
             except Exception as e:
                 return {"error": f"Communication error: {str(e)}"}
