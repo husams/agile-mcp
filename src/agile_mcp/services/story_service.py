@@ -9,7 +9,6 @@ from typing import Any, Dict, List, Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from ..repositories.comment_repository import CommentRepository
 from ..repositories.dependency_repository import DependencyRepository
 from ..repositories.story_repository import StoryRepository
 from ..utils.logging_config import create_entity_context, get_logger
@@ -37,7 +36,7 @@ class StoryService:
         self,
         story_repository: StoryRepository,
         dependency_repository: Optional[DependencyRepository] = None,
-        comment_repository: Optional["CommentRepository"] = None,
+        comment_repository: Optional[Any] = None,
     ):
         """Initialize service with repository dependencies."""
         self.story_repository = story_repository
