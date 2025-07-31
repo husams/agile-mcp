@@ -82,12 +82,33 @@ def initialize_server(process):
 
 def create_test_epic(process, title="E2E Test Epic"):
     """Create a test epic via JSON-RPC and return the generated ID."""
+    # Create project first
+    project_response = send_jsonrpc_request(
+        process,
+        "tools/call",
+        {
+            "name": "projects.create",
+            "arguments": {
+                "name": f"E2E Test Project for {title}",
+                "description": "Project for E2E testing",
+            },
+        },
+    )
+
+    project_data = json.loads(project_response["result"]["content"][0]["text"])
+    project_id = project_data["id"]
+
+    # Then create epic with project_id
     response = send_jsonrpc_request(
         process,
         "tools/call",
         {
             "name": "backlog.createEpic",
-            "arguments": {"title": title, "description": "Epic for E2E testing"},
+            "arguments": {
+                "title": title,
+                "description": "Epic for E2E testing",
+                "project_id": project_id,
+            },
         },
     )
 

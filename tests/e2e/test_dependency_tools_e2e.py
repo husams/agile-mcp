@@ -80,6 +80,23 @@ def initialize_server(process):
 
 def create_test_epic(process):
     """Create a test epic for dependency testing."""
+    # Create project first
+    project_response = send_jsonrpc_request(
+        process,
+        "tools/call",
+        {
+            "name": "projects.create",
+            "arguments": {
+                "name": "Dependency Test Project",
+                "description": "Project for testing story dependencies",
+            },
+        },
+    )
+
+    project_data = json.loads(project_response["result"]["content"][0]["text"])
+    project_id = project_data["id"]
+
+    # Then create epic with project_id
     response = send_jsonrpc_request(
         process,
         "tools/call",
@@ -88,6 +105,7 @@ def create_test_epic(process):
             "arguments": {
                 "title": "Dependency Test Epic",
                 "description": "Epic for testing story dependencies",
+                "project_id": project_id,
             },
         },
     )
