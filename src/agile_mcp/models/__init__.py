@@ -2,6 +2,7 @@
 
 from .artifact import Artifact
 from .epic import Epic
+from .project import Project
 from .story import Story
 
-__all__ = ["Epic", "Story", "Artifact"]
+__all__ = ["Project", "Epic", "Story", "Artifact"]

@@ -26,18 +26,25 @@ def test_epic_creation():
         id="test-epic-1",
         title="Test Epic",
         description="This is a test epic description",
+        project_id="test-project-1",
         status="Draft",
     )
 
     assert epic.id == "test-epic-1"
     assert epic.title == "Test Epic"
     assert epic.description == "This is a test epic description"
+    assert epic.project_id == "test-project-1"
     assert epic.status == "Draft"
 
 
 def test_epic_default_status():
     """Test Epic model uses default status of 'Draft'."""
-    epic = Epic(id="test-epic-2", title="Test Epic 2", description="Another test epic")
+    epic = Epic(
+        id="test-epic-2",
+        title="Test Epic 2",
+        description="Another test epic",
+        project_id="test-project-2",
+    )
 
     assert epic.status == "Draft"
 
@@ -48,6 +55,7 @@ def test_epic_to_dict():
         id="test-epic-3",
         title="Test Epic 3",
         description="Third test epic",
+        project_id="test-project-3",
         status="In Progress",
     )
 
@@ -58,6 +66,7 @@ def test_epic_to_dict():
         "title": "Test Epic 3",
         "description": "Third test epic",
         "status": "In Progress",
+        "project_id": "test-project-3",
     }
 
     assert epic_dict == expected
@@ -69,6 +78,7 @@ def test_epic_repr():
         id="test-epic-4",
         title="Test Epic 4",
         description="Fourth test epic",
+        project_id="test-project-4",
         status="Done",
     )
 
@@ -84,6 +94,7 @@ def test_epic_database_persistence(in_memory_db):
         id="test-epic-5",
         title="Persistent Epic",
         description="This epic should persist in the database",
+        project_id="test-project-5",
         status="Ready",
     )
 
@@ -98,4 +109,5 @@ def test_epic_database_persistence(in_memory_db):
     assert retrieved_epic.id == "test-epic-5"
     assert retrieved_epic.title == "Persistent Epic"
     assert retrieved_epic.description == "This epic should persist in the database"
+    assert retrieved_epic.project_id == "test-project-5"
     assert retrieved_epic.status == "Ready"

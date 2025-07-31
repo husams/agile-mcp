@@ -11,14 +11,20 @@ from .exceptions import (
     DatabaseError,
     EpicNotFoundError,
     EpicValidationError,
+    ProjectNotFoundError,
+    ProjectValidationError,
     StoryNotFoundError,
     StoryValidationError,
 )
+from .project_service import ProjectService
 from .story_service import StoryService
 
 __all__ = [
+    "ProjectService",
     "EpicService",
     "StoryService",
+    "ProjectValidationError",
+    "ProjectNotFoundError",
     "EpicValidationError",
     "EpicNotFoundError",
     "StoryValidationError",

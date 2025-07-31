@@ -18,13 +18,14 @@ class EpicRepository:
         """Initialize repository with database session."""
         self.db_session = db_session
 
-    def create_epic(self, title: str, description: str) -> Epic:
+    def create_epic(self, title: str, description: str, project_id: str) -> Epic:
         """
         Create a new epic with default "Draft" status.
 
         Args:
             title: The name of the epic
             description: A detailed explanation of the epic's goal
+            project_id: The ID of the project this epic belongs to
 
         Returns:
             Epic: The created epic instance
@@ -37,6 +38,7 @@ class EpicRepository:
                 id=str(uuid.uuid4()),
                 title=title,
                 description=description,
+                project_id=project_id,
                 status="Draft",
             )
 

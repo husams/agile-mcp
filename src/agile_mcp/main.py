@@ -16,6 +16,7 @@ try:
         register_artifact_tools,
         register_backlog_tools,
         register_epic_tools,
+        register_project_tools,
         register_story_tools,
     )
     from .utils.logging_config import configure_logging, get_logger
@@ -28,6 +29,7 @@ except ImportError:  # type: ignore
         register_artifact_tools,
         register_backlog_tools,
         register_epic_tools,
+        register_project_tools,
         register_story_tools,
     )
     from utils.logging_config import configure_logging, get_logger  # type: ignore
@@ -51,6 +53,10 @@ def create_server() -> FastMCP:
         # Initialize FastMCP server with proper configuration
         server: FastMCP = FastMCP("Agile Management Server")
         logger.info("FastMCP server instance created successfully")
+
+        # Register project management tools
+        register_project_tools(server)
+        logger.info("Project management tools registered successfully")
 
         # Register epic management tools
         register_epic_tools(server)

@@ -41,16 +41,19 @@ def register_epic_tools(mcp: FastMCP) -> None:
         raise
 
     @mcp.tool("backlog.createEpic")
-    def create_epic(title: str, description: str) -> Dict[str, Any]:
+    def create_epic(title: str, description: str, project_id: str) -> Dict[str, Any]:
         """
         Create a new epic with the specified title and description.
 
         Args:
             title: The name of the epic (max 200 characters)
-            description: A detailed explanation of the epic's goal (max 2000 characters)
+            description: A detailed explanation of the epic's goal
+            (max 2000 characters)
+            project_id: The ID of the project this epic belongs to
 
         Returns:
-            Dict containing the created epic's id, title, description, and status
+            Dict containing the created epic's id, title, description, status,
+            and project_id
 
         Raises:
             McpError: If validation fails or database operation fails
@@ -70,7 +73,7 @@ def register_epic_tools(mcp: FastMCP) -> None:
                 epic_repository = EpicRepository(db_session)
                 epic_service = EpicService(epic_repository)
 
-                epic_dict = epic_service.create_epic(title, description)
+                epic_dict = epic_service.create_epic(title, description, project_id)
                 epic_response = EpicResponse(**epic_dict)
 
                 logger.info(
