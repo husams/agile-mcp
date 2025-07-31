@@ -1116,15 +1116,39 @@ def test_story_comments_validation_invalid_timestamp():
 
     with pytest.raises(
         ValueError,
+        match="Comment at index 0 timestamp string must be in valid ISO format",
+    ):
+        Story(
+            id="test-story-comments-7",
+            title="Invalid Timestamp",
+            description="Story with invalid timestamp in comment",
+            acceptance_criteria=["Should fail validation"],
+            epic_id="test-epic-1",
+            comments=[invalid_comment],
+        )
+
+
+def test_story_comments_validation_invalid_timestamp_type():
+    """Test Story model comments validation with non-string/non-datetime timestamp."""
+    invalid_comment = {
+        "id": "comment-1",
+        "author_role": "Developer Agent",
+        "content": "This is a test comment",
+        "timestamp": 12345,  # Invalid timestamp type (integer)
+        "reply_to_id": None,
+    }
+
+    with pytest.raises(
+        ValueError,
         match=(
             "Comment at index 0 timestamp field must be a datetime object "
             "or ISO format string"
         ),
     ):
         Story(
-            id="test-story-comments-7",
-            title="Invalid Timestamp",
-            description="Story with invalid timestamp in comment",
+            id="test-story-comments-type",
+            title="Invalid Timestamp Type",
+            description="Story with invalid timestamp type in comment",
             acceptance_criteria=["Should fail validation"],
             epic_id="test-epic-1",
             comments=[invalid_comment],
