@@ -13,7 +13,9 @@ from .models import (  # Import to register with metadata  # noqa: F401
     Document,
     DocumentSection,
 )
-from .models.epic import Base
+from .models.comment import Comment  # Import to register with metadata  # noqa: F401
+from .models.epic import Base, Epic  # Import to register with metadata  # noqa: F401
+from .models.project import Project  # Import to register with metadata  # noqa: F401
 
 # Database file path - use DATABASE_URL for production, TEST_DATABASE_URL for E2E test
 DATABASE_URL = (

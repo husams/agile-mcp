@@ -15,15 +15,16 @@ from .test_helpers import validate_json_response, validate_jsonrpc_response_form
 
 @pytest.fixture
 def mcp_server_process(isolated_test_database):
-    """Start MCP server as subprocess with production database."""
+    """Start MCP server as subprocess with isolated test database."""
     # Get the path to the run_server.py file
     run_server_path = Path(__file__).parent.parent.parent / "run_server.py"
 
-    # Set up environment to use production database (not isolated)
+    # Set up environment to use isolated test database for CI compatibility
     env = os.environ.copy()
-    # DO NOT set TEST_DATABASE_URL - use production database as required by architecture
+    # Use isolated test database to prevent CI conflicts
+    env["TEST_DATABASE_URL"] = f"sqlite:///{isolated_test_database}"
 
-    # Start server process with production database connection
+    # Start server process with isolated test database connection
     process = subprocess.Popen(
         [sys.executable, str(run_server_path)],
         stdin=subprocess.PIPE,
