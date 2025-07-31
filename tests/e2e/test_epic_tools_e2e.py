@@ -63,10 +63,15 @@ def test_create_epic_tool_success(mcp_server_subprocess):
     )
 
     # Send initialized notification (no response expected)
+    # Handle both direct process and mcp_server_subprocess fixture tuple
+    if isinstance(mcp_server_subprocess, tuple):
+        process, env_vars, communicate_json_rpc = mcp_server_subprocess
+    else:
+        process = mcp_server_subprocess
     request = {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}}
     request_json = json.dumps(request) + "\n"
-    mcp_server_subprocess.stdin.write(request_json)
-    mcp_server_subprocess.stdin.flush()
+    process.stdin.write(request_json)
+    process.stdin.flush()
 
     # Create project first
     project_response = send_jsonrpc_request(
@@ -126,10 +131,15 @@ def test_find_epics_tool_success(mcp_server_subprocess):
     )
 
     # Send initialized notification (no response expected)
+    # Handle both direct process and mcp_server_subprocess fixture tuple
+    if isinstance(mcp_server_subprocess, tuple):
+        process, env_vars, communicate_json_rpc = mcp_server_subprocess
+    else:
+        process = mcp_server_subprocess
     request = {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}}
     request_json = json.dumps(request) + "\n"
-    mcp_server_subprocess.stdin.write(request_json)
-    mcp_server_subprocess.stdin.flush()
+    process.stdin.write(request_json)
+    process.stdin.flush()
 
     # Create project first
     project_response = send_jsonrpc_request(
@@ -202,10 +212,15 @@ def test_create_epic_validation_error(mcp_server_subprocess):
     )
 
     # Send initialized notification (no response expected)
+    # Handle both direct process and mcp_server_subprocess fixture tuple
+    if isinstance(mcp_server_subprocess, tuple):
+        process, env_vars, communicate_json_rpc = mcp_server_subprocess
+    else:
+        process = mcp_server_subprocess
     request = {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}}
     request_json = json.dumps(request) + "\n"
-    mcp_server_subprocess.stdin.write(request_json)
-    mcp_server_subprocess.stdin.flush()
+    process.stdin.write(request_json)
+    process.stdin.flush()
 
     # Create project first
     project_response = send_jsonrpc_request(
@@ -260,10 +275,15 @@ def test_create_epic_with_long_title_error(mcp_server_subprocess):
     )
 
     # Send initialized notification (no response expected)
+    # Handle both direct process and mcp_server_subprocess fixture tuple
+    if isinstance(mcp_server_subprocess, tuple):
+        process, env_vars, communicate_json_rpc = mcp_server_subprocess
+    else:
+        process = mcp_server_subprocess
     request = {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}}
     request_json = json.dumps(request) + "\n"
-    mcp_server_subprocess.stdin.write(request_json)
-    mcp_server_subprocess.stdin.flush()
+    process.stdin.write(request_json)
+    process.stdin.flush()
 
     # Create project first
     project_response = send_jsonrpc_request(
@@ -322,10 +342,15 @@ def initialize_server(mcp_server_subprocess):
     )
 
     # Send initialized notification (no response expected)
+    # Handle both direct process and mcp_server_subprocess fixture tuple
+    if isinstance(mcp_server_subprocess, tuple):
+        process, env_vars, communicate_json_rpc = mcp_server_subprocess
+    else:
+        process = mcp_server_subprocess
     request = {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}}
     request_json = json.dumps(request) + "\n"
-    mcp_server_subprocess.stdin.write(request_json)
-    mcp_server_subprocess.stdin.flush()
+    process.stdin.write(request_json)
+    process.stdin.flush()
 
 
 def test_update_epic_status_tool_success(mcp_server_subprocess):
