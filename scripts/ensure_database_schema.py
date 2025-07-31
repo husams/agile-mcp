@@ -75,6 +75,30 @@ def ensure_comments_column():
         return True
 
 
+def check_table_exists(table_name: str) -> bool:
+    """Check if a table exists in the database."""
+    try:
+        with engine.connect() as conn:
+            # For SQLite, check if table exists in sqlite_master
+            result = conn.execute(
+                text("SELECT name FROM sqlite_master WHERE type='table' AND name=?"),
+                (table_name,),
+            ).fetchone()
+            return result is not None
+    except Exception:
+        return False
+
+
+def ensure_comments_table():
+    """Ensure the comments table exists."""
+    if not check_table_exists("comments"):
+        print("Comments table missing - will be created by create_tables()")
+        return True
+    else:
+        print("✓ Comments table exists")
+        return True
+
+
 def ensure_database_schema():
     """Ensure database schema is up to date."""
     print("Ensuring database schema is up to date...")
@@ -91,6 +115,7 @@ def ensure_database_schema():
     migrations = [
         ensure_structured_acceptance_criteria_column,
         ensure_comments_column,
+        ensure_comments_table,
     ]
 
     for migration in migrations:

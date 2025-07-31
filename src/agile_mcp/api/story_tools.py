@@ -9,6 +9,7 @@ from mcp.types import ErrorData
 
 from ..database import create_tables, get_db
 from ..models.response import DoDChecklistResponse, StoryResponse
+from ..repositories.comment_repository import CommentRepository
 from ..repositories.story_repository import StoryRepository
 from ..services.exceptions import (
     DatabaseError,
@@ -199,7 +200,10 @@ def register_story_tools(mcp: FastMCP) -> None:
             db_session = get_db()
             try:
                 story_repository = StoryRepository(db_session)
-                story_service = StoryService(story_repository)
+                comment_repository = CommentRepository(db_session)
+                story_service = StoryService(
+                    story_repository, comment_repository=comment_repository
+                )
 
                 story_dict = story_service.get_story(story_id)
                 story_response = StoryResponse(**story_dict)

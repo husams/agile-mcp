@@ -15,6 +15,7 @@ try:
     from .api import (
         register_artifact_tools,
         register_backlog_tools,
+        register_comment_tools,
         register_document_tools,
         register_epic_tools,
         register_project_tools,
@@ -29,6 +30,7 @@ except ImportError:  # type: ignore
     from api import register_artifact_tools  # type: ignore
     from api import (
         register_backlog_tools,
+        register_comment_tools,
         register_document_tools,
         register_epic_tools,
         register_project_tools,
@@ -67,6 +69,10 @@ def create_server() -> FastMCP:
         # Register story management tools
         register_story_tools(server)
         logger.info("Story management tools registered successfully")
+
+        # Register comment management tools
+        register_comment_tools(server)
+        logger.info("Comment management tools registered successfully")
 
         # Register artifact management tools
         register_artifact_tools(server)

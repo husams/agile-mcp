@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from ..repositories.comment_repository import CommentRepository
 from ..repositories.dependency_repository import DependencyRepository
 from ..repositories.story_repository import StoryRepository
 from ..utils.logging_config import create_entity_context, get_logger
@@ -36,10 +37,12 @@ class StoryService:
         self,
         story_repository: StoryRepository,
         dependency_repository: Optional[DependencyRepository] = None,
+        comment_repository: Optional["CommentRepository"] = None,
     ):
         """Initialize service with repository dependencies."""
         self.story_repository = story_repository
         self.dependency_repository = dependency_repository
+        self.comment_repository = comment_repository
         self.story_parser = StoryParser()
         self.logger = get_logger(__name__)
 
@@ -168,13 +171,13 @@ class StoryService:
 
     def get_story(self, story_id: str) -> Dict[str, Any]:
         """
-        Retrieve a story by its ID.
+        Retrieve a story by its ID with relational comments included.
 
         Args:
             story_id: The unique identifier of the story
 
         Returns:
-            Dict[str, Any]: Dictionary representation of the story
+            Dict[str, Any]: Dictionary representation of the story with comments
 
         Raises:
             StoryNotFoundError: If story is not found
@@ -187,7 +190,32 @@ class StoryService:
             story = self.story_repository.find_story_by_id(story_id.strip())
             if not story:
                 raise StoryNotFoundError(f"Story with ID '{story_id}' not found")
-            return story.to_dict()
+
+            story_dict = story.to_dict()
+
+            # If comment repository is available, load relational comments
+            if self.comment_repository:
+                try:
+                    relational_comments = (
+                        self.comment_repository.get_comments_by_story_id(
+                            story_id.strip()
+                        )
+                    )
+                    story_dict["relational_comments"] = [
+                        comment.to_dict() for comment in relational_comments
+                    ]
+                except Exception as e:
+                    # Log warning but don't fail the story retrieval
+                    self.logger.warning(
+                        "Failed to load relational comments for story",
+                        **create_entity_context(story_id=story_id),
+                        error=str(e),
+                    )
+                    story_dict["relational_comments"] = []
+            else:
+                story_dict["relational_comments"] = []
+
+            return story_dict
         except SQLAlchemyError as e:
             raise DatabaseError(
                 f"Database operation failed while retrieving story: {str(e)}"

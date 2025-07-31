@@ -15,6 +15,7 @@ class StoryResponse(BaseModel):
     structured_acceptance_criteria: List[Dict[str, Any]]
     tasks: List[Dict[str, Any]]
     comments: List[Dict[str, Any]]
+    relational_comments: Optional[List[Dict[str, Any]]] = []
     dev_notes: Optional[str]
     status: str
     priority: int
@@ -105,3 +106,14 @@ class DocumentResponse(BaseModel):
     file_path: str
     created_at: Optional[str]
     sections: List[DocumentSectionResponse]
+
+
+class CommentResponse(BaseModel):
+    """Response model for comment data."""
+
+    id: str
+    story_id: str
+    author_role: str
+    content: str
+    timestamp: str
+    reply_to_id: Optional[str]
