@@ -34,6 +34,9 @@ class Project(Base):
     # Relationship to epics (one-to-many)
     epics = relationship("Epic", back_populates="project")
 
+    # Relationship to documents (one-to-many)
+    documents = relationship("Document", back_populates="project")
+
     def __init__(self, id: str, name: str, description: str):
         """Initialize Project."""
         super().__init__()

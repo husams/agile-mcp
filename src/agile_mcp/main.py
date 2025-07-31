@@ -15,6 +15,7 @@ try:
     from .api import (
         register_artifact_tools,
         register_backlog_tools,
+        register_document_tools,
         register_epic_tools,
         register_project_tools,
         register_story_tools,
@@ -25,9 +26,10 @@ except ImportError:  # type: ignore
     import os
 
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from api import (  # type: ignore
-        register_artifact_tools,
+    from api import register_artifact_tools  # type: ignore
+    from api import (
         register_backlog_tools,
+        register_document_tools,
         register_epic_tools,
         register_project_tools,
         register_story_tools,
@@ -73,6 +75,10 @@ def create_server() -> FastMCP:
         # Register backlog management tools
         register_backlog_tools(server)
         logger.info("Backlog management tools registered successfully")
+
+        # Register document management tools
+        register_document_tools(server)
+        logger.info("Document management tools registered successfully")
 
         # FastMCP automatically handles:
         # - MCP initialize request handling

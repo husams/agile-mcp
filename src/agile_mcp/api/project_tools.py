@@ -10,10 +10,7 @@ from mcp.types import ErrorData
 from ..database import create_tables, get_db
 from ..models.response import ProjectResponse
 from ..repositories.project_repository import ProjectRepository
-from ..services.exceptions import (
-    DatabaseError,
-    ProjectValidationError,
-)
+from ..services.exceptions import DatabaseError, ProjectValidationError
 from ..services.project_service import ProjectService
 from ..utils.logging_config import (
     create_entity_context,

@@ -8,10 +8,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from ..repositories.project_repository import ProjectRepository
 from ..utils.logging_config import create_entity_context, get_logger
-from .exceptions import (
-    DatabaseError,
-    ProjectValidationError,
-)
+from .exceptions import DatabaseError, ProjectValidationError
 
 
 class ProjectService:

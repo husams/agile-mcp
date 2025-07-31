@@ -8,10 +8,7 @@ import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
 from src.agile_mcp.models.project import Project
-from src.agile_mcp.services.exceptions import (
-    DatabaseError,
-    ProjectValidationError,
-)
+from src.agile_mcp.services.exceptions import DatabaseError, ProjectValidationError
 from src.agile_mcp.services.project_service import ProjectService
 
 

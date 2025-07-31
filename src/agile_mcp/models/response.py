@@ -84,3 +84,24 @@ class DoDChecklistResponse(BaseModel):
     summary: Dict[str, int]
     recommendations: List[str]
     evaluated_at: str
+
+
+class DocumentSectionResponse(BaseModel):
+    """Response model for document section data."""
+
+    id: str
+    document_id: str
+    title: str
+    content: str
+    order: int
+
+
+class DocumentResponse(BaseModel):
+    """Response model for document data."""
+
+    id: str
+    project_id: str
+    title: str
+    file_path: str
+    created_at: Optional[str]
+    sections: List[DocumentSectionResponse]
