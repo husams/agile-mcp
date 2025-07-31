@@ -7,6 +7,7 @@ communications and translate between MCP requests/responses and business logic.
 
 from .artifact_tools import register_artifact_tools
 from .backlog_tools import register_backlog_tools
+from .document_tools import register_document_tools
 from .epic_tools import register_epic_tools
 from .project_tools import register_project_tools
 from .story_tools import register_story_tools
@@ -17,4 +18,5 @@ __all__ = [
     "register_story_tools",
     "register_artifact_tools",
     "register_backlog_tools",
+    "register_document_tools",
 ]
