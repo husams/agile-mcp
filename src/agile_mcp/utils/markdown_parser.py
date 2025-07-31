@@ -119,7 +119,8 @@ class MarkdownParser:
                 if len(title) > 100:
                     title = title[:100]  # Limit title length
 
-                # Extract description from content after title until next heading or reasonable limit
+                # Extract description from content after title until next heading
+                # or reasonable limit
                 desc_lines = []
                 for desc_line in lines[i + 1 :]:
                     if self.heading_pattern.match(desc_line):

@@ -6,10 +6,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from src.agile_mcp.services.exceptions import (
-    DatabaseError,
-    ProjectValidationError,
-)
+from src.agile_mcp.services.exceptions import DatabaseError, ProjectValidationError
 from src.agile_mcp.services.project_service import ProjectService
 
 

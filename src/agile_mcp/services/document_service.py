@@ -10,10 +10,7 @@ from ..repositories.document_repository import DocumentRepository
 from ..repositories.project_repository import ProjectRepository
 from ..utils.logging_config import create_entity_context, get_logger
 from ..utils.markdown_parser import MarkdownParser
-from .exceptions import (
-    DatabaseError,
-    ProjectValidationError,
-)
+from .exceptions import DatabaseError, ProjectValidationError
 
 
 class DocumentValidationError(Exception):
@@ -58,7 +55,8 @@ class DocumentService:
             title: Optional custom title (if not provided, extracted from content)
 
         Returns:
-            Dict[str, Any]: Dictionary representation of the created document with sections
+            Dict[str, Any]: Dictionary representation of the created document
+                with sections
 
         Raises:
             DocumentValidationError: If validation fails

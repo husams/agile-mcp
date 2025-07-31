@@ -53,8 +53,8 @@ def documents_ingest(
     """
     Ingest a document by parsing its Markdown content into structured sections.
 
-    This tool accepts a file's content, parses it into sections based on Markdown headings,
-    and saves it to the database linked to a specific project.
+    This tool accepts a file's content, parses it into sections based on
+    Markdown headings, and saves it to the database linked to a specific project.
 
     Args:
         project_id: ID of the project to ingest document into
@@ -197,7 +197,10 @@ def documents_getSection(
             raise McpError(
                 ErrorData(
                     code=-32001,
-                    message="Must provide either section_id or title to search for sections",
+                    message=(
+                        "Must provide either section_id or title to search "
+                        "for sections"
+                    ),
                 )
             )
 
@@ -334,8 +337,8 @@ def register_document_tools(mcp: FastMCP) -> None:
         """
         Ingest a document by parsing its Markdown content into structured sections.
 
-        This tool accepts a file's content, parses it into sections based on Markdown headings,
-        and saves it to the database linked to a specific project.
+        This tool accepts a file's content, parses it into sections based on
+        Markdown headings, and saves it to the database linked to a specific project.
 
         Args:
             project_id: ID of the project to ingest document into

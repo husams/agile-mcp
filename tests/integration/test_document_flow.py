@@ -4,9 +4,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from src.agile_mcp.database import create_tables
 from src.agile_mcp.models.epic import Base
-from src.agile_mcp.models.project import Project
 from src.agile_mcp.repositories.document_repository import DocumentRepository
 from src.agile_mcp.repositories.project_repository import ProjectRepository
 from src.agile_mcp.services.document_service import DocumentService

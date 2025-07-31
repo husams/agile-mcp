@@ -63,7 +63,10 @@ class TestDocumentService:
             result = self.service.ingest_document(
                 project_id="project-1",
                 file_path="/path/to/doc.md",
-                content="# Introduction\n\nIntro content\n\n# Conclusion\n\nConclusion content",
+                content=(
+                    "# Introduction\\n\\nIntro content\\n\\n"
+                    "# Conclusion\\n\\nConclusion content"
+                ),
             )
 
             assert result == {"id": "doc-1", "title": "Test Doc"}
@@ -102,6 +105,7 @@ class TestDocumentService:
             # Verify custom title was used
             call_args = self.mock_document_repo.create_document_with_sections.call_args
             assert call_args[1]["title"] == "Custom Title"
+            assert result == {"id": "doc-1", "title": "Custom Title"}
 
     def test_ingest_document_empty_project_id(self):
         """Test document ingestion with empty project ID."""

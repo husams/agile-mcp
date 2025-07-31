@@ -179,9 +179,8 @@ class TestDocumentRepository:
         """Test finding sections by title filtered by project."""
         mock_sections = [MagicMock(spec=DocumentSection)]
         mock_query = MagicMock()
-        mock_query.filter.return_value.join.return_value.filter.return_value.all.return_value = (
-            mock_sections
-        )
+        mock_filter_chain = mock_query.filter.return_value.join.return_value
+        mock_filter_chain.filter.return_value.all.return_value = mock_sections
         self.mock_session.query.return_value = mock_query
 
         result = self.repository.find_sections_by_title(

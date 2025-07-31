@@ -26,8 +26,8 @@ except ImportError:  # type: ignore
     import os
 
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from api import (  # type: ignore
-        register_artifact_tools,
+    from api import register_artifact_tools  # type: ignore
+    from api import (
         register_backlog_tools,
         register_document_tools,
         register_epic_tools,

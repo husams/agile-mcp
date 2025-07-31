@@ -80,7 +80,8 @@ class DocumentRepository:
             document_id: The unique identifier of the document
 
         Returns:
-            Optional[Document]: The document instance with sections if found, None otherwise
+            Optional[Document]: The document instance with sections if found,
+                None otherwise
 
         Raises:
             SQLAlchemyError: If database operation fails
@@ -187,7 +188,8 @@ class DocumentRepository:
             document_id: The unique identifier of the document
 
         Returns:
-            List[DocumentSection]: List of section instances ordered by their order field
+            List[DocumentSection]: List of section instances ordered by their
+                order field
 
         Raises:
             SQLAlchemyError: If database operation fails
