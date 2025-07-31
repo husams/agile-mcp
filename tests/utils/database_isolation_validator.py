@@ -205,6 +205,7 @@ class DatabaseIsolationValidator:
                     id=f"isolation-test-epic-{test_id}",
                     title=f"Isolation Test Epic {test_id}",
                     description="Epic for isolation testing",
+                    project_id="test-project-id",
                     status="Ready",
                 )
                 session1.add(epic1)
@@ -333,6 +334,7 @@ class DatabaseIsolationValidator:
                         id=f"thread-epic-{thread_id}",
                         title=f"Thread {thread_id} Epic",
                         description=f"Epic created by thread {thread_id}",
+                        project_id="test-project-id",
                         status="Ready",
                     )
                     session.add(epic)

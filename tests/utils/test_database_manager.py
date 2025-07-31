@@ -334,6 +334,7 @@ class DatabaseManager:
                 id=f"perf_test_{uuid.uuid4().hex[:8]}",
                 title="Performance Test Epic",
                 description="Test epic for performance measurement",
+                project_id="test-project-id",
                 status="Ready",
             )
             session.add(test_epic)
