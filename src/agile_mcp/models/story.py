@@ -140,10 +140,13 @@ class Story(Base):
         serialized_comments = []
         for comment in self.comments:
             serialized_comment = comment.copy()
-            if isinstance(serialized_comment.get("timestamp"), datetime):
-                serialized_comment["timestamp"] = serialized_comment[
-                    "timestamp"
-                ].isoformat()
+            # Ensure timestamp is always in ISO string format for serialization
+            timestamp = serialized_comment.get("timestamp")
+            if isinstance(timestamp, datetime):
+                serialized_comment["timestamp"] = timestamp.isoformat()
+            elif isinstance(timestamp, str):
+                # Already a string, keep it as is (should be ISO format from validation)
+                pass
             serialized_comments.append(serialized_comment)
 
         return {
@@ -363,10 +366,26 @@ class Story(Base):
                     f"Comment at index {i} must have a non-empty string content"
                 )
 
-            # Validate timestamp
-            if not isinstance(comment["timestamp"], datetime):
+            # Validate timestamp (accept datetime objects or ISO format strings)
+            timestamp = comment["timestamp"]
+            if isinstance(timestamp, datetime):
+                # Already a datetime object - valid
+                pass
+            elif isinstance(timestamp, str):
+                # Validate it's a valid ISO format string by trying to parse it
+                try:
+                    from datetime import datetime as dt
+
+                    dt.fromisoformat(timestamp.replace("Z", "+00:00"))
+                except ValueError:
+                    raise ValueError(
+                        f"Comment at index {i} timestamp string must be in "
+                        "valid ISO format"
+                    )
+            else:
                 raise ValueError(
-                    f"Comment at index {i} timestamp field must be a datetime object"
+                    f"Comment at index {i} timestamp field must be a datetime "
+                    "object or ISO format string"
                 )
 
             # Validate reply_to_id (optional)
