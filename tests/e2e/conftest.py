@@ -121,58 +121,40 @@ def mcp_server_subprocess(isolated_e2e_database):
         # if no input
         time.sleep(0.5)
 
-        # Simplified startup approach for CI environments
-        # In CI, we skip complex startup verification and rely on test timeouts
-        import os
+        # Improved startup check with non-blocking approach for CI compatibility
+        start_time = time.time()
+        server_ready = False
+        startup_timeout = 10  # Increased timeout for CI environments
 
-        is_ci = os.getenv("GITHUB_ACTIONS") == "true" or os.getenv("CI") == "true"
-
-        if is_ci:
-            # In CI environments, use minimal startup check to avoid deadlocks
-            time.sleep(2)  # Just wait 2 seconds for server to start
+        while time.time() - start_time < startup_timeout:
+            # Check if process has failed
             if process.poll() is not None:
+                stdout, stderr_final = process.communicate(timeout=1)
+                raise RuntimeError(
+                    f"MCP server failed to start. Exit code: {process.returncode}, "
+                    f"stdout: {stdout}, stderr: {stderr_final}"
+                )
+
+            # For CI environments, we'll rely on a simple time-based check
+            # instead of trying to read stderr which can deadlock
+            if time.time() - start_time > 2:  # Give server 2 seconds to start
+                server_ready = True
+                break
+
+            time.sleep(0.1)
+
+        if not server_ready:
+            # Try to get any output for debugging
+            try:
                 stdout, stderr = process.communicate(timeout=1)
                 raise RuntimeError(
-                    f"MCP server failed to start in CI. "
-                    f"Exit code: {process.returncode}, "
-                    f"stdout: {stdout}, stderr: {stderr}"
+                    f"MCP server startup timeout. stdout: {stdout}, stderr: {stderr}"
                 )
-        else:
-            # Local development: use more thorough startup check
-            start_time = time.time()
-            server_ready = False
-            startup_timeout = 10  # Increased timeout for CI environments
-
-            while time.time() - start_time < startup_timeout:
-                # Check if process has failed
-                if process.poll() is not None:
-                    stdout, stderr_final = process.communicate(timeout=1)
-                    raise RuntimeError(
-                        f"MCP server failed to start. Exit code: {process.returncode}, "
-                        f"stdout: {stdout}, stderr: {stderr_final}"
-                    )
-
-                # For CI environments, we'll rely on a simple time-based check
-                # instead of trying to read stderr which can deadlock
-                if time.time() - start_time > 2:  # Give server 2 seconds to start
-                    server_ready = True
-                    break
-
-                time.sleep(0.1)
-
-            if not server_ready:
-                # Try to get any output for debugging
-                try:
-                    stdout, stderr = process.communicate(timeout=1)
-                    raise RuntimeError(
-                        f"MCP server startup timeout. "
-                        f"stdout: {stdout}, stderr: {stderr}"
-                    )
-                except subprocess.TimeoutExpired:
-                    raise RuntimeError(
-                        "MCP server startup timeout - "
-                        "process still running but not responsive"
-                    )
+            except subprocess.TimeoutExpired:
+                raise RuntimeError(
+                    "MCP server startup timeout - "
+                    "process still running but not responsive"
+                )
 
         def communicate_json_rpc(
             method: str, params: Optional[Dict[str, Any]] = None
