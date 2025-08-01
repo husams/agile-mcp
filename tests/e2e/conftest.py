@@ -220,7 +220,7 @@ def mcp_server_subprocess(isolated_e2e_database):
                 reader_thread = threading.Thread(target=read_response)
                 reader_thread.daemon = True
                 reader_thread.start()
-                reader_thread.join(timeout=10.0)  # 10 second timeout
+                reader_thread.join(timeout=10.0)  # 10 second timeout for CI robustness
 
                 if reader_thread.is_alive():
                     # Thread is still running, meaning timeout occurred
