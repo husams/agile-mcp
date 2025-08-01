@@ -18,27 +18,34 @@ def send_jsonrpc_request(process_or_fixture, method, params=None):
     # Handle both direct process and mcp_server_subprocess fixture tuple
     if isinstance(process_or_fixture, tuple):
         process, env_vars, communicate_json_rpc = process_or_fixture
+        # Use the robust communicate function from the fixture
+        response = communicate_json_rpc(method, params)
+
+        # Validate JSON-RPC response format
+        validated_response = validate_jsonrpc_response_format(response)
+        return validated_response
     else:
+        # Legacy support for direct process
         process = process_or_fixture
-    request = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params or {}}
+        request = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params or {}}
 
-    request_json = json.dumps(request) + "\n"
-    process.stdin.write(request_json)
-    process.stdin.flush()
+        request_json = json.dumps(request) + "\n"
+        process.stdin.write(request_json)
+        process.stdin.flush()
 
-    # Read response
-    response_line = process.stdout.readline()
-    if not response_line:
-        stderr_output = process.stderr.read()
-        raise RuntimeError(f"No response from server. Stderr: {stderr_output}")
+        # Read response
+        response_line = process.stdout.readline()
+        if not response_line:
+            stderr_output = process.stderr.read()
+            raise RuntimeError(f"No response from server. Stderr: {stderr_output}")
 
-    # Validate JSON parsing
-    response_json = validate_json_response(response_line.strip())
+        # Validate JSON parsing
+        response_json = validate_json_response(response_line.strip())
 
-    # Validate JSON-RPC response format
-    validated_response = validate_jsonrpc_response_format(response_json)
+        # Validate JSON-RPC response format
+        validated_response = validate_jsonrpc_response_format(response_json)
 
-    return validated_response
+        return validated_response
 
 
 def initialize_server(process_or_fixture):
