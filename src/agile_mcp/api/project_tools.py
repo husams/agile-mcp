@@ -56,7 +56,7 @@ def register_project_tools(mcp: FastMCP) -> None:
             logger.info(
                 "Processing create project request",
                 **create_request_context(
-                    request_id=request_id, tool_name="projects.create"
+                    request_id=request_id, tool_name="create_project"
                 ),
                 name=name[:50] if name else None,
             )
@@ -86,7 +86,7 @@ def register_project_tools(mcp: FastMCP) -> None:
             logger.error(
                 "Project validation error in create project",
                 **create_request_context(
-                    request_id=request_id, tool_name="projects.create"
+                    request_id=request_id, tool_name="create_project"
                 ),
                 error_type="ProjectValidationError",
                 error_message=str(e),
@@ -99,7 +99,7 @@ def register_project_tools(mcp: FastMCP) -> None:
             logger.error(
                 "Database error in create project",
                 **create_request_context(
-                    request_id=request_id, tool_name="projects.create"
+                    request_id=request_id, tool_name="create_project"
                 ),
                 error_type="DatabaseError",
                 error_message=str(e),
@@ -110,7 +110,7 @@ def register_project_tools(mcp: FastMCP) -> None:
             logger.error(
                 "Unexpected error in create project",
                 **create_request_context(
-                    request_id=request_id, tool_name="projects.create"
+                    request_id=request_id, tool_name="create_project"
                 ),
                 error_type=type(e).__name__,
                 error_message=str(e),
