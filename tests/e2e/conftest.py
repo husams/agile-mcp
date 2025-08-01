@@ -107,8 +107,10 @@ def mcp_server_subprocess(isolated_e2e_database):
     process = None
     try:
         # Start the MCP server process
+        # Use 'python' in CI, 'python3' locally for compatibility
+        python_cmd = "python" if os.getenv("CI") == "true" else "python3"
         process = subprocess.Popen(
-            ["python3", "-m", "src.agile_mcp.main"],
+            [python_cmd, "-m", "src.agile_mcp.main"],
             env=subprocess_env,
             stdin=subprocess.PIPE,  # Add stdin for communication
             stdout=subprocess.PIPE,
