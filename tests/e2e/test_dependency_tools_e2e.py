@@ -82,7 +82,7 @@ def create_test_epic(process):
         process,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": "Dependency Test Project",
                 "description": "Project for testing story dependencies",
@@ -98,7 +98,7 @@ def create_test_epic(process):
         process,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": "Dependency Test Epic",
                 "description": "Epic for testing story dependencies",
@@ -120,7 +120,7 @@ def create_test_story(process, epic_id, title):
         process,
         "tools/call",
         {
-            "name": "backlog.createStory",
+            "name": "create_story",
             "arguments": {
                 "epic_id": epic_id,
                 "title": title,
@@ -141,7 +141,7 @@ class TestDependencyToolsE2E:
     """End-to-end tests for dependency management tools."""
 
     def test_backlog_add_dependency_e2e_success(self, mcp_server_subprocess):
-        """Test backlog.addDependency tool via MCP JSON-RPC - success case."""
+        """Test add_story_dependency tool via MCP JSON-RPC - success case."""
         # Initialize server
         initialize_server(mcp_server_subprocess)
 
@@ -155,7 +155,7 @@ class TestDependencyToolsE2E:
             mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {
                     "story_id": story_1_id,
                     "depends_on_story_id": story_2_id,
@@ -202,7 +202,7 @@ class TestDependencyToolsE2E:
             mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {
                     "story_id": story_1_id,
                     "depends_on_story_id": story_2_id,
@@ -214,7 +214,7 @@ class TestDependencyToolsE2E:
             mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {
                     "story_id": story_2_id,
                     "depends_on_story_id": story_3_id,
@@ -228,7 +228,7 @@ class TestDependencyToolsE2E:
             mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {
                     "story_id": story_3_id,
                     "depends_on_story_id": story_1_id,
@@ -264,7 +264,7 @@ class TestDependencyToolsE2E:
             mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {
                     "story_id": story_1_id,
                     "depends_on_story_id": "nonexistent-story-id",
@@ -303,7 +303,7 @@ class TestDependencyToolsE2E:
             mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {
                     "story_id": story_1_id,
                     "depends_on_story_id": story_2_id,
@@ -317,7 +317,7 @@ class TestDependencyToolsE2E:
             mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {
                     "story_id": story_1_id,
                     "depends_on_story_id": story_2_id,
@@ -357,7 +357,7 @@ class TestDependencyToolsE2E:
             mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {"story_id": story_id, "depends_on_story_id": story_id},
             },
         )
@@ -388,7 +388,7 @@ class TestDependencyToolsE2E:
             mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {"story_id": "", "depends_on_story_id": "some-story-id"},
             },
         )
@@ -406,7 +406,7 @@ class TestDependencyToolsE2E:
             mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {"story_id": "some-story-id", "depends_on_story_id": ""},
             },
         )
@@ -452,7 +452,7 @@ class TestDependencyToolsE2E:
                 mcp_server_subprocess,
                 "tools/call",
                 {
-                    "name": "backlog.addDependency",
+                    "name": "add_story_dependency",
                     "arguments": {
                         "story_id": story_id,
                         "depends_on_story_id": depends_on_id,
@@ -469,7 +469,7 @@ class TestDependencyToolsE2E:
             mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {
                     "story_id": story_ids[4],  # Story 5
                     "depends_on_story_id": story_ids[0],  # Story 1
@@ -504,7 +504,7 @@ class TestDependencyToolsE2E:
             mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.addDependency",
+                "name": "add_story_dependency",
                 "arguments": {
                     "story_id": story_1_id,
                     "depends_on_story_id": story_2_id,
@@ -521,7 +521,7 @@ class TestDependencyToolsE2E:
         story_1_response = send_jsonrpc_request(
             mcp_server_subprocess,
             "tools/call",
-            {"name": "backlog.getStory", "arguments": {"story_id": story_1_id}},
+            {"name": "get_story", "arguments": {"story_id": story_1_id}},
         )
         assert "error" not in story_1_response
         result = story_1_response.get("result", {})
@@ -530,7 +530,7 @@ class TestDependencyToolsE2E:
         story_2_response = send_jsonrpc_request(
             mcp_server_subprocess,
             "tools/call",
-            {"name": "backlog.getStory", "arguments": {"story_id": story_2_id}},
+            {"name": "get_story", "arguments": {"story_id": story_2_id}},
         )
         assert "error" not in story_2_response
         result = story_2_response.get("result", {})

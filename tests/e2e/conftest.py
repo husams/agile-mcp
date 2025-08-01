@@ -10,6 +10,7 @@ and JSON-RPC client helpers for server communication with automatic cleanup.
 import json
 import os
 import subprocess
+import threading
 import time
 from typing import Any, Dict, Optional
 
@@ -106,8 +107,17 @@ def mcp_server_subprocess(isolated_e2e_database):
     process = None
     try:
         # Start the MCP server process
+        # Use appropriate Python command based on availability
+        python_cmd = "python3"  # Default to python3
+        if os.getenv("CI") == "true":
+            # In CI, try to use 'python' first, fallback to 'python3'
+            try:
+                subprocess.run(["python", "--version"], check=True, capture_output=True)
+                python_cmd = "python"
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                python_cmd = "python3"
         process = subprocess.Popen(
-            ["python3", "-m", "src.agile_mcp.main"],
+            [python_cmd, "-m", "src.agile_mcp.main"],
             env=subprocess_env,
             stdin=subprocess.PIPE,  # Add stdin for communication
             stdout=subprocess.PIPE,
@@ -127,7 +137,7 @@ def mcp_server_subprocess(isolated_e2e_database):
 
         if is_ci:
             # In CI environments, use minimal startup check to avoid deadlocks
-            time.sleep(2)  # Just wait 2 seconds for server to start
+            time.sleep(5)  # Wait 5 seconds for server to start (increased for CI)
             if process.poll() is not None:
                 stdout, stderr = process.communicate(timeout=1)
                 raise RuntimeError(
@@ -192,7 +202,7 @@ def mcp_server_subprocess(isolated_e2e_database):
                 "params": params or {},
             }
 
-            # Improved stdin/stdout communication with timeout for CI robustness
+            # Thread-safe communication with timeout to prevent CI hanging
             try:
                 # Check if process is still alive before attempting communication
                 if process.poll() is not None:
@@ -202,29 +212,41 @@ def mcp_server_subprocess(isolated_e2e_database):
                 process.stdin.write(request_json)
                 process.stdin.flush()
 
-                # Add timeout for response reading to prevent hanging in CI
-                import select
+                # Use threading to implement timeout for stdout.readline()
+                response_data = {}
 
-                # Use select for non-blocking read on Unix-like systems
-                if hasattr(select, "select"):
-                    ready, _, _ = select.select(
-                        [process.stdout], [], [], 5.0  # 5 second timeout
-                    )
-                    if ready:
+                def read_response():
+                    try:
                         response_line = process.stdout.readline()
                         if response_line:
-                            return json.loads(response_line.strip())
+                            response_data["response"] = response_line.strip()
                         else:
-                            return {"error": "Empty response from server"}
-                    else:
-                        return {"error": "Response timeout from server"}
-                else:
-                    # Fallback for non-Unix systems
-                    response_line = process.stdout.readline()
-                    if response_line:
-                        return json.loads(response_line.strip())
-                    else:
-                        return {"error": "No response from server"}
+                            response_data["error"] = "Empty response from server"
+                    except Exception as e:
+                        response_data["error"] = f"Read error: {str(e)}"
+
+                # Start reader thread with timeout
+                reader_thread = threading.Thread(target=read_response)
+                reader_thread.daemon = True
+                reader_thread.start()
+                # Use longer timeout in CI environments which can be slower
+                timeout_seconds = 30.0 if os.getenv("CI") == "true" else 10.0
+                reader_thread.join(timeout=timeout_seconds)
+
+                if reader_thread.is_alive():
+                    # Thread is still running, meaning timeout occurred
+                    error_msg = f"Response timeout from server after {timeout_seconds}s"
+                    if os.getenv("CI") == "true":
+                        error_msg += f" (CI environment, PID: {process.pid})"
+                    return {"error": error_msg}
+
+                if "error" in response_data:
+                    return {"error": response_data["error"]}
+
+                if "response" in response_data:
+                    return json.loads(response_data["response"])
+
+                return {"error": "No response received"}
 
             except Exception as e:
                 return {"error": f"Communication error: {str(e)}"}

@@ -40,7 +40,7 @@ def register_epic_tools(mcp: FastMCP) -> None:
         )
         raise
 
-    @mcp.tool("backlog.createEpic")
+    @mcp.tool("create_epic")
     def create_epic(title: str, description: str, project_id: str) -> Dict[str, Any]:
         """
         Create a new epic with the specified title and description.
@@ -63,7 +63,7 @@ def register_epic_tools(mcp: FastMCP) -> None:
             logger.info(
                 "Processing create epic request",
                 **create_request_context(
-                    request_id=request_id, tool_name="backlog.createEpic"
+                    request_id=request_id, tool_name="create_epic"
                 ),
                 title=title[:50] if title else None,
             )
@@ -93,7 +93,7 @@ def register_epic_tools(mcp: FastMCP) -> None:
             logger.error(
                 "Epic validation error in create epic",
                 **create_request_context(
-                    request_id=request_id, tool_name="backlog.createEpic"
+                    request_id=request_id, tool_name="create_epic"
                 ),
                 error_type="EpicValidationError",
                 error_message=str(e),
@@ -106,7 +106,7 @@ def register_epic_tools(mcp: FastMCP) -> None:
             logger.error(
                 "Database error in create epic",
                 **create_request_context(
-                    request_id=request_id, tool_name="backlog.createEpic"
+                    request_id=request_id, tool_name="create_epic"
                 ),
                 error_type="DatabaseError",
                 error_message=str(e),
@@ -117,7 +117,7 @@ def register_epic_tools(mcp: FastMCP) -> None:
             logger.error(
                 "Unexpected error in create epic",
                 **create_request_context(
-                    request_id=request_id, tool_name="backlog.createEpic"
+                    request_id=request_id, tool_name="create_epic"
                 ),
                 error_type=type(e).__name__,
                 error_message=str(e),
@@ -127,7 +127,7 @@ def register_epic_tools(mcp: FastMCP) -> None:
                 ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
             )
 
-    @mcp.tool("backlog.findEpics")
+    @mcp.tool("find_epics")
     def find_epics() -> List[Dict[str, Any]]:
         """
         Retrieve a list of all existing epics.
@@ -161,7 +161,7 @@ def register_epic_tools(mcp: FastMCP) -> None:
                 ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
             )
 
-    @mcp.tool("backlog.updateEpicStatus")
+    @mcp.tool("update_epic_status")
     def update_epic_status(epic_id: str, status: str) -> Dict[str, Any]:
         """
         Update the status of an epic to reflect its current stage in the project plan.
@@ -183,7 +183,7 @@ def register_epic_tools(mcp: FastMCP) -> None:
             logger.info(
                 "Processing update epic status request",
                 **create_request_context(
-                    request_id=request_id, tool_name="backlog.updateEpicStatus"
+                    request_id=request_id, tool_name="update_epic_status"
                 ),
                 **create_entity_context(epic_id=epic_id),
                 new_status=status,
@@ -215,7 +215,7 @@ def register_epic_tools(mcp: FastMCP) -> None:
             logger.error(
                 "Epic not found error in update epic status",
                 **create_request_context(
-                    request_id=request_id, tool_name="backlog.updateEpicStatus"
+                    request_id=request_id, tool_name="update_epic_status"
                 ),
                 **create_entity_context(epic_id=epic_id),
                 new_status=status,
@@ -228,7 +228,7 @@ def register_epic_tools(mcp: FastMCP) -> None:
             logger.error(
                 "Invalid epic status error in update epic status",
                 **create_request_context(
-                    request_id=request_id, tool_name="backlog.updateEpicStatus"
+                    request_id=request_id, tool_name="update_epic_status"
                 ),
                 **create_entity_context(epic_id=epic_id),
                 new_status=status,
@@ -241,7 +241,7 @@ def register_epic_tools(mcp: FastMCP) -> None:
             logger.error(
                 "Database error in update epic status",
                 **create_request_context(
-                    request_id=request_id, tool_name="backlog.updateEpicStatus"
+                    request_id=request_id, tool_name="update_epic_status"
                 ),
                 **create_entity_context(epic_id=epic_id),
                 new_status=status,
@@ -254,7 +254,7 @@ def register_epic_tools(mcp: FastMCP) -> None:
             logger.error(
                 "Unexpected error in update epic status",
                 **create_request_context(
-                    request_id=request_id, tool_name="backlog.updateEpicStatus"
+                    request_id=request_id, tool_name="update_epic_status"
                 ),
                 **create_entity_context(epic_id=epic_id),
                 new_status=status,

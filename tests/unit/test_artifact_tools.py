@@ -69,7 +69,7 @@ class TestArtifactTools:
                 if call[0]:  # positional arguments
                     tool_names.append(call[0][0])
 
-            assert "artifacts.linkToStory" in tool_names
+            assert "link_artifact_to_story" in tool_names
 
     def test_list_artifacts_for_story_tool_registration(self, mock_mcp):
         """Test successful artifacts listing tool registration."""
@@ -85,7 +85,7 @@ class TestArtifactTools:
                 if call[0]:  # positional arguments
                     tool_names.append(call[0][0])
 
-            assert "artifacts.listForStory" in tool_names
+            assert "list_story_artifacts" in tool_names
 
     def test_tools_registration(self, mock_mcp):
         """Test that both tools are registered correctly."""
@@ -100,8 +100,8 @@ class TestArtifactTools:
                 if call[0]:  # positional arguments
                     tool_names.append(call[0][0])
 
-            assert "artifacts.linkToStory" in tool_names
-            assert "artifacts.listForStory" in tool_names
+            assert "link_artifact_to_story" in tool_names
+            assert "list_story_artifacts" in tool_names
 
             # Verify database tables creation was called
             mock_create_tables.assert_called_once()

@@ -31,10 +31,10 @@ def test_register_comment_tools(mock_mcp):
 
     # Verify expected tools are registered
     expected_tools = [
-        "story.addComment",
-        "story.getComments",
-        "story.updateComment",
-        "story.deleteComment",
+        "add_story_comment",
+        "get_story_comments",
+        "update_story_comment",
+        "delete_story_comment",
     ]
 
     for tool in expected_tools:

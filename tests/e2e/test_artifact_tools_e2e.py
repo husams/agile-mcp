@@ -20,30 +20,34 @@ def send_jsonrpc_request(process_or_fixture, method, params=None):
     # Handle both direct process and mcp_server_subprocess fixture tuple
     if isinstance(process_or_fixture, tuple):
         process, env_vars, communicate_json_rpc = process_or_fixture
+        # Use the robust communicate function from the fixture
+        response = communicate_json_rpc(method, params)
+
+        # Validate JSON-RPC response format
+        validated_response = validate_jsonrpc_response_format(response)
+        return validated_response
     else:
+        # Legacy support for direct process
         process = process_or_fixture
+        request = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params or {}}
 
-    # Original function body follows:
-    """Send JSON-RPC request to MCP server and return validated response."""
-    request = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params or {}}
+        request_json = json.dumps(request) + "\n"
+        process.stdin.write(request_json)
+        process.stdin.flush()
 
-    request_json = json.dumps(request) + "\n"
-    process.stdin.write(request_json)
-    process.stdin.flush()
+        # Read response
+        response_line = process.stdout.readline()
+        if not response_line:
+            stderr_output = process.stderr.read()
+            raise RuntimeError(f"No response from server. Stderr: {stderr_output}")
 
-    # Read response
-    response_line = process.stdout.readline()
-    if not response_line:
-        stderr_output = process.stderr.read()
-        raise RuntimeError(f"No response from server. Stderr: {stderr_output}")
+        # Validate JSON parsing
+        response_json = validate_json_response(response_line.strip())
 
-    # Validate JSON parsing
-    response_json = validate_json_response(response_line.strip())
+        # Validate JSON-RPC response format
+        validated_response = validate_jsonrpc_response_format(response_json)
 
-    # Validate JSON-RPC response format
-    validated_response = validate_jsonrpc_response_format(response_json)
-
-    return validated_response
+        return validated_response
 
 
 def initialize_server(process_or_fixture):
@@ -81,7 +85,7 @@ def create_test_epic_and_story(process):
         process,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": "Test Project for Artifacts",
                 "description": "Project created for artifact testing purposes",
@@ -99,7 +103,7 @@ def create_test_epic_and_story(process):
         process,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": "Test Epic for Artifacts",
                 "description": "Epic created for artifact testing purposes",
@@ -118,7 +122,7 @@ def create_test_epic_and_story(process):
         process,
         "tools/call",
         {
-            "name": "backlog.createStory",
+            "name": "create_story",
             "arguments": {
                 "epic_id": epic_id,
                 "title": "Test Story for Artifacts",
@@ -143,7 +147,7 @@ class TestArtifactToolsE2E:
     """End-to-end tests for artifact management tools."""
 
     def test_artifacts_link_to_story_e2e_success(self, mcp_server_subprocess):
-        """Test artifacts.linkToStory tool via MCP JSON-RPC - success case."""
+        """Test link_artifact_to_story tool via MCP JSON-RPC - success case."""
         process = mcp_server_subprocess
 
         # Initialize server
@@ -158,7 +162,7 @@ class TestArtifactToolsE2E:
             process,
             "tools/call",
             {
-                "name": "artifacts.linkToStory",
+                "name": "link_artifact_to_story",
                 "arguments": {
                     "story_id": story_id,
                     "uri": "file:///path/to/implementation.js",
@@ -184,7 +188,7 @@ class TestArtifactToolsE2E:
         assert artifact_response.id is not None
 
     def test_artifacts_link_to_story_e2e_validation_error(self, mcp_server_subprocess):
-        """Test artifacts.linkToStory tool with validation error."""
+        """Test link_artifact_to_story tool with validation error."""
         process = mcp_server_subprocess
 
         # Initialize server
@@ -198,7 +202,7 @@ class TestArtifactToolsE2E:
             process,
             "tools/call",
             {
-                "name": "artifacts.linkToStory",
+                "name": "link_artifact_to_story",
                 "arguments": {
                     "story_id": story_id,
                     "uri": "",
@@ -222,7 +226,7 @@ class TestArtifactToolsE2E:
         assert "URI cannot be empty" in validated_error["message"]
 
     def test_artifacts_link_to_story_e2e_invalid_relation(self, mcp_server_subprocess):
-        """Test artifacts.linkToStory tool with invalid relation type."""
+        """Test link_artifact_to_story tool with invalid relation type."""
         process = mcp_server_subprocess
 
         # Initialize server
@@ -236,7 +240,7 @@ class TestArtifactToolsE2E:
             process,
             "tools/call",
             {
-                "name": "artifacts.linkToStory",
+                "name": "link_artifact_to_story",
                 "arguments": {
                     "story_id": story_id,
                     "uri": "file:///path/to/code.js",
@@ -259,7 +263,7 @@ class TestArtifactToolsE2E:
         assert "Invalid relation type" in validated_error["message"]
 
     def test_artifacts_link_to_story_e2e_story_not_found(self, mcp_server_subprocess):
-        """Test artifacts.linkToStory tool with non-existent story."""
+        """Test link_artifact_to_story tool with non-existent story."""
         process = mcp_server_subprocess
 
         # Initialize server
@@ -270,7 +274,7 @@ class TestArtifactToolsE2E:
             process,
             "tools/call",
             {
-                "name": "artifacts.linkToStory",
+                "name": "link_artifact_to_story",
                 "arguments": {
                     "story_id": "non-existent-story-id",
                     "uri": "file:///path/to/code.js",
@@ -286,7 +290,7 @@ class TestArtifactToolsE2E:
         assert "Story not found" in response["result"]["content"][0]["text"]
 
     def test_artifacts_list_for_story_e2e_success(self, mcp_server_subprocess):
-        """Test artifacts.listForStory tool via MCP JSON-RPC - success case."""
+        """Test list_story_artifacts tool via MCP JSON-RPC - success case."""
         process = mcp_server_subprocess
 
         # Initialize server
@@ -308,7 +312,7 @@ class TestArtifactToolsE2E:
                 process,
                 "tools/call",
                 {
-                    "name": "artifacts.linkToStory",
+                    "name": "link_artifact_to_story",
                     "arguments": {
                         "story_id": story_id,
                         "uri": artifact_data["uri"],
@@ -323,7 +327,7 @@ class TestArtifactToolsE2E:
         list_response = send_jsonrpc_request(
             process,
             "tools/call",
-            {"name": "artifacts.listForStory", "arguments": {"story_id": story_id}},
+            {"name": "list_story_artifacts", "arguments": {"story_id": story_id}},
         )
 
         # Verify response structure
@@ -351,7 +355,7 @@ class TestArtifactToolsE2E:
             assert artifact["relation"] in ["implementation", "design", "test"]
 
     def test_artifacts_list_for_story_e2e_empty_result(self, mcp_server_subprocess):
-        """Test artifacts.listForStory tool with no artifacts."""
+        """Test list_story_artifacts tool with no artifacts."""
         process = mcp_server_subprocess
 
         # Initialize server
@@ -364,7 +368,7 @@ class TestArtifactToolsE2E:
         list_response = send_jsonrpc_request(
             process,
             "tools/call",
-            {"name": "artifacts.listForStory", "arguments": {"story_id": story_id}},
+            {"name": "list_story_artifacts", "arguments": {"story_id": story_id}},
         )
 
         # Verify response structure
@@ -384,7 +388,7 @@ class TestArtifactToolsE2E:
         assert len(artifacts_list) == 0
 
     def test_artifacts_list_for_story_e2e_validation_error(self, mcp_server_subprocess):
-        """Test artifacts.listForStory tool with validation error."""
+        """Test list_story_artifacts tool with validation error."""
         process = mcp_server_subprocess
 
         # Initialize server
@@ -394,7 +398,7 @@ class TestArtifactToolsE2E:
         response = send_jsonrpc_request(
             process,
             "tools/call",
-            {"name": "artifacts.listForStory", "arguments": {"story_id": ""}},
+            {"name": "list_story_artifacts", "arguments": {"story_id": ""}},
         )
 
         # Verify error response (FastMCP returns successful response with error content)
@@ -418,7 +422,7 @@ class TestArtifactToolsE2E:
             process,
             "tools/call",
             {
-                "name": "projects.create",
+                "name": "create_project",
                 "arguments": {
                     "name": "Complete Workflow Project",
                     "description": "Project for complete workflow testing",
@@ -434,7 +438,7 @@ class TestArtifactToolsE2E:
             process,
             "tools/call",
             {
-                "name": "backlog.createEpic",
+                "name": "create_epic",
                 "arguments": {
                     "title": "Complete Workflow Epic",
                     "description": "Epic for complete workflow testing",
@@ -450,7 +454,7 @@ class TestArtifactToolsE2E:
             process,
             "tools/call",
             {
-                "name": "backlog.createStory",
+                "name": "create_story",
                 "arguments": {
                     "epic_id": epic_id,
                     "title": "Complete Workflow Story",
@@ -481,7 +485,7 @@ class TestArtifactToolsE2E:
                 process,
                 "tools/call",
                 {
-                    "name": "artifacts.linkToStory",
+                    "name": "link_artifact_to_story",
                     "arguments": {
                         "story_id": story_id,
                         "uri": uri,
@@ -497,7 +501,7 @@ class TestArtifactToolsE2E:
         list_response = send_jsonrpc_request(
             process,
             "tools/call",
-            {"name": "artifacts.listForStory", "arguments": {"story_id": story_id}},
+            {"name": "list_story_artifacts", "arguments": {"story_id": story_id}},
         )
 
         assert "result" in list_response
@@ -521,7 +525,7 @@ class TestArtifactToolsE2E:
         story_get_response = send_jsonrpc_request(
             process,
             "tools/call",
-            {"name": "backlog.getStory", "arguments": {"story_id": story_id}},
+            {"name": "get_story", "arguments": {"story_id": story_id}},
         )
 
         assert "result" in story_get_response
@@ -555,7 +559,7 @@ class TestArtifactToolsE2E:
                 process,
                 "tools/call",
                 {
-                    "name": "artifacts.linkToStory",
+                    "name": "link_artifact_to_story",
                     "arguments": {
                         "story_id": story_id,
                         "uri": uri,
@@ -574,7 +578,7 @@ class TestArtifactToolsE2E:
         list_response = send_jsonrpc_request(
             process,
             "tools/call",
-            {"name": "artifacts.listForStory", "arguments": {"story_id": story_id}},
+            {"name": "list_story_artifacts", "arguments": {"story_id": story_id}},
         )
 
         artifacts_list = json.loads(list_response["result"]["content"][0]["text"])
@@ -612,7 +616,7 @@ class TestArtifactToolsE2E:
                 process,
                 "tools/call",
                 {
-                    "name": "artifacts.linkToStory",
+                    "name": "link_artifact_to_story",
                     "arguments": {
                         "story_id": story_id,
                         "uri": invalid_uri,

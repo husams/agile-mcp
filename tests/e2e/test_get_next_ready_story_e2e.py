@@ -84,7 +84,7 @@ def create_test_epic(process, title="E2E Test Epic"):
         process,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": f"E2E Test Project for {title}",
                 "description": "Project for E2E testing",
@@ -100,7 +100,7 @@ def create_test_epic(process, title="E2E Test Epic"):
         process,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": title,
                 "description": "Epic for E2E testing",
@@ -122,7 +122,7 @@ def create_test_story(process, epic_id, title, description):
         process,
         "tools/call",
         {
-            "name": "backlog.createStory",
+            "name": "create_story",
             "arguments": {
                 "epic_id": epic_id,
                 "title": title,
@@ -145,7 +145,7 @@ def add_story_dependency(process, story_id, depends_on_story_id):
         process,
         "tools/call",
         {
-            "name": "backlog.addDependency",
+            "name": "add_story_dependency",
             "arguments": {
                 "story_id": story_id,
                 "depends_on_story_id": depends_on_story_id,
@@ -161,7 +161,7 @@ def update_story_status(process, story_id, status):
         process,
         "tools/call",
         {
-            "name": "backlog.updateStoryStatus",
+            "name": "update_story_status",
             "arguments": {"story_id": story_id, "status": status},
         },
     )
@@ -247,7 +247,7 @@ class TestGetNextReadyStoryE2E:
         response = send_jsonrpc_request(
             mcp_server_subprocess,
             "tools/call",
-            {"name": "backlog.getNextReadyStory", "arguments": {}},
+            {"name": "get_next_ready_story", "arguments": {}},
         )
 
         # Extract and validate tool response structure
@@ -281,7 +281,7 @@ class TestGetNextReadyStoryE2E:
                 response = send_jsonrpc_request(
                     mcp_server_subprocess,
                     "tools/call",
-                    {"name": "backlog.getNextReadyStory", "arguments": {}},
+                    {"name": "get_next_ready_story", "arguments": {}},
                 )
 
                 result = extract_tool_response(response)
@@ -297,7 +297,7 @@ class TestGetNextReadyStoryE2E:
                         response = send_jsonrpc_request(
                             mcp_server_subprocess,
                             "tools/call",
-                            {"name": "backlog.getNextReadyStory", "arguments": {}},
+                            {"name": "get_next_ready_story", "arguments": {}},
                         )
 
                         result = extract_tool_response(response)
@@ -328,7 +328,7 @@ class TestGetNextReadyStoryE2E:
         verify_response = send_jsonrpc_request(
             mcp_server_subprocess,
             "tools/call",
-            {"name": "backlog.getStory", "arguments": {"story_id": story_id}},
+            {"name": "get_story", "arguments": {"story_id": story_id}},
         )
 
         initial_story = extract_tool_response(verify_response)
@@ -345,7 +345,7 @@ class TestGetNextReadyStoryE2E:
             response = send_jsonrpc_request(
                 mcp_server_subprocess,
                 "tools/call",
-                {"name": "backlog.getNextReadyStory", "arguments": {}},
+                {"name": "get_next_ready_story", "arguments": {}},
             )
 
             result = extract_tool_response(response)
@@ -369,7 +369,7 @@ class TestGetNextReadyStoryE2E:
             verify_response = send_jsonrpc_request(
                 mcp_server_subprocess,
                 "tools/call",
-                {"name": "backlog.getStory", "arguments": {"story_id": story_id}},
+                {"name": "get_story", "arguments": {"story_id": story_id}},
             )
 
             persisted_story = extract_tool_response(verify_response)
@@ -380,7 +380,7 @@ class TestGetNextReadyStoryE2E:
             response2 = send_jsonrpc_request(
                 mcp_server_subprocess,
                 "tools/call",
-                {"name": "backlog.getNextReadyStory", "arguments": {}},
+                {"name": "get_next_ready_story", "arguments": {}},
             )
 
             result2 = extract_tool_response(response2)
@@ -422,7 +422,7 @@ class TestGetNextReadyStoryE2E:
             verify_response = send_jsonrpc_request(
                 mcp_server_subprocess,
                 "tools/call",
-                {"name": "backlog.getStory", "arguments": {"story_id": story_id}},
+                {"name": "get_story", "arguments": {"story_id": story_id}},
             )
             story = extract_tool_response(verify_response)
             assert story["status"] == "ToDo"
@@ -442,7 +442,7 @@ class TestGetNextReadyStoryE2E:
             response = send_jsonrpc_request(
                 mcp_server_subprocess,
                 "tools/call",
-                {"name": "backlog.getNextReadyStory", "arguments": {}},
+                {"name": "get_next_ready_story", "arguments": {}},
             )
 
             result = extract_tool_response(response)
@@ -464,7 +464,7 @@ class TestGetNextReadyStoryE2E:
                 response2 = send_jsonrpc_request(
                     mcp_server_subprocess,
                     "tools/call",
-                    {"name": "backlog.getNextReadyStory", "arguments": {}},
+                    {"name": "get_next_ready_story", "arguments": {}},
                 )
 
                 result2 = extract_tool_response(response2)
@@ -495,7 +495,7 @@ class TestGetNextReadyStoryE2E:
         response = send_jsonrpc_request(
             mcp_server_subprocess,
             "tools/call",
-            {"name": "backlog.getNextReadyStory", "arguments": {}},
+            {"name": "get_next_ready_story", "arguments": {}},
         )
 
         # Validate JSON-RPC response structure
@@ -550,7 +550,7 @@ class TestGetNextReadyStoryE2E:
         response = send_jsonrpc_request(
             mcp_server_subprocess,
             "tools/call",
-            {"name": "backlog.getNextReadyStory", "arguments": {}},
+            {"name": "get_next_ready_story", "arguments": {}},
         )
 
         # Validate JSON-RPC response format

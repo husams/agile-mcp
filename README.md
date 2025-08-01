@@ -22,6 +22,12 @@ This server implements the Model Context Protocol (MCP) specification, providing
 - Tool-based operations for backlog management
 - Secure and predictable agent-service interactions
 
+## Version Information
+
+**Current Version**: 2.0.0
+
+**⚠️ Breaking Changes in v2.0.0**: All tool names have been updated to use underscore-based naming for better MCP protocol compliance. See the [Migration Guide](MIGRATION-GUIDE.md) for complete details on updating from v1.x.
+
 ## Getting Started
 
 ### Prerequisites
@@ -98,6 +104,9 @@ agile-mcp/
 
 ## Documentation
 
+- **[Migration Guide](MIGRATION-GUIDE.md)** - Complete guide for migrating from v1.x to v2.0
+- **[Changelog](CHANGELOG.md)** - Version history and breaking changes
+- [Available Tools](docs/tools.md) - Complete list of MCP tools and their usage
 - [Product Requirements Document](docs/prd.md)
 - [Architecture Overview](docs/architecture.md)
 - [Configuration Management](docs/configuration.md)

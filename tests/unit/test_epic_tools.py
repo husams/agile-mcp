@@ -112,9 +112,9 @@ def test_tool_registration_includes_update_epic_status():
     tool_calls = mock_mcp.tool.call_args_list
     tool_names = [call[0][0] for call in tool_calls]
 
-    assert "backlog.updateEpicStatus" in tool_names
-    assert "backlog.createEpic" in tool_names
-    assert "backlog.findEpics" in tool_names
+    assert "update_epic_status" in tool_names
+    assert "create_epic" in tool_names
+    assert "find_epics" in tool_names
 
 
 def test_service_layer_error_handling():

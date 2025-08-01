@@ -40,7 +40,7 @@ def register_artifact_tools(mcp: FastMCP) -> None:
         )
         raise
 
-    @mcp.tool("artifacts.linkToStory")
+    @mcp.tool("link_artifact_to_story")
     def link_artifact_to_story(
         story_id: str, uri: str, relation: str
     ) -> Dict[str, Any]:
@@ -203,7 +203,7 @@ def register_artifact_tools(mcp: FastMCP) -> None:
                 )
             )
 
-    @mcp.tool("artifacts.listForStory")
+    @mcp.tool("list_story_artifacts")
     def list_artifacts_for_story(story_id: str) -> List[Dict[str, Any]]:
         """
         Retrieve all artifacts linked to a specific story.

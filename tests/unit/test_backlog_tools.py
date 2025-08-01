@@ -33,9 +33,9 @@ class TestBacklogTools:
 
         # Check all tools are registered
         tool_names = [call[0][0] for call in tool_calls]
-        assert "backlog.getStorySection" in tool_names
-        assert "backlog.addDependency" in tool_names
-        assert "backlog.getNextReadyStory" in tool_names
+        assert "get_story_section" in tool_names
+        assert "add_story_dependency" in tool_names
+        assert "get_next_ready_story" in tool_names
 
     @patch(
         "src.agile_mcp.api.backlog_tools.create_tables",
@@ -63,13 +63,13 @@ class TestBacklogTools:
         assert len(tool_calls) == 3
 
         tool_names = [call[0][0] for call in tool_calls]
-        assert "backlog.getStorySection" in tool_names
-        assert "backlog.addDependency" in tool_names
-        assert "backlog.getNextReadyStory" in tool_names
+        assert "get_story_section" in tool_names
+        assert "add_story_dependency" in tool_names
+        assert "get_next_ready_story" in tool_names
 
 
 class TestAddDependencyTool:
-    """Test cases for the backlog.addDependency tool."""
+    """Test cases for the add_story_dependency tool."""
 
     @patch("src.agile_mcp.api.backlog_tools.create_tables")
     def test_add_dependency_tool_registration(self, mock_create_tables, mock_mcp):
@@ -82,12 +82,12 @@ class TestAddDependencyTool:
 
         # Check that addDependency tool was registered
         tool_names = [call[0][0] for call in tool_calls]
-        assert "backlog.addDependency" in tool_names
+        assert "add_story_dependency" in tool_names
 
         # Verify that a function was passed for the addDependency tool
         add_dependency_call = None
         for call in tool_calls:
-            if call[0][0] == "backlog.addDependency":
+            if call[0][0] == "add_story_dependency":
                 add_dependency_call = call
                 break
 
@@ -99,7 +99,7 @@ class TestAddDependencyTool:
 
 
 class TestGetNextReadyStoryTool:
-    """Test cases for the backlog.getNextReadyStory tool."""
+    """Test cases for the get_next_ready_story tool."""
 
     @patch("src.agile_mcp.api.backlog_tools.create_tables")
     def test_get_next_ready_story_tool_registration(self, mock_create_tables, mock_mcp):
@@ -112,7 +112,7 @@ class TestGetNextReadyStoryTool:
 
         # Check that getNextReadyStory tool was registered
         tool_names = [call[0][0] for call in tool_calls]
-        assert "backlog.getNextReadyStory" in tool_names
+        assert "get_next_ready_story" in tool_names
 
     @patch("src.agile_mcp.api.backlog_tools.create_tables")
     @patch("src.agile_mcp.api.backlog_tools.get_db")

@@ -12,21 +12,24 @@ def send_jsonrpc_request(process_or_fixture, method, params=None):
     # Handle both direct process and mcp_server_subprocess fixture tuple
     if isinstance(process_or_fixture, tuple):
         process, env_vars, communicate_json_rpc = process_or_fixture
+        # Use the robust communicate function from the fixture
+        return communicate_json_rpc(method, params)
     else:
+        # Legacy support for direct process
         process = process_or_fixture
-    request = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params or {}}
+        request = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params or {}}
 
-    request_json = json.dumps(request) + "\n"
-    process.stdin.write(request_json)
-    process.stdin.flush()
+        request_json = json.dumps(request) + "\n"
+        process.stdin.write(request_json)
+        process.stdin.flush()
 
-    # Read response
-    response_line = process.stdout.readline()
-    if not response_line:
-        stderr_output = process.stderr.read()
-        raise RuntimeError(f"No response from server. Stderr: {stderr_output}")
+        # Read response
+        response_line = process.stdout.readline()
+        if not response_line:
+            stderr_output = process.stderr.read()
+            raise RuntimeError(f"No response from server. Stderr: {stderr_output}")
 
-    return json.loads(response_line.strip())
+        return json.loads(response_line.strip())
 
 
 def test_mcp_server_initialization(mcp_server_subprocess):
@@ -78,7 +81,7 @@ def test_create_epic_tool_success(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": "Test Project E2E",
                 "description": "Project for E2E epic testing",
@@ -94,7 +97,7 @@ def test_create_epic_tool_success(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": "Test Epic E2E",
                 "description": "This is an end-to-end test epic",
@@ -146,7 +149,7 @@ def test_find_epics_tool_success(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": "Findable Project",
                 "description": "Project for findable epic testing",
@@ -162,7 +165,7 @@ def test_find_epics_tool_success(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": "Findable Epic",
                 "description": "This epic should be findable",
@@ -175,7 +178,7 @@ def test_find_epics_tool_success(mcp_server_subprocess):
     response = send_jsonrpc_request(
         mcp_server_subprocess,
         "tools/call",
-        {"name": "backlog.findEpics", "arguments": {}},
+        {"name": "find_epics", "arguments": {}},
     )
 
     # Verify response
@@ -227,7 +230,7 @@ def test_create_epic_validation_error(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": "Validation Test Project",
                 "description": "Project for validation testing",
@@ -243,7 +246,7 @@ def test_create_epic_validation_error(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": "",
                 "description": "Valid description",
@@ -290,7 +293,7 @@ def test_create_epic_with_long_title_error(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": "Long Title Test Project",
                 "description": "Project for long title testing",
@@ -307,7 +310,7 @@ def test_create_epic_with_long_title_error(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": long_title,
                 "description": "Valid description",
@@ -362,7 +365,7 @@ def test_update_epic_status_tool_success(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": "Update Test Project",
                 "description": "Project for update testing",
@@ -378,7 +381,7 @@ def test_update_epic_status_tool_success(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": "Epic to Update",
                 "description": "This epic will be updated",
@@ -397,7 +400,7 @@ def test_update_epic_status_tool_success(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.updateEpicStatus",
+            "name": "update_epic_status",
             "arguments": {"epic_id": epic_id, "status": "Ready"},
         },
     )
@@ -428,7 +431,7 @@ def test_update_epic_status_all_valid_statuses(mcp_server_subprocess):
             mcp_server_subprocess,
             "tools/call",
             {
-                "name": "projects.create",
+                "name": "create_project",
                 "arguments": {
                     "name": f"Project for {status}",
                     "description": f"Project for testing {status} status",
@@ -444,7 +447,7 @@ def test_update_epic_status_all_valid_statuses(mcp_server_subprocess):
             mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.createEpic",
+                "name": "create_epic",
                 "arguments": {
                     "title": f"Epic {status}",
                     "description": f"Epic for testing {status} status",
@@ -462,7 +465,7 @@ def test_update_epic_status_all_valid_statuses(mcp_server_subprocess):
             mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.updateEpicStatus",
+                "name": "update_epic_status",
                 "arguments": {"epic_id": epic_id, "status": status},
             },
         )
@@ -482,7 +485,7 @@ def test_update_epic_status_not_found(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.updateEpicStatus",
+            "name": "update_epic_status",
             "arguments": {"epic_id": "nonexistent-id", "status": "Ready"},
         },
     )
@@ -506,7 +509,7 @@ def test_update_epic_status_invalid_status(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": "Invalid Status Test Project",
                 "description": "Project for invalid status testing",
@@ -522,7 +525,7 @@ def test_update_epic_status_invalid_status(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": "Epic for Invalid Status",
                 "description": "This epic will test invalid status",
@@ -542,7 +545,7 @@ def test_update_epic_status_invalid_status(mcp_server_subprocess):
             mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.updateEpicStatus",
+                "name": "update_epic_status",
                 "arguments": {"epic_id": epic_id, "status": invalid_status},
             },
         )
@@ -563,7 +566,7 @@ def test_update_epic_status_empty_parameters(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.updateEpicStatus",
+            "name": "update_epic_status",
             "arguments": {"epic_id": "", "status": "Ready"},
         },
     )
@@ -577,7 +580,7 @@ def test_update_epic_status_empty_parameters(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.updateEpicStatus",
+            "name": "update_epic_status",
             "arguments": {"epic_id": "some-id", "status": ""},
         },
     )
@@ -596,7 +599,7 @@ def test_update_epic_status_integration_with_find_epics(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": "Integration Test Project",
                 "description": "Project for integration testing",
@@ -612,7 +615,7 @@ def test_update_epic_status_integration_with_find_epics(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": "Integration Test Epic",
                 "description": "Epic for testing integration with findEpics",
@@ -630,7 +633,7 @@ def test_update_epic_status_integration_with_find_epics(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.updateEpicStatus",
+            "name": "update_epic_status",
             "arguments": {"epic_id": epic_id, "status": "In Progress"},
         },
     )
@@ -639,7 +642,7 @@ def test_update_epic_status_integration_with_find_epics(mcp_server_subprocess):
     find_response = send_jsonrpc_request(
         mcp_server_subprocess,
         "tools/call",
-        {"name": "backlog.findEpics", "arguments": {}},
+        {"name": "find_epics", "arguments": {}},
     )
 
     epics_data = find_response["result"]["content"][0]["text"]
@@ -660,7 +663,7 @@ def test_multiple_status_transitions_workflow(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": "Workflow Test Project",
                 "description": "Project for workflow testing",
@@ -676,7 +679,7 @@ def test_multiple_status_transitions_workflow(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": "Workflow Epic",
                 "description": "Epic for testing workflow transitions",
@@ -701,7 +704,7 @@ def test_multiple_status_transitions_workflow(mcp_server_subprocess):
             mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.updateEpicStatus",
+                "name": "update_epic_status",
                 "arguments": {"epic_id": epic_id, "status": target_status},
             },
         )
@@ -715,7 +718,7 @@ def test_multiple_status_transitions_workflow(mcp_server_subprocess):
     find_response = send_jsonrpc_request(
         mcp_server_subprocess,
         "tools/call",
-        {"name": "backlog.findEpics", "arguments": {}},
+        {"name": "find_epics", "arguments": {}},
     )
 
     epics_data = find_response["result"]["content"][0]["text"]
@@ -734,7 +737,7 @@ def test_create_update_retrieve_complete_workflow(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": "Complete Workflow Project",
                 "description": "Project for complete workflow testing",
@@ -750,7 +753,7 @@ def test_create_update_retrieve_complete_workflow(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": "Complete Workflow Epic",
                 "description": "Epic for testing complete workflow",
@@ -771,7 +774,7 @@ def test_create_update_retrieve_complete_workflow(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.updateEpicStatus",
+            "name": "update_epic_status",
             "arguments": {"epic_id": epic_id, "status": "On Hold"},
         },
     )
@@ -789,7 +792,7 @@ def test_create_update_retrieve_complete_workflow(mcp_server_subprocess):
     find_response = send_jsonrpc_request(
         mcp_server_subprocess,
         "tools/call",
-        {"name": "backlog.findEpics", "arguments": {}},
+        {"name": "find_epics", "arguments": {}},
     )
 
     epics_data = find_response["result"]["content"][0]["text"]

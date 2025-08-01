@@ -18,27 +18,34 @@ def send_jsonrpc_request(process_or_fixture, method, params=None):
     # Handle both direct process and mcp_server_subprocess fixture tuple
     if isinstance(process_or_fixture, tuple):
         process, env_vars, communicate_json_rpc = process_or_fixture
+        # Use the robust communicate function from the fixture
+        response = communicate_json_rpc(method, params)
+
+        # Validate JSON-RPC response format
+        validated_response = validate_jsonrpc_response_format(response)
+        return validated_response
     else:
+        # Legacy support for direct process
         process = process_or_fixture
-    request = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params or {}}
+        request = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params or {}}
 
-    request_json = json.dumps(request) + "\n"
-    process.stdin.write(request_json)
-    process.stdin.flush()
+        request_json = json.dumps(request) + "\n"
+        process.stdin.write(request_json)
+        process.stdin.flush()
 
-    # Read response
-    response_line = process.stdout.readline()
-    if not response_line:
-        stderr_output = process.stderr.read()
-        raise RuntimeError(f"No response from server. Stderr: {stderr_output}")
+        # Read response
+        response_line = process.stdout.readline()
+        if not response_line:
+            stderr_output = process.stderr.read()
+            raise RuntimeError(f"No response from server. Stderr: {stderr_output}")
 
-    # Validate JSON parsing
-    response_json = validate_json_response(response_line.strip())
+        # Validate JSON parsing
+        response_json = validate_json_response(response_line.strip())
 
-    # Validate JSON-RPC response format
-    validated_response = validate_jsonrpc_response_format(response_json)
+        # Validate JSON-RPC response format
+        validated_response = validate_jsonrpc_response_format(response_json)
 
-    return validated_response
+        return validated_response
 
 
 def initialize_server(process_or_fixture):
@@ -75,7 +82,7 @@ def create_test_epic(process):
         process,
         "tools/call",
         {
-            "name": "projects.create",
+            "name": "create_project",
             "arguments": {
                 "name": "Test Project for Stories",
                 "description": "Project created for story testing purposes",
@@ -91,7 +98,7 @@ def create_test_epic(process):
         process,
         "tools/call",
         {
-            "name": "backlog.createEpic",
+            "name": "create_epic",
             "arguments": {
                 "title": "Test Epic for Stories",
                 "description": "Epic created for story testing purposes",
@@ -128,12 +135,12 @@ def test_create_story_tool_success(mcp_server_subprocess):
     initialize_server(mcp_server_subprocess)
     epic_id = create_test_epic(mcp_server_subprocess)
 
-    # Call backlog.createStory tool
+    # Call create_story tool
     response = send_jsonrpc_request(
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createStory",
+            "name": "create_story",
             "arguments": {
                 "epic_id": epic_id,
                 "title": "Test Story",
@@ -179,12 +186,12 @@ def test_create_story_with_missing_epic_id(mcp_server_subprocess):
     """Test story creation with missing epic_id parameter."""
     initialize_server(mcp_server_subprocess)
 
-    # Call backlog.createStory tool without epic_id
+    # Call create_story tool without epic_id
     response = send_jsonrpc_request(
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createStory",
+            "name": "create_story",
             "arguments": {
                 "title": "Test Story",
                 "description": "This should fail",
@@ -204,12 +211,12 @@ def test_create_story_with_invalid_epic_id(mcp_server_subprocess):
     """Test story creation with non-existent epic_id."""
     initialize_server(mcp_server_subprocess)
 
-    # Call backlog.createStory tool with invalid epic_id
+    # Call create_story tool with invalid epic_id
     response = send_jsonrpc_request(
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createStory",
+            "name": "create_story",
             "arguments": {
                 "epic_id": "non-existent-epic-id",
                 "title": "Test Story",
@@ -232,12 +239,12 @@ def test_create_story_with_empty_title(mcp_server_subprocess):
     initialize_server(mcp_server_subprocess)
     epic_id = create_test_epic(mcp_server_subprocess)
 
-    # Call backlog.createStory tool with empty title
+    # Call create_story tool with empty title
     response = send_jsonrpc_request(
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createStory",
+            "name": "create_story",
             "arguments": {
                 "epic_id": epic_id,
                 "title": "",
@@ -260,12 +267,12 @@ def test_create_story_with_empty_acceptance_criteria(mcp_server_subprocess):
     initialize_server(mcp_server_subprocess)
     epic_id = create_test_epic(mcp_server_subprocess)
 
-    # Call backlog.createStory tool with empty acceptance criteria
+    # Call create_story tool with empty acceptance criteria
     response = send_jsonrpc_request(
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createStory",
+            "name": "create_story",
             "arguments": {
                 "epic_id": epic_id,
                 "title": "Valid title",
@@ -293,7 +300,7 @@ def test_get_story_tool_success(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createStory",
+            "name": "create_story",
             "arguments": {
                 "epic_id": epic_id,
                 "title": "Retrievable Story",
@@ -307,11 +314,11 @@ def test_get_story_tool_success(mcp_server_subprocess):
     created_story = json.loads(story_data)
     story_id = created_story["id"]
 
-    # Call backlog.getStory tool
+    # Call get_story tool
     response = send_jsonrpc_request(
         mcp_server_subprocess,
         "tools/call",
-        {"name": "backlog.getStory", "arguments": {"story_id": story_id}},
+        {"name": "get_story", "arguments": {"story_id": story_id}},
     )
 
     # Verify response structure
@@ -336,12 +343,12 @@ def test_get_story_with_non_existent_id(mcp_server_subprocess):
     """Test story retrieval with non-existent story ID."""
     initialize_server(mcp_server_subprocess)
 
-    # Call backlog.getStory tool with non-existent ID
+    # Call get_story tool with non-existent ID
     response = send_jsonrpc_request(
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.getStory",
+            "name": "get_story",
             "arguments": {"story_id": "non-existent-story-id"},
         },
     )
@@ -359,11 +366,11 @@ def test_get_story_with_empty_id(mcp_server_subprocess):
     """Test story retrieval with empty story ID."""
     initialize_server(mcp_server_subprocess)
 
-    # Call backlog.getStory tool with empty ID
+    # Call get_story tool with empty ID
     response = send_jsonrpc_request(
         mcp_server_subprocess,
         "tools/call",
-        {"name": "backlog.getStory", "arguments": {"story_id": ""}},
+        {"name": "get_story", "arguments": {"story_id": ""}},
     )
 
     # Verify error response (FastMCP format)
@@ -384,7 +391,7 @@ def test_create_then_retrieve_story_integration(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createStory",
+            "name": "create_story",
             "arguments": {
                 "epic_id": epic_id,
                 "title": "Integration Test Story",
@@ -407,7 +414,7 @@ def test_create_then_retrieve_story_integration(mcp_server_subprocess):
     get_response = send_jsonrpc_request(
         mcp_server_subprocess,
         "tools/call",
-        {"name": "backlog.getStory", "arguments": {"story_id": story_id}},
+        {"name": "get_story", "arguments": {"story_id": story_id}},
     )
 
     # Verify retrieved story matches created story
@@ -436,7 +443,7 @@ def test_multiple_stories_same_epic(mcp_server_subprocess):
             mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.createStory",
+                "name": "create_story",
                 "arguments": {
                     "epic_id": epic_id,
                     "title": f"Story {i+1}",
@@ -455,7 +462,7 @@ def test_multiple_stories_same_epic(mcp_server_subprocess):
         response = send_jsonrpc_request(
             mcp_server_subprocess,
             "tools/call",
-            {"name": "backlog.getStory", "arguments": {"story_id": story_id}},
+            {"name": "get_story", "arguments": {"story_id": story_id}},
         )
 
         story_data = response["result"]["content"][0]["text"]
@@ -479,7 +486,7 @@ def test_jsonrpc_compliance_for_story_tools(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createStory",
+            "name": "create_story",
             "arguments": {
                 "epic_id": epic_id,
                 "title": "JSON-RPC Test Story",
@@ -504,7 +511,7 @@ def test_jsonrpc_compliance_for_story_tools(mcp_server_subprocess):
         get_response = send_jsonrpc_request(
             mcp_server_subprocess,
             "tools/call",
-            {"name": "backlog.getStory", "arguments": {"story_id": story_id}},
+            {"name": "get_story", "arguments": {"story_id": story_id}},
         )
 
         # Verify JSON-RPC 2.0 response structure
@@ -524,7 +531,7 @@ def test_update_story_status_tool_success(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createStory",
+            "name": "create_story",
             "arguments": {
                 "epic_id": epic_id,
                 "title": "Status Update Story",
@@ -544,7 +551,7 @@ def test_update_story_status_tool_success(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.updateStoryStatus",
+            "name": "update_story_status",
             "arguments": {"story_id": story_id, "status": "InProgress"},
         },
     )
@@ -575,7 +582,7 @@ def test_update_story_status_all_valid_statuses(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createStory",
+            "name": "create_story",
             "arguments": {
                 "epic_id": epic_id,
                 "title": "Multi-Status Story",
@@ -597,7 +604,7 @@ def test_update_story_status_all_valid_statuses(mcp_server_subprocess):
             mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.updateStoryStatus",
+                "name": "update_story_status",
                 "arguments": {"story_id": story_id, "status": status},
             },
         )
@@ -618,7 +625,7 @@ def test_update_story_status_invalid_status_error(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createStory",
+            "name": "create_story",
             "arguments": {
                 "epic_id": epic_id,
                 "title": "Validation Test Story",
@@ -637,7 +644,7 @@ def test_update_story_status_invalid_status_error(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.updateStoryStatus",
+            "name": "update_story_status",
             "arguments": {"story_id": story_id, "status": "InvalidStatus"},
         },
     )
@@ -661,7 +668,7 @@ def test_update_story_status_empty_status_error(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createStory",
+            "name": "create_story",
             "arguments": {
                 "epic_id": epic_id,
                 "title": "Empty Status Test Story",
@@ -680,7 +687,7 @@ def test_update_story_status_empty_status_error(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.updateStoryStatus",
+            "name": "update_story_status",
             "arguments": {"story_id": story_id, "status": ""},
         },
     )
@@ -702,7 +709,7 @@ def test_update_story_status_non_existent_story_error(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.updateStoryStatus",
+            "name": "update_story_status",
             "arguments": {"story_id": "non-existent-story-id", "status": "InProgress"},
         },
     )
@@ -724,7 +731,7 @@ def test_update_story_status_empty_story_id_error(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.updateStoryStatus",
+            "name": "update_story_status",
             "arguments": {"story_id": "", "status": "InProgress"},
         },
     )
@@ -747,7 +754,7 @@ def test_update_story_status_integration_with_get_story(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createStory",
+            "name": "create_story",
             "arguments": {
                 "epic_id": epic_id,
                 "title": "Integration Test Story",
@@ -765,7 +772,7 @@ def test_update_story_status_integration_with_get_story(mcp_server_subprocess):
     get_response = send_jsonrpc_request(
         mcp_server_subprocess,
         "tools/call",
-        {"name": "backlog.getStory", "arguments": {"story_id": story_id}},
+        {"name": "get_story", "arguments": {"story_id": story_id}},
     )
     initial_story_data = get_response["result"]["content"][0]["text"]
     initial_story = json.loads(initial_story_data)
@@ -776,7 +783,7 @@ def test_update_story_status_integration_with_get_story(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.updateStoryStatus",
+            "name": "update_story_status",
             "arguments": {"story_id": story_id, "status": "InProgress"},
         },
     )
@@ -790,7 +797,7 @@ def test_update_story_status_integration_with_get_story(mcp_server_subprocess):
     get_updated_response = send_jsonrpc_request(
         mcp_server_subprocess,
         "tools/call",
-        {"name": "backlog.getStory", "arguments": {"story_id": story_id}},
+        {"name": "get_story", "arguments": {"story_id": story_id}},
     )
     retrieved_story_data = get_updated_response["result"]["content"][0]["text"]
     retrieved_story = json.loads(retrieved_story_data)
@@ -801,7 +808,7 @@ def test_update_story_status_integration_with_get_story(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.updateStoryStatus",
+            "name": "update_story_status",
             "arguments": {"story_id": story_id, "status": "Done"},
         },
     )
@@ -809,7 +816,7 @@ def test_update_story_status_integration_with_get_story(mcp_server_subprocess):
     final_get_response = send_jsonrpc_request(
         mcp_server_subprocess,
         "tools/call",
-        {"name": "backlog.getStory", "arguments": {"story_id": story_id}},
+        {"name": "get_story", "arguments": {"story_id": story_id}},
     )
     final_story_data = final_get_response["result"]["content"][0]["text"]
     final_story = json.loads(final_story_data)
@@ -827,7 +834,7 @@ def test_create_update_get_complete_workflow(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createStory",
+            "name": "create_story",
             "arguments": {
                 "epic_id": epic_id,
                 "title": "Workflow Test Story",
@@ -855,7 +862,7 @@ def test_create_update_get_complete_workflow(mcp_server_subprocess):
             mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.updateStoryStatus",
+                "name": "update_story_status",
                 "arguments": {"story_id": story_id, "status": status},
             },
         )
@@ -869,7 +876,7 @@ def test_create_update_get_complete_workflow(mcp_server_subprocess):
         get_response = send_jsonrpc_request(
             mcp_server_subprocess,
             "tools/call",
-            {"name": "backlog.getStory", "arguments": {"story_id": story_id}},
+            {"name": "get_story", "arguments": {"story_id": story_id}},
         )
         retrieved_story_data = get_response["result"]["content"][0]["text"]
         retrieved_story = json.loads(retrieved_story_data)
@@ -891,7 +898,7 @@ def test_concurrent_status_updates_same_story(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createStory",
+            "name": "create_story",
             "arguments": {
                 "epic_id": epic_id,
                 "title": "Concurrent Update Story",
@@ -912,7 +919,7 @@ def test_concurrent_status_updates_same_story(mcp_server_subprocess):
             mcp_server_subprocess,
             "tools/call",
             {
-                "name": "backlog.updateStoryStatus",
+                "name": "update_story_status",
                 "arguments": {"story_id": story_id, "status": status},
             },
         )
@@ -922,7 +929,7 @@ def test_concurrent_status_updates_same_story(mcp_server_subprocess):
     get_response = send_jsonrpc_request(
         mcp_server_subprocess,
         "tools/call",
-        {"name": "backlog.getStory", "arguments": {"story_id": story_id}},
+        {"name": "get_story", "arguments": {"story_id": story_id}},
     )
     final_story_data = get_response["result"]["content"][0]["text"]
     final_story = json.loads(final_story_data)
@@ -939,7 +946,7 @@ def test_update_story_status_jsonrpc_compliance(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.createStory",
+            "name": "create_story",
             "arguments": {
                 "epic_id": epic_id,
                 "title": "JSON-RPC Compliance Test Story",
@@ -958,7 +965,7 @@ def test_update_story_status_jsonrpc_compliance(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.updateStoryStatus",
+            "name": "update_story_status",
             "arguments": {"story_id": story_id, "status": "InProgress"},
         },
     )
@@ -974,7 +981,7 @@ def test_update_story_status_jsonrpc_compliance(mcp_server_subprocess):
         mcp_server_subprocess,
         "tools/call",
         {
-            "name": "backlog.updateStoryStatus",
+            "name": "update_story_status",
             "arguments": {"story_id": story_id, "status": "InvalidStatus"},
         },
     )

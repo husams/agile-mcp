@@ -41,7 +41,7 @@ def register_comment_tools(mcp: FastMCP) -> None:
         )
         raise
 
-    @mcp.tool("story.addComment")
+    @mcp.tool("add_story_comment")
     def add_comment(
         story_id: str, author_role: str, content: str, reply_to_id: Optional[str] = None
     ) -> Dict[str, Any]:
@@ -186,7 +186,7 @@ def register_comment_tools(mcp: FastMCP) -> None:
                 ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
             )
 
-    @mcp.tool("story.getComments")
+    @mcp.tool("get_story_comments")
     def get_story_comments(story_id: str) -> Dict[str, Any]:
         """
         Retrieve all comments for a story, ordered chronologically.
@@ -277,7 +277,7 @@ def register_comment_tools(mcp: FastMCP) -> None:
                 ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
             )
 
-    @mcp.tool("story.updateComment")
+    @mcp.tool("update_story_comment")
     def update_comment(comment_id: str, content: str) -> Dict[str, Any]:
         """
         Update the content of an existing comment.
@@ -391,7 +391,7 @@ def register_comment_tools(mcp: FastMCP) -> None:
                 ErrorData(code=-32001, message=f"Unexpected error: {str(e)}")
             )
 
-    @mcp.tool("story.deleteComment")
+    @mcp.tool("delete_story_comment")
     def delete_comment(comment_id: str) -> Dict[str, Any]:
         """
         Delete a comment.
