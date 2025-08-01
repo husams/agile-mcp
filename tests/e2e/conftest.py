@@ -128,7 +128,7 @@ def mcp_server_subprocess(isolated_e2e_database):
 
         if is_ci:
             # In CI environments, use minimal startup check to avoid deadlocks
-            time.sleep(2)  # Just wait 2 seconds for server to start
+            time.sleep(5)  # Wait 5 seconds for server to start (increased for CI)
             if process.poll() is not None:
                 stdout, stderr = process.communicate(timeout=1)
                 raise RuntimeError(
@@ -220,11 +220,16 @@ def mcp_server_subprocess(isolated_e2e_database):
                 reader_thread = threading.Thread(target=read_response)
                 reader_thread.daemon = True
                 reader_thread.start()
-                reader_thread.join(timeout=10.0)  # 10 second timeout for CI robustness
+                # Use longer timeout in CI environments which can be slower
+                timeout_seconds = 30.0 if os.getenv("CI") == "true" else 10.0
+                reader_thread.join(timeout=timeout_seconds)
 
                 if reader_thread.is_alive():
                     # Thread is still running, meaning timeout occurred
-                    return {"error": "Response timeout from server"}
+                    error_msg = f"Response timeout from server after {timeout_seconds}s"
+                    if os.getenv("CI") == "true":
+                        error_msg += f" (CI environment, PID: {process.pid})"
+                    return {"error": error_msg}
 
                 if "error" in response_data:
                     return {"error": response_data["error"]}
