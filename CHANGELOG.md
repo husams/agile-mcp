@@ -60,7 +60,7 @@ All MCP tool names have been updated to remove dots and use underscore-based nam
 
 #### Project Management Tools
 - `projects.create` → `create_project`
-- `projects.find` → `find_projects`
+- `projects.find` → `list_projects`
 
 ### Added
 - **Migration Guide**: Comprehensive MIGRATION-GUIDE.md with complete tool name mappings and client migration examples

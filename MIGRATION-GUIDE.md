@@ -72,7 +72,7 @@ This guide covers the breaking changes introduced in version 2.0.0, where all MC
 | Old Name | New Name |
 |----------|----------|
 | `projects.create` | `create_project` |
-| `projects.find` | `find_projects` |
+| `projects.find` | `list_projects` |
 
 ## Migration Examples
 
@@ -154,7 +154,7 @@ TOOL_NAME_MAPPING = {
     "documents.ingest": "ingest_document",
     "documents.getSection": "get_document_section",
     "projects.create": "create_project",
-    "projects.find": "find_projects"
+    "projects.find": "list_projects"
 }
 
 def migrate_tool_name(old_name: str) -> str:
