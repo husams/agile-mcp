@@ -10,6 +10,7 @@ and JSON-RPC client helpers for server communication with automatic cleanup.
 import json
 import os
 import subprocess
+import threading
 import time
 from typing import Any, Dict, Optional
 
@@ -192,7 +193,7 @@ def mcp_server_subprocess(isolated_e2e_database):
                 "params": params or {},
             }
 
-            # Improved stdin/stdout communication with timeout for CI robustness
+            # Thread-safe communication with timeout to prevent CI hanging
             try:
                 # Check if process is still alive before attempting communication
                 if process.poll() is not None:
@@ -202,29 +203,36 @@ def mcp_server_subprocess(isolated_e2e_database):
                 process.stdin.write(request_json)
                 process.stdin.flush()
 
-                # Add timeout for response reading to prevent hanging in CI
-                import select
+                # Use threading to implement timeout for stdout.readline()
+                response_data = {}
 
-                # Use select for non-blocking read on Unix-like systems
-                if hasattr(select, "select"):
-                    ready, _, _ = select.select(
-                        [process.stdout], [], [], 5.0  # 5 second timeout
-                    )
-                    if ready:
+                def read_response():
+                    try:
                         response_line = process.stdout.readline()
                         if response_line:
-                            return json.loads(response_line.strip())
+                            response_data["response"] = response_line.strip()
                         else:
-                            return {"error": "Empty response from server"}
-                    else:
-                        return {"error": "Response timeout from server"}
-                else:
-                    # Fallback for non-Unix systems
-                    response_line = process.stdout.readline()
-                    if response_line:
-                        return json.loads(response_line.strip())
-                    else:
-                        return {"error": "No response from server"}
+                            response_data["error"] = "Empty response from server"
+                    except Exception as e:
+                        response_data["error"] = f"Read error: {str(e)}"
+
+                # Start reader thread with timeout
+                reader_thread = threading.Thread(target=read_response)
+                reader_thread.daemon = True
+                reader_thread.start()
+                reader_thread.join(timeout=10.0)  # 10 second timeout
+
+                if reader_thread.is_alive():
+                    # Thread is still running, meaning timeout occurred
+                    return {"error": "Response timeout from server"}
+
+                if "error" in response_data:
+                    return {"error": response_data["error"]}
+
+                if "response" in response_data:
+                    return json.loads(response_data["response"])
+
+                return {"error": "No response received"}
 
             except Exception as e:
                 return {"error": f"Communication error: {str(e)}"}
