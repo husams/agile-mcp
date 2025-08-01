@@ -235,3 +235,4 @@ in_memory_*
 memory_*
 *.inmemory
 .inmemory_*
+*.db
